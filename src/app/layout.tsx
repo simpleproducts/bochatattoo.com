@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Cursor } from "@/components/Cursor";
+import { Grain } from "@/components/Grain";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +44,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-fg">{children}</body>
+      <body className="min-h-full flex flex-col bg-bg text-fg">
+        {children}
+        <Grain />
+        <Cursor />
+      </body>
     </html>
   );
 }

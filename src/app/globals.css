@@ -33,11 +33,98 @@ body {
   color: var(--color-bg);
 }
 
+/* ---------- Marquee ---------- */
 @keyframes marquee {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+.animate-marquee { animation: marquee 40s linear infinite; }
 
-.animate-marquee {
-  animation: marquee 40s linear infinite;
+/* ---------- Scroll cue ---------- */
+@keyframes scroll-cue {
+  0%   { transform: scaleY(0); transform-origin: top; }
+  50%  { transform: scaleY(1); transform-origin: top; }
+  51%  { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+.animate-scroll-cue { animation: scroll-cue 2.4s cubic-bezier(.7,0,.3,1) infinite; }
+
+/* ---------- Hero placeholder background (animated gradient) ---------- */
+.hero-placeholder {
+  background:
+    radial-gradient(ellipse at 25% 20%, #2a221a 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 70%, #1a1f28 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, #18120c 0%, transparent 70%),
+    linear-gradient(135deg, #0a0a0a 0%, #14110d 100%);
+  background-size: 140% 140%, 160% 160%, 180% 180%, 100% 100%;
+  animation: hero-pan 22s ease-in-out infinite alternate;
+}
+@keyframes hero-pan {
+  0%   { background-position: 0% 0%, 100% 100%, 50% 50%, 0% 0%; }
+  100% { background-position: 100% 100%, 0% 0%, 80% 30%, 0% 0%; }
+}
+
+/* ---------- Custom cursor ---------- */
+@media (pointer: fine) {
+  .custom-cursor,
+  .custom-cursor * { cursor: none !important; }
+}
+.cursor-ring {
+  transition:
+    width 220ms cubic-bezier(.2,.7,.2,1),
+    height 220ms cubic-bezier(.2,.7,.2,1),
+    margin 220ms cubic-bezier(.2,.7,.2,1),
+    border-color 220ms ease;
+}
+.cursor-ring.is-active {
+  width: 3rem;
+  height: 3rem;
+  margin-left: -1.5rem;
+  margin-top: -1.5rem;
+}
+
+/* ---------- Reveal ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 900ms cubic-bezier(.2,.7,.2,1),
+    transform 900ms cubic-bezier(.2,.7,.2,1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Nav link underline ---------- */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 380ms cubic-bezier(.2,.7,.2,1);
+}
+.nav-link:hover::after { transform: scaleX(1); transform-origin: left; }
+
+/* ---------- Work tile hover ---------- */
+.tile { transition: transform 600ms cubic-bezier(.2,.7,.2,1); }
+.tile:hover { transform: translateY(-4px); }
+.tile .tile-img { transition: transform 1200ms cubic-bezier(.2,.7,.2,1); }
+.tile:hover .tile-img { transform: scale(1.04); }
+.tile:hover .tile-overlay { background: linear-gradient(to top, rgba(10,10,10,0.55), rgba(10,10,10,0)); }
+.tile:hover .tile-label { opacity: 1; transform: none; }
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-marquee,
+  .animate-scroll-cue,
+  .hero-placeholder { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .tile, .tile-img, .tile-overlay, .tile-label { transition: none; }
 }
