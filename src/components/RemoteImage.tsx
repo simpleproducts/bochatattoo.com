@@ -12,6 +12,8 @@ type Props = {
   fill?: boolean;
 } & Pick<ImageProps, "style">;
 
+const BASE = process.env.NEXT_PUBLIC_IMAGES_BASE_URL ?? "";
+
 export function RemoteImage({
   slug,
   alt,
@@ -23,14 +25,16 @@ export function RemoteImage({
 }: Props) {
   const entry = getImage(slug);
 
-  if (!entry) {
+  // No manifest entry OR no R2 base URL configured → render a labelled box so
+  // the layout works on preview deploys before env vars are wired up.
+  if (!entry || !BASE) {
     // Manifest entry missing — render a labelled box so the layout still works.
     return (
       <div
         className={`relative bg-line text-muted text-[10px] uppercase tracking-[0.2em] font-mono flex items-end p-3 ${className ?? ""}`}
         style={{ aspectRatio: "3 / 4", ...style }}
       >
-        Missing: {slug}
+        {!BASE ? `No images host: ${slug}` : `Missing: ${slug}`}
       </div>
     );
   }
