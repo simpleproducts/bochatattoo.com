@@ -32,12 +32,17 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
 # claude code local config
 .claude/
+
+# image pipeline — originals & generated variants live outside git
+/raw-images/
+/processed-images/
 
 # typescript
 *.tsbuildinfo
