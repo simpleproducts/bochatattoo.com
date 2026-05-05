@@ -1,4 +1,3 @@
-import { Placeholder } from "./Placeholder";
 import { Reveal } from "./Reveal";
 import type { Dictionary } from "@/i18n/types";
 
@@ -11,7 +10,20 @@ export function About({ dict }: { dict: Dictionary["about"] }) {
     >
       <div className="grid md:grid-cols-12 gap-8 md:gap-12">
         <Reveal className="md:col-span-5">
-          <Placeholder label={dict.portraitAlt} ratio="portrait" />
+          <figure className="relative aspect-[3/4] overflow-hidden bg-line">
+            <picture>
+              <source srcSet="/site/about-me.avif" type="image/avif" />
+              <source srcSet="/site/about-me.webp" type="image/webp" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/site/about-me.jpg"
+                alt={dict.portraitAlt}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </picture>
+          </figure>
         </Reveal>
 
         <div className="md:col-span-7 flex flex-col justify-between gap-12">
