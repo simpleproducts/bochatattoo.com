@@ -1,0 +1,71 @@
+import { ImageResponse } from "next/og";
+import { getDictionary } from "@/i18n";
+
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
+export const alt = "Bocha — Tattoo Artist";
+
+export default function OG() {
+  const dict = getDictionary("en");
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          background:
+            "radial-gradient(ellipse at 25% 25%, #2a221a 0%, transparent 55%), radial-gradient(ellipse at 75% 70%, #1a1f28 0%, transparent 55%), #0a0a0a",
+          color: "#ededed",
+          padding: 80,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          fontFamily: "Georgia, serif",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontFamily:
+              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            fontSize: 18,
+            color: "#a0a0a0",
+            textTransform: "uppercase",
+            letterSpacing: "0.2em",
+          }}
+        >
+          <span>Bocha · Tattoo</span>
+          <span>· {dict.hero.booking}</span>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              fontStyle: "italic",
+              fontSize: 220,
+              lineHeight: 0.86,
+              letterSpacing: "-0.04em",
+            }}
+          >
+            <span>bocha</span>
+            <span style={{ color: "#7a7a7a" }}>tattoo</span>
+          </div>
+          <div
+            style={{
+              fontSize: 28,
+              color: "#cfcfcf",
+              maxWidth: 900,
+              lineHeight: 1.2,
+            }}
+          >
+            {dict.meta.description}
+          </div>
+        </div>
+      </div>
+    ),
+    { ...size },
+  );
+}

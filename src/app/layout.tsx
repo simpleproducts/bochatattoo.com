@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Cursor } from "@/components/Cursor";
 import { Grain } from "@/components/Grain";
 import "./globals.css";
@@ -41,6 +42,7 @@ export default function RootLayout({
         {children}
         <Grain />
         <Cursor />
+        <Analytics />
       </body>
     </html>
   );

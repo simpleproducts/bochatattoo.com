@@ -9,12 +9,14 @@ import { FAQ } from "./FAQ";
 import { Contact } from "./Contact";
 import { Footer } from "./Footer";
 import { HtmlLang } from "./HtmlLang";
+import { JsonLd } from "./JsonLd";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
 export function HomePage({ dict, locale }: { dict: Dictionary; locale: Locale }) {
   return (
     <>
+      <JsonLd locale={locale} />
       <HtmlLang locale={locale} />
       <Nav dict={dict.nav} locale={locale} switcherLabel={dict.localeSwitcher.label} />
       <main className="flex-1">
