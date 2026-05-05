@@ -127,6 +127,15 @@ const es: Dictionary = {
   faq: {
     eyebrow: "05 / Preguntas",
     title: "Preguntas frecuentes",
+    pageTitle: "Preguntas\nfrecuentes.",
+    intro:
+      "Todo lo que me preguntan, respondido con honestidad. Si falta algo, abajo de todo está la forma de escribirme.",
+    back: "Volver",
+    contactPrompt: "¿Te quedó una duda?",
+    contactCta: "Escribime →",
+    metaTitle: "Preguntas · Bocha · Tatuador · Almagro, Buenos Aires",
+    metaDescription:
+      "Reservas, precios, señas, primer tatuaje, viajes — todo lo que querrías preguntar antes de tatuarte con Bocha.",
     items: [
       {
         q: "¿Cómo reservo?",

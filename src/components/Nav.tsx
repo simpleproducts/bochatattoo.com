@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Magnetic } from "./Magnetic";
+import { localePath } from "@/i18n";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
@@ -16,14 +18,20 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
   const [progress, setProgress] = useState(0);
   const [open, setOpen] = useState(false);
 
+  const home = localePath(locale);
+  const faqUrl = locale === "en" ? "/faq" : `/${locale}/faq`;
+  const homeMark = home === "/" ? "/" : home;
+
   const items: [string, string][] = [
-    [dict.work, "#work"],
-    [dict.about, "#about"],
-    [dict.process, "#process"],
-    [dict.aftercare, "#aftercare"],
-    [dict.faq, "#faq"],
-    [dict.contact, "#contact"],
+    [dict.work, `${home === "/" ? "" : home}/#work`.replace("//", "/")],
+    [dict.about, `${home === "/" ? "" : home}/#about`.replace("//", "/")],
+    [dict.process, `${home === "/" ? "" : home}/#process`.replace("//", "/")],
+    [dict.aftercare, `${home === "/" ? "" : home}/#aftercare`.replace("//", "/")],
+    [dict.faq, faqUrl],
+    [dict.contact, `${home === "/" ? "" : home}/#contact`.replace("//", "/")],
   ];
+
+  const bookHref = `${home === "/" ? "" : home}/#contact`.replace("//", "/");
 
   useEffect(() => {
     let raf = 0;
@@ -66,22 +74,22 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
           scrolled ? "py-3" : "py-5"
         }`}
       >
-        <a
-          href="#top"
+        <Link
+          href={homeMark}
           aria-label="Bocha Tattoo"
           className={`font-serif italic tracking-tight transition-all duration-500 ${
             scrolled ? "text-lg md:text-xl" : "text-xl md:text-2xl"
           }`}
         >
           bocha
-        </a>
+        </Link>
 
         <ul className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs uppercase tracking-[0.2em] font-mono">
           {items.map(([label, href]) => (
-            <li key={href}>
-              <a href={href} className="nav-link relative inline-block py-1">
+            <li key={label}>
+              <Link href={href} className="nav-link relative inline-block py-1">
                 {label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -89,15 +97,15 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
         <div className="hidden md:flex items-center gap-6">
           <LocaleSwitcher current={locale} label={switcherLabel} />
           <Magnetic strength={0.35} range={60}>
-            <a
-              href="#contact"
+            <Link
+              href={bookHref}
               className={`inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-mono border border-current rounded-full transition-all duration-500 hover:bg-fg hover:text-bg ${
                 scrolled ? "px-3 py-1.5" : "px-4 py-2"
               }`}
             >
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
               {dict.book}
-            </a>
+            </Link>
           </Magnetic>
         </div>
 
@@ -128,14 +136,14 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
       >
         <ul className="flex flex-col gap-2 px-6 py-6 text-2xl font-serif">
           {items.map(([label, href]) => (
-            <li key={href}>
-              <a
+            <li key={label}>
+              <Link
                 href={href}
                 onClick={() => setOpen(false)}
                 className="block py-2"
               >
                 {label}
-              </a>
+              </Link>
             </li>
           ))}
           <li className="pt-4 border-t border-line mt-2">
