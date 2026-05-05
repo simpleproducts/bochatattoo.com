@@ -98,6 +98,6 @@ export type Dictionary = {
     directLabel: string;
     instagramLabel: string;
   };
-  footer: { rights: string };
+  footer: { rights: string; backToTop: string };
   localeSwitcher: { label: string };
 };
