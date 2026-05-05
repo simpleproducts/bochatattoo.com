@@ -54,13 +54,12 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
         </Reveal>
       </div>
 
-      {/* Floating circular booking badge */}
+      {/* Floating circular booking badge — links to contact */}
       <div
-        aria-hidden
         className="absolute right-6 md:right-10 top-28 md:top-32 hidden sm:block opacity-0 animate-fade-in"
         style={{ animationDelay: "1400ms" }}
       >
-        <BookingBadge text={dict.booking} />
+        <BookingBadge text={dict.booking} href="#contact" ariaLabel={dict.booking} />
       </div>
 
       <div
