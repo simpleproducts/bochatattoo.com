@@ -40,17 +40,6 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-bg text-fg">
-        {/*
-          Pre-hydration script: stops mobile Safari from restoring the
-          previous scroll position on refresh. Runs synchronously when the
-          parser reaches it, before React mounts anything below.
-        */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "if('scrollRestoration' in history)history.scrollRestoration='manual';if(!location.hash)scrollTo(0,0);",
-          }}
-        />
         <PageCurtain />
         {children}
         <Grain />

@@ -188,6 +188,10 @@ const en: Dictionary = {
         q: "Where's the studio?",
         a: "I have my private studio in Almagro, Ciudad de Buenos Aires, a few blocks from the B subway line. I also do guest spots in other places around the world, so reach out if you want me to tattoo in your city.",
       },
+      {
+        q: "Do you do cover-ups or touch-ups?",
+        a: "Yes, I do cover-ups.",
+      },
     ],
   },
   contact: {

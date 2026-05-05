@@ -7,6 +7,15 @@ export function PageCurtain() {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
+    // Mobile Safari restores scroll based on stale heights; take manual control.
+    // Runs post-hydration but the scrollTo override still snaps to top quickly.
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+    if (!window.location.hash) {
+      window.scrollTo(0, 0);
+    }
+
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setGone(true);
       return;
