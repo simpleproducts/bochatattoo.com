@@ -77,7 +77,7 @@ export function HeroBackground() {
             alt=""
             aria-hidden
             fetchPriority="high"
-            className="block relative w-full h-[calc(100%+240px)] -top-[240px] object-cover object-center md:h-full md:top-0 md:scale-[1.36] md:translate-x-[35%] md:origin-center"
+            className="block relative w-full h-[calc(100%_+_240px)] -top-[240px] object-cover object-center md:h-full md:top-0 md:scale-[1.36] md:translate-x-[35%] md:origin-center"
           />
         </picture>
       </div>
