@@ -44,6 +44,14 @@ yarn-error.log*
 /raw-images/
 /processed-images/
 
+# safety net: portfolio media lives on R2, never in public/
+/public/images/
+/public/**/*.jpg
+/public/**/*.jpeg
+/public/**/*.mp4
+/public/**/*.mov
+/public/**/*.webm
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
