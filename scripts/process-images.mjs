@@ -104,49 +104,49 @@ async function main() {
     const sizes = WIDTHS.filter((w) => w <= intrinsicW);
     if (sizes.length === 0) sizes.push(intrinsicW);
 
-    // Resume support: if the manifest already has this entry AND every expected
-    // variant exists on disk, skip the (expensive) re-encode.
+    // Resume: if every expected variant is already on disk, skip the expensive
+    // re-encode but still ensure the manifest entry is present.
     const allVariantsExist = sizes.every((w) =>
       FORMATS.every(({ ext }) => existsSync(join(OUT_DIR, `${slug}-${w}.${ext}`))),
     );
-    if (manifest[slug] && allVariantsExist) {
-      skipped++;
-      done++;
-      continue;
-    }
 
-    for (const width of sizes) {
-      const height = Math.round((width / intrinsicW) * intrinsicH);
-      for (const { ext, options } of FORMATS) {
-        const out = join(OUT_DIR, `${slug}-${width}.${ext}`);
-        try {
-          await sharp(src)
-            .rotate() // honor EXIF orientation
-            .resize({ width, height, fit: "inside" })
-            [ext](options)
-            .toFile(out);
-        } catch (err) {
-          console.warn(`Failed ${rel} → ${out}: ${err.message}`);
+    if (!allVariantsExist) {
+      for (const width of sizes) {
+        const height = Math.round((width / intrinsicW) * intrinsicH);
+        for (const { ext, options } of FORMATS) {
+          const out = join(OUT_DIR, `${slug}-${width}.${ext}`);
+          try {
+            await sharp(src)
+              .rotate()
+              .resize({ width, height, fit: "inside" })
+              [ext](options)
+              .toFile(out);
+          } catch (err) {
+            console.warn(`Failed ${rel} → ${out}: ${err.message}`);
+          }
         }
       }
+      processed++;
+    } else {
+      skipped++;
     }
 
+    // Always upsert the manifest entry (cheap — just metadata + a tiny blur).
     manifest[slug] = {
       alt: existing[slug]?.alt ?? slug.replace(/-/g, " "),
       width: intrinsicW,
       height: intrinsicH,
-      blurDataURL: await blurPlaceholder(src),
+      blurDataURL: existing[slug]?.blurDataURL ?? (await blurPlaceholder(src)),
       sizes,
       format: "avif",
       category,
     };
 
-    processed++;
     done++;
-    // Checkpoint every 25 fresh entries so an interrupt doesn't lose progress.
-    if (processed % 25 === 0) {
+    // Checkpoint regularly so an interrupt doesn't lose the manifest.
+    if (done % 25 === 0) {
       await flush();
-      console.log(`  ${done}/${files.length} (processed ${processed}, skipped ${skipped})`);
+      console.log(`  ${done}/${files.length} (encoded ${processed}, skipped ${skipped})`);
     }
   }
 
