@@ -134,18 +134,6 @@ body {
   }
 }
 
-/* ---------- Hero spotlight (mouse-tracked) ---------- */
-.hero-spotlight {
-  background: radial-gradient(
-    600px circle at var(--mx) var(--my),
-    rgba(216, 200, 168, 0.18),
-    rgba(216, 200, 168, 0.06) 30%,
-    transparent 60%
-  );
-  transition: background 80ms linear;
-  mix-blend-mode: screen;
-}
-
 /* ---------- Work grid sibling-dim ---------- */
 .work-grid:hover .tile { opacity: 0.45; transition: opacity 500ms ease, transform 600ms cubic-bezier(.2,.7,.2,1); }
 .work-grid:hover .tile:hover { opacity: 1; }
@@ -280,7 +268,6 @@ body {
   .split-char { opacity: 1; transform: none; animation: none; }
   .animate-fade-in { opacity: 1; animation: none; }
   .animate-spin-slow { animation: none; }
-  .hero-spotlight { display: none; }
   .work-grid:hover .tile { opacity: 1; }
   .cursor-mark { transition: none; }
 }

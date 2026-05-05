@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 export function HeroBackground() {
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
-  const spotlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -21,37 +20,11 @@ export function HeroBackground() {
       });
     };
 
-    let mraf = 0;
-    let mx = 50;
-    let my = 50;
-    let cx = 50;
-    let cy = 50;
-    const onMove = (e: MouseEvent) => {
-      mx = (e.clientX / window.innerWidth) * 100;
-      my = (e.clientY / window.innerHeight) * 100;
-    };
-    const tick = () => {
-      cx += (mx - cx) * 0.06;
-      cy += (my - cy) * 0.06;
-      const el = spotlightRef.current;
-      if (el) {
-        el.style.setProperty("--mx", `${cx}%`);
-        el.style.setProperty("--my", `${cy}%`);
-      }
-      mraf = requestAnimationFrame(tick);
-    };
-
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    if (!reduce && !window.matchMedia("(pointer: coarse)").matches) {
-      window.addEventListener("mousemove", onMove, { passive: true });
-      mraf = requestAnimationFrame(tick);
-    }
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("mousemove", onMove);
       cancelAnimationFrame(raf);
-      cancelAnimationFrame(mraf);
     };
   }, []);
 
@@ -90,17 +63,6 @@ export function HeroBackground() {
           <div aria-hidden className="hero-img-fade" />
         </div>
       </div>
-
-      {/* Mouse-tracked spotlight (uses CSS vars set in the rAF loop above) */}
-      <div
-        ref={spotlightRef}
-        aria-hidden
-        className="absolute inset-0 pointer-events-none hero-spotlight"
-        style={{
-          ["--mx" as string]: "50%",
-          ["--my" as string]: "30%",
-        }}
-      />
 
       {/* Vignette + bottom fade so text stays legible */}
       <div
