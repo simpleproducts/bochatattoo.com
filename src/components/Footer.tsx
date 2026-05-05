@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Dictionary } from "@/i18n/types";
 
 export function Footer({ dict }: { dict: Dictionary["footer"] }) {
@@ -6,9 +7,15 @@ export function Footer({ dict }: { dict: Dictionary["footer"] }) {
   return (
     <footer className="px-6 md:px-10 py-10 border-t border-line mt-auto">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-xs uppercase tracking-[0.2em] font-mono text-muted">
-        <span className="font-serif italic text-base normal-case tracking-tight text-fg">
-          bocha
-        </span>
+        <div className="relative w-9 h-9 md:w-10 md:h-10">
+          <Image
+            src="/logo/logo-white.png"
+            alt="Bocha Tattoo"
+            fill
+            sizes="40px"
+            className="object-contain"
+          />
+        </div>
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
           <li><a href="https://instagram.com/@bocha.ttt" target="_blank" rel="noreferrer" className="hover:text-fg transition-colors">Instagram</a></li>
           <li><a href="mailto:info@bochatattoo.com" className="hover:text-fg transition-colors">Email</a></li>
