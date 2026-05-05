@@ -174,22 +174,6 @@ const es: Dictionary = {
         q: "¿Dónde queda el estudio?",
         a: "Tengo mi estudio privado en Almagro, Ciudad de Buenos Aires, a unas pocas cuadras del subte B. Tambien hago guest spots en otros lugares del mundo, asi que escribime para que vaya a tatuar a tu cuidad.",
       },
-      {
-        q: "Es mi primer tatuaje. ¿Tengo que preocuparme?",
-        a: "No. Charlamos todo antes de arrancar — qué esperar, cómo se va a sentir, qué hacer después. Comé bien, dormí, vení. Lo demás es problema mío.",
-      },
-      {
-        q: "¿Viajás?",
-        a: "Sí — Berlín y Madrid casi todos los años, más alguno suelto. Las fechas las anuncio en Instagram con un par de meses de anticipación. Mismo flujo de reserva que Buenos Aires.",
-      },
-      {
-        q: "¿Cuál es tu estilo?",
-        a: "Casi siempre negro. Casi siempre chico. Trabajo desde el dibujo — piezas que funcionan de cerca, y de lejos. El portfolio lo dice mejor que cualquier etiqueta.",
-      },
-      {
-        q: "¿Cómo es la seña?",
-        a: "Chica, no reembolsable, se descuenta del precio final. Los detalles van con la confirmación. Movible una vez si me avisás con 48 horas.",
-      },
     ],
   },
   contact: {
