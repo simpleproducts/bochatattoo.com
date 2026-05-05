@@ -157,7 +157,7 @@ const es: Dictionary = {
     items: [
       {
         q: "¿Cómo reservo?",
-        a: "DM de Instagram. Unas líneas: idea, ubicación, tamaño aproximado, referencias. Reviso mensajes una vez por día. Si pinta, te paso fechas y un link de seña. Los cupos abiertos los anuncio en mis historias.",
+        a: "DM de Instagram, email o <a href='#contact' class='underline hover:opacity-60 transition-opacity'>formulario de contacto</a>",
       },
       {
         q: "¿Hacés diseños a medida?",
