@@ -44,7 +44,11 @@ const en: Dictionary = {
     featuredSlugs: [
       "compo-img-1518",
       "compo-img-3599",
+      "botanica-img-4139", // best match for IMG_4143 (closest in source)
       "botanica-img-4474",
+      "arte-img-5503", // best match for IMG_5504 (closest in source)
+      "minis-img-9033-1", // best match for IMG_9057 (closest in source)
+      "flashes-img-9098", // best match for IMG_9123 (closest in source)
       "arte-img-2023",
       "arte-img-2848",
       "arte-img-3063",
