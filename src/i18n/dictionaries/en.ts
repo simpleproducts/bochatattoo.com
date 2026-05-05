@@ -4,7 +4,7 @@ const en: Dictionary = {
   meta: {
     title: "Bocha · Tattoo Artist · Almagro, Buenos Aires",
     description:
-      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2011. Guest spots in Berlin and Madrid.",
+      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2015. Guest spots in Berlin and Madrid.",
   },
   nav: {
     work: "Work",
@@ -18,13 +18,13 @@ const en: Dictionary = {
     menuClose: "Close menu",
   },
   hero: {
-    badge: "Est. 2011 — Almagro BA",
+    badge: "Est. 2015 — Almagro BA",
     location: "Almagro · Buenos Aires",
     booking: "Now booking",
     title1: "bocha",
     title2: "tattoo",
     intro:
-      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2011.",
+      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2015.",
     cta: "View the work",
     scroll: "Scroll",
   },
@@ -33,11 +33,11 @@ const en: Dictionary = {
     "By appointment",
     "Almagro · Buenos Aires",
     "Solo studio",
-    "Since 2011",
+    "Since 2015",
     "Berlin · Madrid",
   ],
   work: {
-    eyebrow: "01 / Work",
+    eyebrow: "02 / Work",
     title: "Selected work",
     inquire: "Ask about a piece →",
     open: "Open piece",
@@ -50,7 +50,7 @@ const en: Dictionary = {
     back: "Back",
     metaTitle: "Work · Bocha · Tattoo Artist · Almagro, Buenos Aires",
     metaDescription:
-      "Full archive of Bocha's tattoo work — best pieces, animals, botanical, portraits, films, and more. Tattoos in black, made slowly since 2011.",
+      "Full archive of Bocha's tattoo work — best pieces, animals, botanical, portraits, films, and more. Tattoos in black, made slowly since 2015.",
     emptyState: "Archive is loading. Come back in a moment.",
     categoryOrder: [
       "best-tattoos",
@@ -104,11 +104,11 @@ const en: Dictionary = {
     lightbox: { close: "Close", next: "Next", prev: "Previous" },
   },
   about: {
-    eyebrow: "02 / About",
+    eyebrow: "01 / About",
     headingPart1: "Drawing first.",
     headingPart2: "Tattooing second.",
     intro1:
-      "I'm Bocha. Born and based in Buenos Aires. Tattooing since 2011 from a small studio in Almagro — quiet by design.",
+      "I'm Bocha. Born and based in Buenos Aires. Tattooing since 2015 from a small studio in Almagro — quiet by design.",
     intro2:
       "I work in black, mostly small, mostly slow. One person in the studio at a time. A few weeks a year I take the work to Berlin and Madrid.",
     portraitAlt: "Portrait — Bocha",
@@ -116,7 +116,7 @@ const en: Dictionary = {
       based: ["Based", "Almagro · BA"],
       style: ["Style", "Black, mostly small"],
       booking: ["Booking", "By appointment"],
-      since: ["Since", "2011"],
+      since: ["Since", "2015"],
     },
   },
   process: {
