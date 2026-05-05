@@ -127,6 +127,15 @@ const en: Dictionary = {
   faq: {
     eyebrow: "05 / FAQ",
     title: "Common questions",
+    pageTitle: "Common\nquestions.",
+    intro:
+      "Everything I get asked, answered honestly. If something's missing, the last line below has the way to reach me.",
+    back: "Back",
+    contactPrompt: "Still wondering?",
+    contactCta: "Send me a message →",
+    metaTitle: "FAQ · Bocha · Tattoo Artist · Almagro, Buenos Aires",
+    metaDescription:
+      "Booking, pricing, deposits, first-timer questions, guest spots — everything you'd ask before getting a tattoo with Bocha.",
     items: [
       {
         q: "How do I book?",

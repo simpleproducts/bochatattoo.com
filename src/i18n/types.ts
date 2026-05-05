@@ -60,6 +60,14 @@ export type Dictionary = {
   faq: {
     eyebrow: string;
     title: string;
+    /** Heading shown on the standalone /faq page (can use \n for line break) */
+    pageTitle: string;
+    intro: string;
+    back: string;
+    contactPrompt: string;
+    contactCta: string;
+    metaTitle: string;
+    metaDescription: string;
     items: { q: string; a: string }[];
   };
   contact: {
