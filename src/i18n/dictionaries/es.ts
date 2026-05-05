@@ -188,6 +188,10 @@ const es: Dictionary = {
         q: "¿Dónde queda el estudio?",
         a: "Tengo mi estudio privado en Almagro, Ciudad de Buenos Aires, a unas pocas cuadras del subte B. Tambien hago guest spots en otros lugares del mundo, asi que escribime para que vaya a tatuar a tu cuidad.",
       },
+      {
+        q: "¿Haces cover-ups o retoques?",
+        a: "Sí hago covers.",
+      },
     ],
   },
   contact: {
