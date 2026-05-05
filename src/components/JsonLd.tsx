@@ -12,12 +12,12 @@ export function JsonLd({ locale }: { locale: Locale }) {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "TattooParlor"],
     "@id": `${SITE}#bocha`,
-    name: "Bocha",
+    name: "Sebastián Barrena",
     alternateName: "Bocha Tattoo",
     description:
       locale === "es"
-        ? "Tatuador en Almagro, Ciudad de Buenos Aires, desde 2015"
-        : "Tattoo artist in Almagro, Buenos Aires since 2015. Considered, custom work by appointment.",
+        ? "Tatuador especializado en microrealismo ilustrativo. Fineline, precisión y texturas sutiles. Estudio privado en Almagro, Buenos Aires."
+        : "Tattoo artist specializing in illustrative microrealism. Fineline, precision, soft shadows and subtle textures. Private studio in Almagro, Buenos Aires.",
     url: locale === DEFAULT_LOCALE ? SITE : `${SITE}/${locale}`,
     image: `${SITE}/opengraph-image`,
     logo: `${SITE}/icon`,
@@ -47,7 +47,8 @@ export function JsonLd({ locale }: { locale: Locale }) {
     },
     founder: {
       "@type": "Person",
-      name: "Bocha",
+      name: "Sebastián Barrena",
+      alternateName: "Bocha",
     },
   };
 

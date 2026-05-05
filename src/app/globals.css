@@ -22,6 +22,12 @@ html {
   scroll-padding-top: 88px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Prevent white scrollbar corner */
+  scrollbar-color: var(--color-line) var(--color-bg);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-bg);
 }
 
 body {
