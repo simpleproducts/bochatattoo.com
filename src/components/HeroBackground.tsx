@@ -77,7 +77,13 @@ export function HeroBackground() {
             alt=""
             aria-hidden
             fetchPriority="high"
-            className="w-full h-full object-cover object-[center_-20%] scale-125 md:object-center md:scale-[1.36] md:translate-x-[35%] md:origin-center"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              display: "block",
+            }}
           />
         </picture>
       </div>
