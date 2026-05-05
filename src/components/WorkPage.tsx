@@ -140,16 +140,14 @@ export function WorkPage({
               className="py-20 md:py-28 border-t border-line first:border-t-0"
             >
               <Reveal>
-                <header className="flex items-baseline justify-between mb-10 md:mb-14 gap-6">
-                  <div className="flex items-baseline gap-6">
-                    <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-                      {String(sIdx + 1).padStart(2, "0")}
-                    </span>
-                    <h2 className="font-serif italic text-3xl md:text-5xl">
-                      {section.label}
-                    </h2>
-                  </div>
+                <header className="grid grid-cols-3 items-baseline mb-10 md:mb-14 gap-4">
                   <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
+                    {String(sIdx + 1).padStart(2, "0")}
+                  </span>
+                  <h2 className="font-serif italic text-3xl md:text-5xl text-center">
+                    {section.label}
+                  </h2>
+                  <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted text-right">
                     {section.images.length}
                   </span>
                 </header>
