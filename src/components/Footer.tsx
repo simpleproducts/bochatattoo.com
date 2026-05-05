@@ -1,5 +1,8 @@
-export function Footer() {
+import type { Dictionary } from "@/i18n/types";
+
+export function Footer({ dict }: { dict: Dictionary["footer"] }) {
   const year = new Date().getFullYear();
+  const rights = dict.rights.replace("{year}", String(year));
   return (
     <footer className="px-6 md:px-10 py-10 border-t border-line mt-auto">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-xs uppercase tracking-[0.2em] font-mono text-muted">
@@ -11,7 +14,7 @@ export function Footer() {
           <li><a href="https://wa.me/" target="_blank" rel="noreferrer" className="hover:text-fg transition-colors">WhatsApp</a></li>
           <li><a href="mailto:hello@bochatattoo.com" className="hover:text-fg transition-colors">Email</a></li>
         </ul>
-        <span>© {year} — Bocha</span>
+        <span>{rights}</span>
       </div>
     </footer>
   );

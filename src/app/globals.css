@@ -119,6 +119,13 @@ body {
 .tile:hover .tile-overlay { background: linear-gradient(to top, rgba(10,10,10,0.55), rgba(10,10,10,0)); }
 .tile:hover .tile-label { opacity: 1; transform: none; }
 
+/* ---------- Lightbox ---------- */
+@keyframes lb-in {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; backdrop-filter: blur(12px); }
+}
+.animate-lb-in { animation: lb-in 240ms ease-out both; }
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -127,4 +134,5 @@ body {
   .hero-placeholder { animation: none; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .tile, .tile-img, .tile-overlay, .tile-label { transition: none; }
+  .animate-lb-in { animation: none; }
 }

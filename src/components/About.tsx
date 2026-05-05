@@ -1,59 +1,54 @@
 import { Placeholder } from "./Placeholder";
+import { Reveal } from "./Reveal";
+import type { Dictionary } from "@/i18n/types";
 
-export function About() {
+export function About({ dict }: { dict: Dictionary["about"] }) {
+  const meta = dict.meta;
   return (
     <section
       id="about"
       className="px-6 md:px-10 py-24 md:py-32 border-t border-line"
     >
       <div className="grid md:grid-cols-12 gap-8 md:gap-12">
-        <div className="md:col-span-5">
-          <Placeholder label="Portrait — Bocha" ratio="portrait" />
-        </div>
+        <Reveal className="md:col-span-5">
+          <Placeholder label={dict.portraitAlt} ratio="portrait" />
+        </Reveal>
 
         <div className="md:col-span-7 flex flex-col justify-between gap-12">
-          <div className="flex items-baseline gap-4">
+          <Reveal>
             <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-              02 / About
+              {dict.eyebrow}
             </span>
-          </div>
+          </Reveal>
 
-          <h2 className="font-serif text-4xl md:text-6xl leading-[0.95]">
-            Drawing first.{" "}
-            <span className="italic text-muted">Tattooing second.</span>
-          </h2>
+          <Reveal delay={80}>
+            <h2 className="font-serif text-4xl md:text-6xl leading-[0.95]">
+              {dict.headingPart1}{" "}
+              <span className="italic text-muted">{dict.headingPart2}</span>
+            </h2>
+          </Reveal>
 
-          <div className="grid sm:grid-cols-2 gap-6 text-base md:text-lg leading-relaxed text-fg/85 max-w-3xl">
-            <p>
-              Placeholder bio paragraph. A short, honest description of who
-              Bocha is, where the studio sits, and how the practice took shape
-              over the years.
-            </p>
-            <p>
-              Placeholder for the philosophy: how each tattoo emerges from a
-              conversation, what kind of work the studio is most known for, and
-              the kinds of pieces Bocha is drawn to building.
-            </p>
-          </div>
+          <Reveal delay={160}>
+            <div className="grid sm:grid-cols-2 gap-6 text-base md:text-lg leading-relaxed text-fg/85 max-w-3xl">
+              <p>{dict.intro1}</p>
+              <p>{dict.intro2}</p>
+            </div>
+          </Reveal>
 
-          <dl className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-line text-xs uppercase tracking-[0.2em] font-mono text-muted">
-            <div>
-              <dt>Based</dt>
-              <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">Placeholder</dd>
-            </div>
-            <div>
-              <dt>Style</dt>
-              <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">Placeholder</dd>
-            </div>
-            <div>
-              <dt>Booking</dt>
-              <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">By request</dd>
-            </div>
-            <div>
-              <dt>Since</dt>
-              <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">20XX</dd>
-            </div>
-          </dl>
+          <Reveal delay={240}>
+            <dl className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-line text-xs uppercase tracking-[0.2em] font-mono text-muted">
+              {([meta.based, meta.style, meta.booking, meta.since] as const).map(
+                ([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">
+                      {value}
+                    </dd>
+                  </div>
+                ),
+              )}
+            </dl>
+          </Reveal>
         </div>
       </div>
     </section>

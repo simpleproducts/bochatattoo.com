@@ -1,10 +1,28 @@
 "use client";
 import { useEffect, useState } from "react";
+import { LocaleSwitcher } from "./LocaleSwitcher";
+import type { Dictionary } from "@/i18n/types";
+import type { Locale } from "@/i18n";
 
-export function Nav() {
+type Props = {
+  dict: Dictionary["nav"];
+  locale: Locale;
+  switcherLabel: string;
+};
+
+export function Nav({ dict, locale, switcherLabel }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const [open, setOpen] = useState(false);
+
+  const items: [string, string][] = [
+    [dict.work, "#work"],
+    [dict.about, "#about"],
+    [dict.process, "#process"],
+    [dict.aftercare, "#aftercare"],
+    [dict.faq, "#faq"],
+    [dict.contact, "#contact"],
+  ];
 
   useEffect(() => {
     let raf = 0;
@@ -43,13 +61,13 @@ export function Nav() {
       />
 
       <nav
-        className={`flex items-center justify-between px-6 md:px-10 transition-all duration-500 text-fg ${
+        className={`flex items-center justify-between gap-6 px-6 md:px-10 transition-all duration-500 text-fg ${
           scrolled ? "py-3" : "py-5"
         }`}
       >
         <a
           href="#top"
-          aria-label="Bocha — home"
+          aria-label="Bocha Tattoo"
           className={`font-serif italic tracking-tight transition-all duration-500 ${
             scrolled ? "text-lg md:text-xl" : "text-xl md:text-2xl"
           }`}
@@ -57,37 +75,32 @@ export function Nav() {
           bocha
         </a>
 
-        <ul className="hidden md:flex items-center gap-8 text-xs uppercase tracking-[0.2em] font-mono">
-          {[
-            ["Work", "#work"],
-            ["About", "#about"],
-            ["Process", "#process"],
-            ["Contact", "#contact"],
-          ].map(([label, href]) => (
+        <ul className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs uppercase tracking-[0.2em] font-mono">
+          {items.map(([label, href]) => (
             <li key={href}>
-              <a
-                href={href}
-                className="nav-link relative inline-block py-1 hover:opacity-100"
-              >
+              <a href={href} className="nav-link relative inline-block py-1">
                 {label}
               </a>
             </li>
           ))}
         </ul>
 
-        <a
-          href="#contact"
-          className={`hidden md:inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-mono border border-current rounded-full transition-all duration-500 hover:bg-fg hover:text-bg ${
-            scrolled ? "px-3 py-1.5" : "px-4 py-2"
-          }`}
-        >
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-          Book
-        </a>
+        <div className="hidden md:flex items-center gap-6">
+          <LocaleSwitcher current={locale} label={switcherLabel} />
+          <a
+            href="#contact"
+            className={`inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-mono border border-current rounded-full transition-all duration-500 hover:bg-fg hover:text-bg ${
+              scrolled ? "px-3 py-1.5" : "px-4 py-2"
+            }`}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+            {dict.book}
+          </a>
+        </div>
 
         <button
           type="button"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={open ? dict.menuClose : dict.menuOpen}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
           className="md:hidden flex flex-col gap-1.5 p-2 -mr-2"
@@ -105,19 +118,13 @@ export function Nav() {
         </button>
       </nav>
 
-      {/* Mobile drawer */}
       <div
         className={`md:hidden overflow-hidden transition-[max-height] duration-500 ease-out ${
-          open ? "max-h-96" : "max-h-0"
+          open ? "max-h-[32rem]" : "max-h-0"
         } bg-bg/90 backdrop-blur-xl`}
       >
         <ul className="flex flex-col gap-2 px-6 py-6 text-2xl font-serif">
-          {[
-            ["Work", "#work"],
-            ["About", "#about"],
-            ["Process", "#process"],
-            ["Contact", "#contact"],
-          ].map(([label, href]) => (
+          {items.map(([label, href]) => (
             <li key={href}>
               <a
                 href={href}
@@ -128,6 +135,9 @@ export function Nav() {
               </a>
             </li>
           ))}
+          <li className="pt-4 border-t border-line mt-2">
+            <LocaleSwitcher current={locale} label={switcherLabel} />
+          </li>
         </ul>
       </div>
     </header>
