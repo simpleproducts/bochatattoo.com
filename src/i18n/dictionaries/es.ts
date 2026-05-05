@@ -18,7 +18,7 @@ const es: Dictionary = {
     menuClose: "Cerrar menú",
   },
   hero: {
-    badge: "Desde 2015",
+    badge: "Desde 2015 — Almagro BA",
     location: "Almagro · Buenos Aires",
     booking: "Agenda abierta",
     title1: "Bocha",
@@ -160,7 +160,7 @@ const es: Dictionary = {
       {
         n: "04",
         title: "Sesión",
-        body: "Transferimos el stencil a tu piel definiendo ubicación y tamaño previamente y una vez que estés conforme tatuamos.",
+        body: "Transferimos el stencil a tu piel definiendo previamente ubicación y tamaño y una vez que estés conforme, tatuamos.",
       },
     ],
   },

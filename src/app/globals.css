@@ -103,29 +103,34 @@ body {
   position: absolute;
   inset: 0;
 }
-/* Mobile + tablet: shrink the frame so the img is shorter & shifted up. */
+/* Bottom fade overlay: hidden on desktop, visible on mobile + tablet. */
+.hero-img-fade {
+  display: none;
+}
+/* Mobile + tablet: shrink the frame, plus an overlay that fades the
+   bottom of the image into solid black. */
 @media (max-width: 1023.98px) {
   .hero-frame {
     top: -10px;
     height: calc(100% - 250px);
     bottom: auto;
   }
-}
-/* Bottom fade-to-black, mobile + tablet only. Hidden on desktop. */
-.hero-mobile-fade {
-  display: none;
-}
-@media (max-width: 1023.98px) {
-  .hero-mobile-fade {
+  .hero-img-fade {
     display: block;
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 35%;
-    background: linear-gradient(to bottom, transparent 0%, var(--color-bg) 100%);
+    height: 55%;
+    background: linear-gradient(
+      to bottom,
+      rgba(10, 10, 10, 0) 0%,
+      rgba(10, 10, 10, 0.4) 40%,
+      rgba(10, 10, 10, 0.85) 75%,
+      #0a0a0a 100%
+    );
     pointer-events: none;
-    z-index: 1;
+    z-index: 2;
   }
 }
 
