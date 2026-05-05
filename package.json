@@ -9,7 +9,7 @@
     "lint": "eslint",
     "images:process": "node scripts/process-images.mjs",
     "images:upload": "node scripts/upload-images.mjs",
-    "images:sync": "pnpm images:process && pnpm images:upload"
+    "images:sync": "pnpm images:process \"${SRC:-raw-images}\" && pnpm images:upload"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
