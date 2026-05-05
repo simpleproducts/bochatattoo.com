@@ -1,18 +1,23 @@
 #!/usr/bin/env node
 /**
- * Reads originals from /raw-images, writes resized AVIF + WebP variants to
- * /processed-images, and rewrites src/data/images.json with dimensions and
- * a tiny blurDataURL for each slug. Idempotent — safe to re-run.
+ * Walks a source directory recursively, resizes every image to AVIF + WebP at
+ * 640/1280/2560 widths, and rewrites src/data/images.json with dimensions and
+ * a tiny blurDataURL for each slug.
  *
- * Naming: each output file is `<slug>-<width>.<ext>`. The slug is the original
- * filename without extension, lowercased and hyphenated.
+ * Usage:
+ *   pnpm images:process                       # default source: ./raw-images
+ *   pnpm images:process public/images/tattoos # custom source dir
+ *
+ * Slug = `${parent-folder-chain}-${filename}`, lowercased and hyphenated.
+ * Outputs land in /processed-images. Idempotent — safe to re-run; existing
+ * variants are overwritten and the manifest preserves any human-edited `alt`.
  */
-import { readdir, mkdir, writeFile, readFile } from "node:fs/promises";
+import { readdir, mkdir, writeFile, readFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join, parse } from "node:path";
+import { join, parse, relative, sep } from "node:path";
 import sharp from "sharp";
 
-const RAW_DIR = "raw-images";
+const SOURCE = process.argv[2] || "raw-images";
 const OUT_DIR = "processed-images";
 const MANIFEST = "src/data/images.json";
 const WIDTHS = [640, 1280, 2560];
@@ -20,25 +25,36 @@ const FORMATS = [
   { ext: "avif", options: { quality: 55, effort: 4 } },
   { ext: "webp", options: { quality: 75 } },
 ];
+const IMAGE_RE = /\.(jpe?g|png|tiff?|webp|avif|heic)$/i;
+const SKIP_DIR = new Set([".git", "node_modules", ".next", ".DS_Store"]);
 
-function slugify(name) {
-  return name
+function slugify(s) {
+  return s
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
+async function* walk(dir) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || SKIP_DIR.has(entry.name)) continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      yield* walk(full);
+    } else if (entry.isFile() && IMAGE_RE.test(entry.name)) {
+      yield full;
+    }
+  }
+}
+
 async function blurPlaceholder(input) {
-  const buf = await sharp(input)
-    .resize(16)
-    .webp({ quality: 40 })
-    .toBuffer();
+  const buf = await sharp(input).resize(16).webp({ quality: 40 }).toBuffer();
   return `data:image/webp;base64,${buf.toString("base64")}`;
 }
 
 async function main() {
-  if (!existsSync(RAW_DIR)) {
-    console.error(`No ${RAW_DIR}/ directory. Drop originals there and re-run.`);
+  if (!existsSync(SOURCE)) {
+    console.error(`Source directory not found: ${SOURCE}`);
     process.exit(1);
   }
   await mkdir(OUT_DIR, { recursive: true });
@@ -46,54 +62,73 @@ async function main() {
   const existing = JSON.parse(await readFile(MANIFEST, "utf8").catch(() => "{}"));
   const manifest = { ...existing };
 
-  const files = (await readdir(RAW_DIR)).filter((f) =>
-    /\.(jpe?g|png|tiff?|webp|avif)$/i.test(f),
-  );
-
+  const files = [];
+  for await (const f of walk(SOURCE)) files.push(f);
   if (files.length === 0) {
-    console.log(`No source images in ${RAW_DIR}/.`);
+    console.log(`No source images found under ${SOURCE}/.`);
     return;
   }
 
-  for (const file of files) {
-    const slug = slugify(parse(file).name);
-    const src = join(RAW_DIR, file);
-    const meta = await sharp(src).metadata();
-    const intrinsicWidth = meta.width ?? 0;
-    const intrinsicHeight = meta.height ?? 0;
+  console.log(`Found ${files.length} image(s) under ${SOURCE}/`);
 
-    if (!intrinsicWidth || !intrinsicHeight) {
-      console.warn(`Skipping ${file} — could not read dimensions.`);
+  let done = 0;
+  for (const src of files) {
+    const rel = relative(SOURCE, src);
+    const { name } = parse(rel);
+    const dirParts = rel.split(sep).slice(0, -1);
+    const slug = slugify([...dirParts, name].join("-"));
+
+    let meta;
+    try {
+      meta = await sharp(src).metadata();
+    } catch (err) {
+      console.warn(`Skipping ${rel} — could not read (${err.message})`);
+      continue;
+    }
+    const intrinsicW = meta.width ?? 0;
+    const intrinsicH = meta.height ?? 0;
+    if (!intrinsicW || !intrinsicH) {
+      console.warn(`Skipping ${rel} — no dimensions`);
       continue;
     }
 
-    const sizes = WIDTHS.filter((w) => w <= intrinsicWidth);
-    if (sizes.length === 0) sizes.push(intrinsicWidth);
+    const sizes = WIDTHS.filter((w) => w <= intrinsicW);
+    if (sizes.length === 0) sizes.push(intrinsicW);
 
     for (const width of sizes) {
-      const height = Math.round((width / intrinsicWidth) * intrinsicHeight);
+      const height = Math.round((width / intrinsicW) * intrinsicH);
       for (const { ext, options } of FORMATS) {
         const out = join(OUT_DIR, `${slug}-${width}.${ext}`);
-        const pipeline = sharp(src).resize({ width, height, fit: "inside" });
-        await pipeline[ext](options).toFile(out);
+        try {
+          await sharp(src)
+            .rotate() // honor EXIF orientation
+            .resize({ width, height, fit: "inside" })
+            [ext](options)
+            .toFile(out);
+        } catch (err) {
+          console.warn(`Failed ${rel} → ${out}: ${err.message}`);
+        }
       }
     }
 
     manifest[slug] = {
       alt: existing[slug]?.alt ?? slug.replace(/-/g, " "),
-      width: intrinsicWidth,
-      height: intrinsicHeight,
+      width: intrinsicW,
+      height: intrinsicH,
       blurDataURL: await blurPlaceholder(src),
       sizes,
       format: "avif",
     };
 
-    console.log(`✓ ${slug} (${sizes.join(", ")})`);
+    done++;
+    if (done % 25 === 0 || done === files.length) {
+      console.log(`  ${done}/${files.length}`);
+    }
   }
 
   await writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + "\n");
-  console.log(`\nManifest written: ${MANIFEST}`);
-  console.log(`Variants in: ${OUT_DIR}/  →  upload with \`pnpm images:upload\`.`);
+  console.log(`\nManifest: ${MANIFEST} (${Object.keys(manifest).length} entries)`);
+  console.log(`Variants: ${OUT_DIR}/  →  upload with \`pnpm images:upload\``);
 }
 
 main().catch((err) => {
