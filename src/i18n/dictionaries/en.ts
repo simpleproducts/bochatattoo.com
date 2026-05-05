@@ -135,22 +135,22 @@ const en: Dictionary = {
       {
         n: "01",
         title: "Inquiry",
-        body: "Send the idea, references, placement, and rough size. A paragraph is plenty. I read everything.",
+        body: "Send me your idea, reference images, body placement and approximate size in centimeters. A paragraph is plenty. I read everything.",
       },
       {
         n: "02",
         title: "Conversation",
-        body: "We trade a few messages. The piece gets clearer with each one — what it means, where it sits, how big it should feel.",
+        body: "We look at references together to get on the same page and know what you like and what you don't like.",
       },
       {
         n: "03",
         title: "Design",
-        body: "I draw it from your brief. You see it before the day. One round of changes if it needs them.",
+        body: "On the day of your appointment I design your tattoo with you by my side for a more fluid dynamic so we can arrive at your design. You'll be able to make any necessary changes and when you're happy with it we move to the next step.",
       },
       {
         n: "04",
         title: "Session",
-        body: "Studio in Almagro. Private room, one client a day, no overlap. We start when you're ready.",
+        body: "We transfer the stencil to your skin, defining placement and size beforehand, and once you're happy we tattoo.",
       },
     ],
   },
@@ -170,35 +170,19 @@ const en: Dictionary = {
     items: [
       {
         q: "How do I book?",
-        a: "Instagram DM. A few sentences: idea, placement, rough size, references. I check messages once a day. If it's a fit, I send dates and a deposit link. Open availability lives in my Instagram stories.",
+        a: "Instagram DM, email or <a href='#contact' class='underline hover:opacity-60 transition-opacity'>contact form</a>. Send me a few lines with your idea, placement, approximate size and reference images. I try to respond as soon as possible. Open spots are announced on my Instagram stories.",
       },
       {
         q: "Do you take custom designs?",
-        a: "Almost everything I do is custom. Send references for direction — I won't copy another artist's work, but I'll build something that's only yours.",
+        a: "Almost everything I do is custom, but feel free to ask about my designs. I don't copy other tattoo artists' work, I only take references to create a unique design for each tattoo.",
       },
       {
         q: "How much does it cost?",
-        a: "Quoted per project. I weigh size, placement, complexity, and time. You get the number before you commit — never on the day.",
+        a: "The price varies depending on the project, level of detail, size and placement on the body. Feel free to ask for a quote for your idea.",
       },
       {
         q: "Where's the studio?",
-        a: "Almagro, Ciudad de Buenos Aires. Private space, easy on the Subte. The exact address goes out with your booking confirmation.",
-      },
-      {
-        q: "First tattoo. Should I be worried?",
-        a: "No. We talk through everything before we start — what to expect, what it'll feel like, what to do after. Eat well, sleep enough, show up. The rest is on me.",
-      },
-      {
-        q: "Do you travel?",
-        a: "Yes — Barcelona, Berlin, Cologne, Freiburg, Basel or Madrid most years, plus the occasional one-off. Dates land on Instagram a couple of months ahead. Same booking flow as Buenos Aires.",
-      },
-      {
-        q: "What's your style?",
-        a: "Mostly black. Mostly small. Drawing-first work — pieces that hold up close, and from across the room. The portfolio says it better than any label.",
-      },
-      {
-        q: "What's the deposit?",
-        a: "A small, non-refundable hold against your final price. Details come with the confirmation. Movable once if you give me 48 hours.",
+        a: "I have my private studio in Almagro, Ciudad de Buenos Aires, a few blocks from the B subway line. I also do guest spots in other places around the world, so reach out if you want me to tattoo in your city.",
       },
     ],
   },
