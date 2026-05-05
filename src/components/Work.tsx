@@ -15,10 +15,14 @@ type Props = { dict: Dictionary["work"]; locale: Locale };
 export function Work({ dict, locale }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const featured = listImagesByCategory(dict.featuredCategory).slice(
-    0,
-    dict.featuredLimit,
-  );
+  // One image per category, in the dictionary's display order, until we fill
+  // the grid. Avoids the home strip looking like a single-category sample.
+  const skip = new Set(dict.skipCategories);
+  const featured = dict.categoryOrder
+    .filter((c) => !skip.has(c))
+    .map((c) => listImagesByCategory(c)[0])
+    .filter((img): img is NonNullable<typeof img> => Boolean(img))
+    .slice(0, dict.featuredLimit);
   const workHref = locale === "en" ? "/work" : `/${locale}/work`;
   const home = localePath(locale);
 
