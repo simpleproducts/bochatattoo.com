@@ -97,8 +97,6 @@ export type Dictionary = {
     title2: string;
     directLabel: string;
     instagramLabel: string;
-    bookingLabel: string;
-    bookingCta: string;
   };
   footer: { rights: string };
   localeSwitcher: { label: string };

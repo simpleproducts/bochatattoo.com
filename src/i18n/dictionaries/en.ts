@@ -226,9 +226,7 @@ const en: Dictionary = {
     title1: "Let's plan",
     title2: "your tattoo.",
     directLabel: "Email",
-    instagramLabel: "Instagram (preferred)",
-    bookingLabel: "WhatsApp",
-    bookingCta: "WhatsApp →",
+    instagramLabel: "Instagram",
   },
   footer: {
     rights: "© {year} — Bocha · Almagro, Buenos Aires",

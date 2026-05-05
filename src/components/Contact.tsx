@@ -25,7 +25,7 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
       </Reveal>
 
       <Reveal delay={120}>
-        <div className="mt-12 grid md:grid-cols-3 gap-8 md:gap-12 max-w-5xl">
+        <div className="mt-12 grid md:grid-cols-2 gap-8 md:gap-12 max-w-3xl">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted mb-2">
               {dict.directLabel}
@@ -42,25 +42,12 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
               {dict.instagramLabel}
             </p>
             <a
-              href="https://instagram.com/@bocha.ttt"
+              href="https://instagram.com/bocha.ttt"
               target="_blank"
               rel="noreferrer"
               className="text-lg md:text-xl border-b border-current pb-0.5 hover:opacity-60 transition-opacity"
             >
               @bocha.ttt
-            </a>
-          </div>
-          <div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted mb-2">
-              {dict.bookingLabel}
-            </p>
-            <a
-              href="https://wa.me/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-lg md:text-xl border-b border-current pb-0.5 hover:opacity-60 transition-opacity"
-            >
-              {dict.bookingCta}
             </a>
           </div>
         </div>
