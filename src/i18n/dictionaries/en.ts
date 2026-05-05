@@ -2,15 +2,14 @@ import type { Dictionary } from "../types";
 
 const en: Dictionary = {
   meta: {
-    title: "Bocha · Tattoo Artist · Almagro, Buenos Aires",
+    title: "Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
     description:
-      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2015. Guest spots in Berlin and Madrid.",
+      "Tattoo artist specializing in illustrative microrealism. Fineline, precision, soft shadows and subtle textures. Private studio in Almagro, Buenos Aires. Working since 2015.",
   },
   nav: {
     work: "Work",
     about: "About",
     process: "Process",
-    aftercare: "Aftercare",
     faq: "FAQ",
     contact: "Contact",
     book: "Book",
@@ -29,12 +28,10 @@ const en: Dictionary = {
     scroll: "Scroll",
   },
   marquee: [
-    "Tattoos in black",
-    "By appointment",
+    "Fineline",
+    "Microrealism",
+    "Illustrative",
     "Almagro · Buenos Aires",
-    "Solo studio",
-    "Since 2015",
-    "Berlin · Madrid",
   ],
   work: {
     eyebrow: "02 / Work",
@@ -48,9 +45,9 @@ const en: Dictionary = {
     intro:
       "An archive of tattoos made in Almagro, Berlin, Madrid, and the cities I've passed through. Sorted by theme — open any piece for a closer look.",
     back: "Back",
-    metaTitle: "Work · Bocha · Tattoo Artist · Almagro, Buenos Aires",
+    metaTitle: "Work · Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
     metaDescription:
-      "Full archive of Bocha's tattoo work — best pieces, animals, botanical, portraits, films, and more. Tattoos in black, made slowly since 2015.",
+      "Full archive of Sebastián Barrena's tattoo work — illustrative microrealism, fineline, animals, botanical, portraits and more. Private studio in Almagro, Buenos Aires.",
     emptyState: "Archive is loading. Come back in a moment.",
     categoryOrder: [
       "best-tattoos",
@@ -108,10 +105,9 @@ const en: Dictionary = {
     headingPart1: "Sebastián",
     headingPart2: "Barrena",
     intro1:
-      "Sebastián Barrena is a tattoo artist specializing in illustrative microrealism. His work is characterized by a unique and distinctive visual language, built from detail, precision, soft shadows and subtle textures. " +
-      "From his private studio in Almagro, Buenos Aires, he works daily on custom pieces, designed to transform ideas and images into tattoos with high visual impact.",
+      "Sebastián Barrena is a tattoo artist specializing in illustrative microrealism. His work is characterized by a unique and distinctive visual language, built from detail, precision, soft shadows and subtle textures. ",
     intro2:
-      "I work in black, mostly small, mostly slow. One person in the studio at a time. A few weeks a year I take the work to Berlin and Madrid.",
+      "From his private studio in Almagro, Buenos Aires, he works daily on custom pieces, designed to transform ideas and images into tattoos with high visual impact.",
     portraitAlt: "Portrait — Bocha",
     meta: {
       based: ["Location", "Almagro · BA"],
@@ -146,34 +142,6 @@ const en: Dictionary = {
       },
     ],
   },
-  aftercare: {
-    eyebrow: "04 / Aftercare",
-    title: "Care for your tattoo",
-    intro:
-      "The first two weeks decide how the tattoo settles. Be gentle, stay patient, and your skin does the rest.",
-    steps: [
-      {
-        n: "Day 1",
-        title: "Keep it wrapped",
-        body: "Leave the bandage on for the time we agreed (2 to 24 hours). Once off: warm water, unscented soap, pat dry with a clean towel.",
-      },
-      {
-        n: "Days 2–4",
-        title: "Wash and moisturize",
-        body: "Twice a day. Unscented soap, thin layer of fragrance-free cream. Less is more — too much slows healing.",
-      },
-      {
-        n: "Days 5–14",
-        title: "Don't pick",
-        body: "It will flake and itch. Don't scratch, don't peel. Tap if it's bad. The flakes carry color out if you pull them.",
-      },
-      {
-        n: "Forever",
-        title: "Sun and water",
-        body: "SPF 50+ for life. First month: no pool, no sea, no sauna, no hours of sun.",
-      },
-    ],
-  },
   faq: {
     eyebrow: "05 / FAQ",
     title: "Common questions",
@@ -183,9 +151,9 @@ const en: Dictionary = {
     back: "Back",
     contactPrompt: "Still wondering?",
     contactCta: "Send me a message →",
-    metaTitle: "FAQ · Bocha · Tattoo Artist · Almagro, Buenos Aires",
+    metaTitle: "FAQ · Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
     metaDescription:
-      "Booking, pricing, deposits, first-timer questions, guest spots — everything you'd ask before getting a tattoo with Bocha.",
+      "Booking, pricing, deposits, first-timer questions — everything you'd ask before getting a tattoo with Sebastián Barrena in Almagro, Buenos Aires.",
     items: [
       {
         q: "How do I book?",

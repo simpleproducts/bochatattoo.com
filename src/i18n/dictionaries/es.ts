@@ -2,15 +2,14 @@ import type { Dictionary } from "../types";
 
 const es: Dictionary = {
   meta: {
-    title: "Bocha · Tatuador · Almagro, Buenos Aires",
+    title: "Sebastián Barrena · Microrealismo Ilustrativo · Almagro, Buenos Aires",
     description:
-      "Tatuajes en negro, hechos despacio. Estudio propio en Almagro, Buenos Aires. Trabajando desde 2015. Tours por Berlín y Madrid.",
+      "Tatuador especializado en microrealismo ilustrativo. Fineline, precisión y texturas sutiles. Estudio privado en Almagro, Buenos Aires. Trabajando desde 2015.",
   },
   nav: {
     work: "Tatuajes",
     about: "Sobre mí",
     process: "Proceso",
-    aftercare: "Cuidados",
     faq: "Preguntas",
     contact: "Contacto",
     book: "Reservar",
@@ -29,13 +28,27 @@ const es: Dictionary = {
     scroll: "Scroll",
   },
   marquee: [
-    "Tatuajes en negro",
-    "Con turno",
+    "Fineline",
+    "Microrealista",
+    "Ilustrativo",
     "Almagro · Buenos Aires",
-    "Estudio propio",
-    "Desde 2015",
-    "Berlín · Madrid",
   ],
+  about: {
+    eyebrow: "01 / Sobre mí",
+    headingPart1: "@bocha",
+    headingPart2: ".ttt",
+    intro1:
+      "Sebastián Barrena es un tatuador especializado en microrealismo ilustrativo. Su obra se caracteriza por un lenguaje visual único y distintivo, construido a partir del detalle, la precisión, las sombras suaves y las texturas sutiles.",
+    intro2:
+      "From his private studio in Almagro, Buenos Aires, he works daily on custom pieces, designed to transform ideas and images into tattoos with high visual impact.",
+    portraitAlt: "Retrato — Bocha",
+    meta: {
+      based: ["Ubicación", "Almagro · CABA"],
+      style: ["Estilo", "Fineline, microrealista, inlustrativo"],
+      booking: ["Reservas", "Con turno"],
+      since: ["Desde", "2015"],
+    },
+  },
   work: {
     eyebrow: "02 / Tatuajes",
     title: "Trabajos seleccionados",
@@ -48,9 +61,9 @@ const es: Dictionary = {
     intro:
       "Un archivo de tatuajes hechos en Almagro, Berlín, Madrid y las ciudades por las que pasé. Ordenado por tema — abrí cualquier pieza para verla de cerca.",
     back: "Volver",
-    metaTitle: "Tatuajes · Bocha · Tatuador · Almagro, Buenos Aires",
+    metaTitle: "Tatuajes · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
     metaDescription:
-      "Archivo completo de las trabajos de Bocha — mejores piezas, animales, botánica, retratos, películas y más. Tatuajes en negro, hechos despacio desde 2015.",
+      "Archivo completo de trabajos de Sebastián Barrena — microrealismo ilustrativo, fineline, animales, botánica, retratos y más. Estudio privado en Almagro, Buenos Aires.",
     emptyState: "El archivo está cargando. Volvé en un momento.",
     categoryOrder: [
       "best-tattoos",
@@ -103,23 +116,6 @@ const es: Dictionary = {
     },
     lightbox: { close: "Cerrar", next: "Siguiente", prev: "Anterior" },
   },
-  about: {
-    eyebrow: "01 / Sobre mí",
-    headingPart1: "Sebastián",
-    headingPart2: "Barrena",
-    intro1:
-      "Sebastián Barrena es un tatuador especializado en microrealismo ilustrativo. Su obra se caracteriza por un lenguaje visual único y distintivo, construido a partir del detalle, la precisión, las sombras suaves y las texturas sutiles." +
-      " Desde su estudio privado en Almagro, Buenos Aires, trabaja a diario en piezas personalizadas, pensadas para transformar ideas e imágenes en tatuajes de alto impacto visual.",
-    intro2:
-      "Trabajo en negro, casi siempre chico, casi siempre lento. Una persona en el estudio por vez. Unas semanas al año me llevo el trabajo a Berlín y a Madrid.",
-    portraitAlt: "Retrato — Bocha",
-    meta: {
-      based: ["Ubicación", "Almagro · CABA"],
-      style: ["Estilo", "Fineline, microrealista, inlustrativo"],
-      booking: ["Reservas", "Con turno"],
-      since: ["Desde", "2015"],
-    },
-  },
   process: {
     eyebrow: "03 / Proceso",
     title: "Del boceto a la piel",
@@ -127,50 +123,22 @@ const es: Dictionary = {
       {
         n: "01",
         title: "Consulta",
-        body: "Mandame la idea, referencias, ubicación y tamaño aproximado. Un párrafo alcanza. Leo todo.",
+        body: "Mandame tu idea, referencias en images, ubicación en el cuerpo y tamaño aproximado en centimetros. Un párrafo alcanza. Leo todo.",
       },
       {
         n: "02",
         title: "Conversación",
-        body: "Cruzamos algunos mensajes. La pieza se aclara con cada uno — qué significa, dónde va, qué tamaño se merece.",
+        body: "Vemos las referencias juntos para estar en sintonia y saber que te gusta y que no te gusta.",
       },
       {
         n: "03",
         title: "Diseño",
-        body: "Lo dibujo desde tu brief. Lo ves antes del día. Una ronda de cambios si los necesita.",
+        body: "El dia del turno diseño tu tatuaje con vos al lado para tener una dinamica mas fluida y poder llegar a tu diseño. Vas a poder hacer los cambios necesarios y cuando estes conforme pasamos al siguiente paso",
       },
       {
         n: "04",
         title: "Sesión",
-        body: "Estudio en Almagro. Sala privada, un cliente por día, sin superposición. Arrancamos cuando estés listo.",
-      },
-    ],
-  },
-  aftercare: {
-    eyebrow: "04 / Cuidados",
-    title: "Cuidá tu tatuaje",
-    intro:
-      "Las primeras dos semanas deciden cómo se asienta el tatuaje. Sé suave, tené paciencia, y la piel hace el resto.",
-    steps: [
-      {
-        n: "Día 1",
-        title: "Mantenelo cubierto",
-        body: "Dejá el film puesto el tiempo que acordamos (2 a 24 horas). Cuando lo saques: agua tibia, jabón sin perfume, secá con palmaditas y una toalla limpia.",
-      },
-      {
-        n: "Días 2–4",
-        title: "Lavá y humectá",
-        body: "Dos veces por día. Jabón sin perfume, capa fina de crema sin fragancia. Menos es más — de más demora la cicatrización.",
-      },
-      {
-        n: "Días 5–14",
-        title: "No te lo arranques",
-        body: "Va a descamarse y picar. No rasques, no peles. Tocalo con palmadita si está bravo. Las costritas se llevan tinta si las arrancás.",
-      },
-      {
-        n: "Siempre",
-        title: "Sol y agua",
-        body: "FPS 50+ de por vida. Primer mes: nada de pileta, mar, sauna ni horas de sol.",
+        body: "Transferimos el stencil a tu piel definiendo ubicacion y tamaño previamente y una vez que estes conformes tatuamos.",
       },
     ],
   },
@@ -183,9 +151,9 @@ const es: Dictionary = {
     back: "Volver",
     contactPrompt: "¿Te quedó una duda?",
     contactCta: "Escribime →",
-    metaTitle: "Preguntas · Bocha · Tatuador · Almagro, Buenos Aires",
+    metaTitle: "Preguntas · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
     metaDescription:
-      "Reservas, precios, señas, primer tatuaje, viajes — todo lo que querrías preguntar antes de tatuarte con Bocha.",
+      "Reservas, precios, señas, primer tatuaje — todo lo que querrías preguntar antes de tatuarte con Sebastián Barrena en Almagro, Buenos Aires.",
     items: [
       {
         q: "¿Cómo reservo?",

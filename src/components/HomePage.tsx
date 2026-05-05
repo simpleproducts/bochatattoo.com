@@ -4,7 +4,6 @@ import { Marquee } from "./Marquee";
 import { Work } from "./Work";
 import { About } from "./About";
 import { Process } from "./Process";
-import { Aftercare } from "./Aftercare";
 import { Contact } from "./Contact";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
@@ -17,7 +16,6 @@ export function HomePage({ dict, locale }: { dict: Dictionary; locale: Locale })
       <About dict={dict.about} />
       <Work dict={dict.work} locale={locale} />
       <Process dict={dict.process} />
-      <Aftercare dict={dict.aftercare} />
       <Contact dict={dict.contact} />
     </SiteShell>
   );

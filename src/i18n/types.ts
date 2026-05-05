@@ -6,7 +6,6 @@ export type Dictionary = {
     work: string;
     about: string;
     process: string;
-    aftercare: string;
     faq: string;
     contact: string;
     book: string;
@@ -70,12 +69,6 @@ export type Dictionary = {
   process: {
     eyebrow: string;
     title: string;
-    steps: { n: string; title: string; body: string }[];
-  };
-  aftercare: {
-    eyebrow: string;
-    title: string;
-    intro: string;
     steps: { n: string; title: string; body: string }[];
   };
   faq: {

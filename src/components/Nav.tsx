@@ -29,7 +29,6 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
     [dict.work, workUrl],
     [dict.about, `${home === "/" ? "" : home}/#about`.replace("//", "/")],
     [dict.process, `${home === "/" ? "" : home}/#process`.replace("//", "/")],
-    [dict.aftercare, `${home === "/" ? "" : home}/#aftercare`.replace("//", "/")],
     [dict.faq, faqUrl],
     [dict.contact, `${home === "/" ? "" : home}/#contact`.replace("//", "/")],
   ];

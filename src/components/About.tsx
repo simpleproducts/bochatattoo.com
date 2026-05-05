@@ -35,30 +35,36 @@ export function About({ dict }: { dict: Dictionary["about"] }) {
 
           <Reveal delay={80}>
             <h2 className="font-serif text-4xl md:text-6xl leading-[0.95]">
-              {dict.headingPart1}{" "}
-              <span className="italic text-muted">{dict.headingPart2}</span>
+              <a
+                href="https://instagram.com/bocha.ttt"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:opacity-60 transition-opacity"
+              >
+                {dict.headingPart1}
+                <span className="italic text-muted">{dict.headingPart2}</span>
+              </a>
             </h2>
           </Reveal>
 
           <Reveal delay={160}>
             <div className="grid sm:grid-cols-2 gap-6 text-base md:text-lg leading-relaxed text-fg/85 max-w-3xl">
               <p>{dict.intro1}</p>
-              <p>{dict.intro2}</p>
             </div>
           </Reveal>
 
           <Reveal delay={240}>
             <dl className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-line text-xs uppercase tracking-[0.2em] font-mono text-muted">
-              {([meta.based, meta.style, meta.booking, meta.since] as const).map(
-                ([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">
-                      {value}
-                    </dd>
-                  </div>
-                ),
-              )}
+              {(
+                [meta.based, meta.style, meta.booking, meta.since] as const
+              ).map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd className="text-fg mt-1 normal-case tracking-normal font-sans text-sm">
+                    {value}
+                  </dd>
+                </div>
+              ))}
             </dl>
           </Reveal>
         </div>
