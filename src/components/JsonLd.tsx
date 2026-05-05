@@ -23,7 +23,7 @@ export function JsonLd({ locale }: { locale: Locale }) {
     logo: `${SITE}/icon`,
     foundingDate: "2015",
     inLanguage: locale,
-    sameAs: ["https://instagram.com/@bocha.ttt"],
+    sameAs: ["https://instagram.com/bocha.ttt"],
     address: {
       "@type": "PostalAddress",
       addressLocality: "Almagro",
