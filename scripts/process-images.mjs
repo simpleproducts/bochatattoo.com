@@ -111,6 +111,8 @@ async function main() {
       }
     }
 
+    const category = dirParts.length > 0 ? slugify(dirParts[0]) : "uncategorized";
+
     manifest[slug] = {
       alt: existing[slug]?.alt ?? slug.replace(/-/g, " "),
       width: intrinsicW,
@@ -118,6 +120,7 @@ async function main() {
       blurDataURL: await blurPlaceholder(src),
       sizes,
       format: "avif",
+      category,
     };
 
     done++;

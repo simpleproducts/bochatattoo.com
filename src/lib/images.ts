@@ -9,9 +9,12 @@ export type ImageEntry = {
   sizes: number[];
   /** Optional file extension override; defaults to "avif". */
   format?: "avif" | "webp" | "jpg";
+  /** Top-level source folder slug (e.g. "best-tattoos", "animales"). */
+  category?: string;
 };
 
 export type ImageManifest = Record<string, ImageEntry>;
+export type ImageWithSlug = { slug: string } & ImageEntry;
 
 const MANIFEST = manifest as ImageManifest;
 
@@ -21,11 +24,25 @@ export function getImage(slug: string): ImageEntry | undefined {
   return MANIFEST[slug];
 }
 
-export function listImages(): Array<{ slug: string } & ImageEntry> {
+export function listImages(): ImageWithSlug[] {
   return Object.entries(MANIFEST).map(([slug, entry]) => ({ slug, ...entry }));
 }
 
-/** Pick the smallest pre-rendered width that satisfies the requested width. */
+export function listImagesByCategory(category: string): ImageWithSlug[] {
+  return listImages()
+    .filter((i) => i.category === category)
+    .sort((a, b) => a.slug.localeCompare(b.slug));
+}
+
+export function getCategoryCounts(): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const entry of Object.values(MANIFEST)) {
+    if (!entry.category) continue;
+    counts[entry.category] = (counts[entry.category] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export function pickSize(sizes: number[], requested: number): number {
   for (const w of sizes) if (w >= requested) return w;
   return sizes[sizes.length - 1];
@@ -33,4 +50,16 @@ export function pickSize(sizes: number[], requested: number): number {
 
 export function imageUrl(slug: string, width: number, format = "avif"): string {
   return `${BASE}/${slug}-${width}.${format}`;
+}
+
+/** Bin a width/height pair into a coarse aspect-ratio bucket for tile grids. */
+export function ratioBucket(
+  width: number,
+  height: number,
+): "tall" | "portrait" | "square" | "landscape" {
+  const r = width / height;
+  if (r < 0.7) return "tall";
+  if (r < 0.95) return "portrait";
+  if (r < 1.15) return "square";
+  return "landscape";
 }

@@ -14,7 +14,7 @@ export function HomePage({ dict, locale }: { dict: Dictionary; locale: Locale })
     <SiteShell dict={dict} locale={locale}>
       <Hero dict={dict.hero} />
       <Marquee phrases={dict.marquee} />
-      <Work dict={dict.work} />
+      <Work dict={dict.work} locale={locale} />
       <About dict={dict.about} />
       <Process dict={dict.process} />
       <Aftercare dict={dict.aftercare} />

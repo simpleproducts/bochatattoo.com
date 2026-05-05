@@ -25,11 +25,32 @@ export type Dictionary = {
   };
   marquee: string[];
   work: {
+    /** Home section eyebrow + title */
     eyebrow: string;
     title: string;
     inquire: string;
     open: string;
-    pieces: { slug: string; ratio: Ratio; title: string }[];
+    /** Category slug pulled into the home featured grid */
+    featuredCategory: string;
+    /** Max number of pieces shown on home */
+    featuredLimit: number;
+    /** Link from home Work section to the full archive */
+    viewAll: string;
+    /** Standalone /work page */
+    pageTitle: string;
+    intro: string;
+    back: string;
+    metaTitle: string;
+    metaDescription: string;
+    /** Empty-state copy for when the manifest has no images yet */
+    emptyState: string;
+    /** Display order for category sections; entries not listed go after, alpha */
+    categoryOrder: string[];
+    /** Categories to hide entirely from the archive (mockups, etc.) */
+    skipCategories: string[];
+    /** Slug → display label per locale */
+    categoryLabels: Record<string, string>;
+    /** Lightbox UI labels */
     lightbox: { close: string; next: string; prev: string };
   };
   about: {
@@ -60,7 +81,6 @@ export type Dictionary = {
   faq: {
     eyebrow: string;
     title: string;
-    /** Heading shown on the standalone /faq page (can use \n for line break) */
     pageTitle: string;
     intro: string;
     back: string;
