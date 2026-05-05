@@ -71,29 +71,49 @@ async function main() {
 
   console.log(`Found ${files.length} image(s) under ${SOURCE}/`);
 
+  async function flush() {
+    await writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + "\n");
+  }
+
   let done = 0;
+  let skipped = 0;
+  let processed = 0;
   for (const src of files) {
     const rel = relative(SOURCE, src);
     const { name } = parse(rel);
     const dirParts = rel.split(sep).slice(0, -1);
     const slug = slugify([...dirParts, name].join("-"));
+    const category = dirParts.length > 0 ? slugify(dirParts[0]) : "uncategorized";
 
     let meta;
     try {
       meta = await sharp(src).metadata();
     } catch (err) {
       console.warn(`Skipping ${rel} — could not read (${err.message})`);
+      done++;
       continue;
     }
     const intrinsicW = meta.width ?? 0;
     const intrinsicH = meta.height ?? 0;
     if (!intrinsicW || !intrinsicH) {
       console.warn(`Skipping ${rel} — no dimensions`);
+      done++;
       continue;
     }
 
     const sizes = WIDTHS.filter((w) => w <= intrinsicW);
     if (sizes.length === 0) sizes.push(intrinsicW);
+
+    // Resume support: if the manifest already has this entry AND every expected
+    // variant exists on disk, skip the (expensive) re-encode.
+    const allVariantsExist = sizes.every((w) =>
+      FORMATS.every(({ ext }) => existsSync(join(OUT_DIR, `${slug}-${w}.${ext}`))),
+    );
+    if (manifest[slug] && allVariantsExist) {
+      skipped++;
+      done++;
+      continue;
+    }
 
     for (const width of sizes) {
       const height = Math.round((width / intrinsicW) * intrinsicH);
@@ -111,8 +131,6 @@ async function main() {
       }
     }
 
-    const category = dirParts.length > 0 ? slugify(dirParts[0]) : "uncategorized";
-
     manifest[slug] = {
       alt: existing[slug]?.alt ?? slug.replace(/-/g, " "),
       width: intrinsicW,
@@ -123,14 +141,18 @@ async function main() {
       category,
     };
 
+    processed++;
     done++;
-    if (done % 25 === 0 || done === files.length) {
-      console.log(`  ${done}/${files.length}`);
+    // Checkpoint every 25 fresh entries so an interrupt doesn't lose progress.
+    if (processed % 25 === 0) {
+      await flush();
+      console.log(`  ${done}/${files.length} (processed ${processed}, skipped ${skipped})`);
     }
   }
 
-  await writeFile(MANIFEST, JSON.stringify(manifest, null, 2) + "\n");
+  await flush();
   console.log(`\nManifest: ${MANIFEST} (${Object.keys(manifest).length} entries)`);
+  console.log(`Processed ${processed}, skipped ${skipped} (already done).`);
   console.log(`Variants: ${OUT_DIR}/  →  upload with \`pnpm images:upload\``);
 }
 
