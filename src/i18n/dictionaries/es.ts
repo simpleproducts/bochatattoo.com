@@ -20,7 +20,7 @@ const es: Dictionary = {
   hero: {
     badge: "Desde 2015 — Almagro BA",
     location: "Almagro · Buenos Aires",
-    booking: "Tomando reservas",
+    booking: "Agenda abierta",
     title1: "Bocha",
     title2: "Barrena",
     intro:
@@ -45,7 +45,7 @@ const es: Dictionary = {
     portraitAlt: "Retrato — Bocha",
     meta: {
       based: ["Ubicación", "Almagro · CABA"],
-      style: ["Estilo", "Fineline, microrealista, inlustrativo"],
+      style: ["Estilo", "Fineline, microrealista, ilustrativo"],
       booking: ["Reservas", "Con turno"],
       since: ["Desde", "2015"],
     },
@@ -145,22 +145,22 @@ const es: Dictionary = {
       {
         n: "01",
         title: "Consulta",
-        body: "Mandame tu idea, referencias en images, ubicación en el cuerpo y tamaño aproximado en centimetros. Un párrafo alcanza. Leo todo.",
+        body: "Mandame tu idea, referencias en imágenes, ubicación en el cuerpo y tamaño aproximado en centímetros. Un párrafo alcanza. Leo todo.",
       },
       {
         n: "02",
         title: "Conversación",
-        body: "Vemos las referencias juntos para estar en sintonia y saber que te gusta y que no te gusta.",
+        body: "Vemos las referencias juntos para estar en sintonía y saber que te gusta.",
       },
       {
         n: "03",
         title: "Diseño",
-        body: "El dia del turno diseño tu tatuaje con vos al lado para tener una dinamica mas fluida y poder llegar a tu diseño. Vas a poder hacer los cambios necesarios y cuando estes conforme pasamos al siguiente paso",
+        body: "El día del turno diseño tu tatuaje con vos al lado para tener una dinámica más fluida y poder llegar a tu diseño. Vas a poder hacer los cambios necesarios y cuando estés conforme pasamos a la siguiente etapa.",
       },
       {
         n: "04",
         title: "Sesión",
-        body: "Transferimos el stencil a tu piel definiendo ubicacion y tamaño previamente y una vez que estes conformes tatuamos.",
+        body: "Transferimos el stencil a tu piel definiendo ubicación y tamaño previamente y una vez que estés conforme tatuamos.",
       },
     ],
   },
@@ -180,19 +180,19 @@ const es: Dictionary = {
     items: [
       {
         q: "¿Cómo reservo?",
-        a: "DM de Instagram, email o <a href='#contact' class='underline hover:opacity-60 transition-opacity'>formulario de contacto</a>. Escribime unas lineas con tu idea, ubicación, tamaño aproximado e imagenes de referencia. Trato de responder siempre a la brevedad. Los cupos abiertos los anuncio en mis stories de instagram.",
+        a: "DM de Instagram, email o <a href='#contact' class='underline hover:opacity-60 transition-opacity'>formulario de contacto</a>. Escribime unas líneas con tu idea, ubicación, tamaño aproximado e imágenes de referencia. Trato de responder siempre a la brevedad. Los cupos abiertos los anuncio en mis stories de instagram.",
       },
       {
         q: "¿Hacés diseños a medida?",
-        a: "Casi todo lo que hago es a medida, pero no dudes en preguntarme por mis diseños. No copio trabajos de otro tatuador, solo tomo referencias para hacer un diseño unico para cada tattoo.",
+        a: "Casi todo lo que hago es a medida, pero no dudes en preguntarme por mis diseños. No copio trabajos de otro tatuador, solo tomo referencias para hacer un diseño único para cada tattoo.",
       },
       {
         q: "¿Cuánto sale?",
-        a: "El precio varia dependiendo el proyecto, nivel de detalle, tamaño y ubicación en el cuerpo. No dudes en preguntar presupuesto para tu idea.",
+        a: "El precio varía dependiendo el proyecto, nivel de detalle, tamaño y ubicación en el cuerpo. No dudes en preguntar presupuesto para tu idea.",
       },
       {
         q: "¿Dónde queda el estudio?",
-        a: "Tengo mi estudio privado en Almagro, Ciudad de Buenos Aires, a unas pocas cuadras del subte B. Tambien hago guest spots en otros lugares del mundo, asi que escribime para que vaya a tatuar a tu cuidad.",
+        a: "Tengo mi estudio privado en Almagro, Ciudad de Buenos Aires, a unas pocas cuadras del subte B. También hago guest spots en otros lugares del mundo, así que escribime para que vaya a tatuar a tu ciudad.",
       },
       {
         q: "¿Haces cover-ups o retoques?",
