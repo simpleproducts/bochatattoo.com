@@ -27,7 +27,7 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
             {dict.title1}
           </SplitText>
         </span>
-        <span className="block italic text-fg/55 overflow-hidden">
+        <span className="block text-fg/55 overflow-hidden">
           <SplitText delay={550} stagger={55}>
             {dict.title2}
           </SplitText>
