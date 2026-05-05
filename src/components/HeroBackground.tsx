@@ -87,8 +87,8 @@ export function HeroBackground() {
               }}
             />
           </picture>
+          <div aria-hidden className="hero-img-fade" />
         </div>
-        <div aria-hidden className="hero-mobile-fade" />
       </div>
 
       {/* Mouse-tracked spotlight (uses CSS vars set in the rAF loop above) */}
@@ -109,7 +109,11 @@ export function HeroBackground() {
       />
       <div
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-b from-transparent via-bg/70 to-bg"
+        className="absolute inset-x-0 bottom-0 h-2/3 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(10,10,10,0) 0%, rgba(10,10,10,0.7) 55%, #0a0a0a 100%)",
+        }}
       />
 
       <div
