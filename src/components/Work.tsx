@@ -5,7 +5,7 @@ import { Placeholder } from "./Placeholder";
 import { RemoteImage } from "./RemoteImage";
 import { Reveal } from "./Reveal";
 import { Lightbox } from "./Lightbox";
-import { listImagesByCategory } from "@/lib/images";
+import { getImage, listImagesByCategory } from "@/lib/images";
 import { localePath } from "@/i18n";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
@@ -15,14 +15,24 @@ type Props = { dict: Dictionary["work"]; locale: Locale };
 export function Work({ dict, locale }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  // One image per category, in the dictionary's display order, until we fill
-  // the grid. Avoids the home strip looking like a single-category sample.
+  // 1) hand-picked slugs first, 2) then top-up with one-per-category until
+  // featuredLimit is reached. Skips categories listed in skipCategories.
   const skip = new Set(dict.skipCategories);
-  const featured = dict.categoryOrder
+  const seen = new Set<string>();
+  const handPicked = (dict.featuredSlugs ?? [])
+    .map((slug) => {
+      const entry = getImage(slug);
+      return entry ? { slug, ...entry } : null;
+    })
+    .filter((img): img is NonNullable<typeof img> => Boolean(img));
+  for (const img of handPicked) seen.add(img.slug);
+
+  const fillers = dict.categoryOrder
     .filter((c) => !skip.has(c))
-    .map((c) => listImagesByCategory(c)[0])
-    .filter((img): img is NonNullable<typeof img> => Boolean(img))
-    .slice(0, dict.featuredLimit);
+    .map((c) => listImagesByCategory(c).find((img) => !seen.has(img.slug)))
+    .filter((img): img is NonNullable<typeof img> => Boolean(img));
+
+  const featured = [...handPicked, ...fillers].slice(0, dict.featuredLimit);
   const workHref = locale === "en" ? "/work" : `/${locale}/work`;
   const home = localePath(locale);
 

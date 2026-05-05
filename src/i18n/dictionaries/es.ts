@@ -57,6 +57,16 @@ const es: Dictionary = {
     open: "Ver pieza",
     featuredCategory: "best-tattoos",
     featuredLimit: 12,
+    featuredSlugs: [
+      "compo-img-1518",
+      "compo-img-3599",
+      "botanica-img-4474",
+      "arte-img-2023",
+      "arte-img-2848",
+      "arte-img-3063",
+      "botanica-img-1762",
+      "botanica-img-3483",
+    ],
     viewAll: "Ver el archivo completo →",
     pageTitle: "Tatuajes.",
     intro:
