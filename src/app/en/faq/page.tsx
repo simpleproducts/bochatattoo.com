@@ -2,28 +2,28 @@ import type { Metadata } from "next";
 import { FAQPage } from "@/components/FAQPage";
 import { getDictionary } from "@/i18n";
 
-const locale = "es" as const;
+const locale = "en" as const;
 const dict = getDictionary(locale);
 
 export const metadata: Metadata = {
   title: dict.faq.metaTitle,
   description: dict.faq.metaDescription,
   alternates: {
-    canonical: "/es/faq",
+    canonical: "/en/faq",
     languages: {
-      en: "/faq",
-      es: "/es/faq",
+      es: "/faq",
+      en: "/en/faq",
       "x-default": "/faq",
     },
   },
   openGraph: {
     title: dict.faq.metaTitle,
     description: dict.faq.metaDescription,
-    locale: "es_ES",
+    locale: "en_US",
     type: "website",
   },
 };
 
-export default function FAQEs() {
+export default function FAQEn() {
   return <FAQPage dict={dict} locale={locale} />;
 }

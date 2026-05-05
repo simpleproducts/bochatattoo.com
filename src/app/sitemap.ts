@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
-import { LOCALES } from "@/i18n";
+import { LOCALES, DEFAULT_LOCALE } from "@/i18n";
 
 const BASE = "https://bochatattoo.com";
 type Segment = "" | "/work" | "/faq";
 const SEGMENTS: Segment[] = ["", "/work", "/faq"];
 
 function pathFor(locale: string, segment: Segment): string {
-  const prefix = locale === "en" ? "" : `/${locale}`;
+  const prefix = locale === DEFAULT_LOCALE ? "" : `/${locale}`;
   return `${BASE}${prefix}${segment === "" ? "/" : segment}`;
 }
 
@@ -21,7 +21,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: pathFor(l, segment),
       lastModified,
       changeFrequency: "monthly" as const,
-      priority: segment === "" ? (l === "en" ? 1 : 0.9) : l === "en" ? 0.8 : 0.7,
+      priority:
+        segment === ""
+          ? l === DEFAULT_LOCALE
+            ? 1
+            : 0.9
+          : l === DEFAULT_LOCALE
+            ? 0.8
+            : 0.7,
       alternates: { languages },
     }));
   });

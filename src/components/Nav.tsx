@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Magnetic } from "./Magnetic";
-import { localePath } from "@/i18n";
+import { localePath, DEFAULT_LOCALE } from "@/i18n";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
@@ -19,8 +19,9 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
   const [open, setOpen] = useState(false);
 
   const home = localePath(locale);
-  const faqUrl = locale === "en" ? "/faq" : `/${locale}/faq`;
-  const workUrl = locale === "en" ? "/work" : `/${locale}/work`;
+  const prefix = locale === DEFAULT_LOCALE ? "" : `/${locale}`;
+  const faqUrl = `${prefix}/faq`;
+  const workUrl = `${prefix}/work`;
   const homeMark = home === "/" ? "/" : home;
 
   const items: [string, string][] = [

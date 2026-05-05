@@ -3,10 +3,10 @@ import { getDictionary } from "@/i18n";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Bocha — Tatuador";
+export const alt = "Bocha — Tattoo Artist";
 
 export default function OG() {
-  const dict = getDictionary("es");
+  const dict = getDictionary("en");
   return new ImageResponse(
     (
       <div

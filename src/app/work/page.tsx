@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { WorkPage } from "@/components/WorkPage";
 import { getDictionary } from "@/i18n";
 
-const locale = "en" as const;
+const locale = "es" as const;
 const dict = getDictionary(locale);
 
 export const metadata: Metadata = {
@@ -11,15 +11,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/work",
     languages: {
-      en: "/work",
-      es: "/es/work",
+      es: "/work",
+      en: "/en/work",
       "x-default": "/work",
     },
   },
   openGraph: {
     title: dict.work.metaTitle,
     description: dict.work.metaDescription,
-    locale: "en_US",
+    locale: "es_ES",
     type: "website",
   },
 };

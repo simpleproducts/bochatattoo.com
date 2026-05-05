@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@/i18n";
 import type { Locale } from "@/i18n";
 
 const SITE = "https://bochatattoo.com";
@@ -17,7 +18,7 @@ export function JsonLd({ locale }: { locale: Locale }) {
       locale === "es"
         ? "Tatuador en Almagro, Ciudad de Buenos Aires, desde 2015"
         : "Tattoo artist in Almagro, Buenos Aires since 2015. Considered, custom work by appointment.",
-    url: locale === "en" ? SITE : `${SITE}/${locale}`,
+    url: locale === DEFAULT_LOCALE ? SITE : `${SITE}/${locale}`,
     image: `${SITE}/opengraph-image`,
     logo: `${SITE}/icon`,
     foundingDate: "2015",
