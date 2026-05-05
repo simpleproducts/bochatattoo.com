@@ -1,73 +1,65 @@
+"use client";
+import { useState } from "react";
 import { Placeholder } from "./Placeholder";
 import { RemoteImage } from "./RemoteImage";
 import { Reveal } from "./Reveal";
+import { Lightbox } from "./Lightbox";
 import { getImage } from "@/lib/images";
+import type { Dictionary, Ratio } from "@/i18n/types";
 
-const PIECES: { slug: string; ratio: "portrait" | "square" | "landscape" | "tall" }[] = [
-  { slug: "untitled-forearm", ratio: "portrait" },
-  { slug: "untitled-sternum", ratio: "tall" },
-  { slug: "untitled-hand", ratio: "square" },
-  { slug: "untitled-calf", ratio: "portrait" },
-  { slug: "untitled-back", ratio: "landscape" },
-  { slug: "untitled-thigh", ratio: "portrait" },
-  { slug: "untitled-ribs", ratio: "tall" },
-  { slug: "untitled-neck", ratio: "square" },
-  { slug: "untitled-shoulder", ratio: "portrait" },
-];
-
-const RATIO_CLASS = {
+const RATIO_CLASS: Record<Ratio, string> = {
   portrait: "aspect-[3/4]",
   square: "aspect-square",
   landscape: "aspect-[4/3]",
   tall: "aspect-[2/3]",
-} as const;
+};
 
-export function Work() {
+export function Work({ dict }: { dict: Dictionary["work"] }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
   return (
     <section id="work" className="px-6 md:px-10 py-24 md:py-32">
       <Reveal>
         <div className="flex items-baseline justify-between mb-12 md:mb-16">
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-            01 / Work
+            {dict.eyebrow}
           </span>
-          <h2 className="font-serif italic text-3xl md:text-5xl">
-            Selected pieces
-          </h2>
+          <h2 className="font-serif italic text-3xl md:text-5xl">{dict.title}</h2>
         </div>
       </Reveal>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-        {PIECES.map((p, i) => {
+        {dict.pieces.map((p, i) => {
           const entry = getImage(p.slug);
           return (
             <Reveal key={p.slug} delay={(i % 3) * 80}>
-              <div
+              <button
+                type="button"
+                onClick={() => setOpenIndex(i)}
+                aria-label={`${dict.open}: ${p.title}`}
                 data-cursor
-                className={`relative ${RATIO_CLASS[p.ratio]} bg-line overflow-hidden tile`}
+                className={`relative w-full ${RATIO_CLASS[p.ratio]} bg-line overflow-hidden tile block text-left`}
               >
                 {entry ? (
                   <RemoteImage
                     slug={p.slug}
+                    alt={p.title}
                     fill
                     sizes="(min-width: 768px) 33vw, 50vw"
                     className="object-cover tile-img"
                   />
                 ) : (
-                  <Placeholder
-                    label={p.slug.replace(/-/g, " ")}
-                    ratio={p.ratio}
-                    index={i + 1}
-                  />
+                  <Placeholder label={p.title} ratio={p.ratio} index={i + 1} />
                 )}
                 <div
                   aria-hidden
                   className="tile-overlay absolute inset-0 bg-bg/0 transition-colors duration-500 flex items-end p-4"
                 >
                   <span className="opacity-0 -translate-y-2 transition-all duration-500 tile-label text-[10px] uppercase tracking-[0.2em] font-mono text-fg">
-                    {String(i + 1).padStart(2, "0")} — {p.slug.replace(/-/g, " ")}
+                    {String(i + 1).padStart(2, "0")} — {p.title}
                   </span>
                 </div>
-              </div>
+              </button>
             </Reveal>
           );
         })}
@@ -78,9 +70,17 @@ export function Work() {
           href="#contact"
           className="text-xs uppercase tracking-[0.2em] font-mono border-b border-current pb-1 hover:opacity-60 transition-opacity"
         >
-          Inquire about a piece →
+          {dict.inquire}
         </a>
       </div>
+
+      <Lightbox
+        pieces={dict.pieces}
+        index={openIndex}
+        onClose={() => setOpenIndex(null)}
+        onIndexChange={setOpenIndex}
+        labels={dict.lightbox}
+      />
     </section>
   );
 }

@@ -21,17 +21,10 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
 });
 
+// Per-page metadata (title, description, alternates, og) lives in each route's
+// page.tsx. Only the resolution base belongs at the root.
 export const metadata: Metadata = {
-  title: "Bocha — Tattoo Artist",
-  description:
-    "Bocha is a tattoo artist working by appointment. Original designs, considered work.",
   metadataBase: new URL("https://bochatattoo.com"),
-  openGraph: {
-    title: "Bocha — Tattoo Artist",
-    description:
-      "Bocha is a tattoo artist working by appointment. Original designs, considered work.",
-    type: "website",
-  },
 };
 
 export default function RootLayout({
