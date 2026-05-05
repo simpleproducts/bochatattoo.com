@@ -98,7 +98,7 @@ export function HeroBackground() {
               alt=""
               aria-hidden
               fetchPriority="high"
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-center md:scale-[1.7] md:translate-x-[35%] md:origin-center"
             />
           </picture>
         )}
