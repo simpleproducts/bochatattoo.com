@@ -4,7 +4,7 @@ const en: Dictionary = {
   meta: {
     title: "Bocha · Tattoo Artist · Almagro, Buenos Aires",
     description:
-      "Bocha — tattoo artist working out of Almagro, Buenos Aires since 2011. Considered, custom work by appointment. Guest spots in Berlin and Madrid.",
+      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2011. Guest spots in Berlin and Madrid.",
   },
   nav: {
     work: "Work",
@@ -19,27 +19,27 @@ const en: Dictionary = {
   },
   hero: {
     badge: "Est. 2011 — Almagro BA",
-    location: "Almagro, Buenos Aires",
+    location: "Almagro · Buenos Aires",
     booking: "Now booking",
     title1: "bocha",
     title2: "tattoo",
     intro:
-      "Tattoo artist working out of a quiet studio in Almagro, Buenos Aires since 2011. Considered, custom drawings — one client at a time, no rush.",
+      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2011.",
     cta: "View the work",
     scroll: "Scroll",
   },
   marquee: [
-    "Custom designs",
+    "Tattoos in black",
     "By appointment",
     "Almagro · Buenos Aires",
+    "Solo studio",
     "Since 2011",
-    "Guest spots · Berlin · Madrid",
-    "Mostly black",
+    "Berlin · Madrid",
   ],
   work: {
     eyebrow: "01 / Work",
     title: "Selected work",
-    inquire: "Inquire about a piece →",
+    inquire: "Ask about a piece →",
     open: "Open piece",
     pieces: [
       { slug: "untitled-forearm", ratio: "portrait", title: "Untitled — Forearm" },
@@ -59,13 +59,13 @@ const en: Dictionary = {
     headingPart1: "Drawing first.",
     headingPart2: "Tattooing second.",
     intro1:
-      "I'm Bocha. I've been tattooing since 2011, working out of a quiet, private studio in Almagro, Ciudad de Buenos Aires. Each piece starts on paper — sometimes for weeks before it touches skin.",
+      "I'm Bocha. Born and based in Buenos Aires. Tattooing since 2011 from a small studio in Almagro — quiet by design.",
     intro2:
-      "I work mostly in black, mostly small. One client at a time, no overlap, no rush. A few times a year I take the work on the road — guest spots in Berlin, Madrid, and other cities I'm fond of.",
+      "I work in black, mostly small, mostly slow. One person in the studio at a time. A few weeks a year I take the work to Berlin and Madrid.",
     portraitAlt: "Portrait — Bocha",
     meta: {
       based: ["Based", "Almagro · BA"],
-      style: ["Style", "Mostly black"],
+      style: ["Style", "Black, mostly small"],
       booking: ["Booking", "By appointment"],
       since: ["Since", "2011"],
     },
@@ -77,22 +77,22 @@ const en: Dictionary = {
       {
         n: "01",
         title: "Inquiry",
-        body: "Send a short note with your idea, references, placement, and approximate size. The more honest the better — there's no perfect template.",
+        body: "Send the idea, references, placement, and rough size. A paragraph is plenty. I read everything.",
       },
       {
         n: "02",
         title: "Conversation",
-        body: "We talk it through. What it means, how it should feel, where it lives on the body. Sometimes that's one message, sometimes a few.",
+        body: "We trade a few messages. The piece gets clearer with each one — what it means, where it sits, how big it should feel.",
       },
       {
         n: "03",
         title: "Design",
-        body: "I draft the piece from your brief. You see it before the day, and we have one round of changes if anything needs adjusting.",
+        body: "I draw it from your brief. You see it before the day. One round of changes if it needs them.",
       },
       {
         n: "04",
         title: "Session",
-        body: "We meet at the studio in Almagro. The room is quiet, sessions are private, and there's no rush to finish. Coffee or mate is on me.",
+        body: "Studio in Almagro. Private room, one client a day, no overlap. We start when you're ready.",
       },
     ],
   },
@@ -100,27 +100,27 @@ const en: Dictionary = {
     eyebrow: "04 / Aftercare",
     title: "Care for your tattoo",
     intro:
-      "The first two weeks shape how your tattoo settles. Most of the work is gentle — keep it clean, keep it covered when needed, and let your skin do the rest.",
+      "The first two weeks decide how the tattoo settles. Be gentle, stay patient, and your skin does the rest.",
     steps: [
       {
         n: "Day 1",
         title: "Keep it wrapped",
-        body: "Leave the bandage on for the time we agreed (usually between 2 and 24 hours). Once you take it off, wash gently with warm water and unscented soap, pat dry with a clean towel.",
+        body: "Leave the bandage on for the time we agreed (2 to 24 hours). Once off: warm water, unscented soap, pat dry with a clean towel.",
       },
       {
         n: "Days 2–4",
         title: "Wash and moisturize",
-        body: "Wash twice a day with unscented soap, pat dry, and apply a thin layer of fragrance-free moisturizer. Less is more — over-moisturizing slows healing.",
+        body: "Twice a day. Unscented soap, thin layer of fragrance-free cream. Less is more — too much slows healing.",
       },
       {
         n: "Days 5–14",
         title: "Don't pick",
-        body: "Your tattoo will flake and itch. Don't scratch, don't peel — tap it if you need to. The flakes carry colour out if you pull them.",
+        body: "It will flake and itch. Don't scratch, don't peel. Tap if it's bad. The flakes carry color out if you pull them.",
       },
       {
         n: "Forever",
         title: "Sun and water",
-        body: "Once fully healed, SPF 50+ whenever it sees direct sun. For the first month, avoid pools, the ocean, hot tubs, and long sun exposure.",
+        body: "SPF 50+ for life. First month: no pool, no sea, no sauna, no hours of sun.",
       },
     ],
   },
@@ -129,44 +129,44 @@ const en: Dictionary = {
     title: "Common questions",
     items: [
       {
-        q: "How do I book a session with you?",
-        a: "Reach out on Instagram with a short message: your idea, placement, approximate size, and any references. I check messages once a day. If we're a fit I'll send dates and a deposit link. I post current availability in my Instagram stories.",
+        q: "How do I book?",
+        a: "Instagram DM. A few sentences: idea, placement, rough size, references. I check messages once a day. If it's a fit, I send dates and a deposit link. Open availability lives in my Instagram stories.",
       },
       {
         q: "Do you take custom designs?",
-        a: "Almost everything I do is custom. Send references for inspiration — I won't copy another artist's work, but I'll build a piece that feels like it belongs to you.",
+        a: "Almost everything I do is custom. Send references for direction — I won't copy another artist's work, but I'll build something that's only yours.",
       },
       {
-        q: "How much does a tattoo cost?",
-        a: "Pricing is quoted per project, based on size, placement, complexity, and how long it'll take. You'll get a clear quote before booking — no surprises on the day.",
+        q: "How much does it cost?",
+        a: "Quoted per project. I weigh size, placement, complexity, and time. You get the number before you commit — never on the day.",
       },
       {
-        q: "Where is the studio?",
-        a: "Almagro, in the City of Buenos Aires. I'll send the exact address once your appointment is confirmed. The studio is private, calm, and easy to reach by Subte.",
+        q: "Where's the studio?",
+        a: "Almagro, Ciudad de Buenos Aires. Private space, easy on the Subte. The exact address goes out with your booking confirmation.",
       },
       {
-        q: "Do you tattoo first-timers?",
-        a: "All the time. I'll walk you through the whole thing before we start — what to expect, how it'll feel, what to do after. Eat something beforehand, sleep well, and we'll be fine.",
+        q: "First tattoo. Should I be worried?",
+        a: "No. We talk through everything before we start — what to expect, what it'll feel like, what to do after. Eat well, sleep enough, show up. The rest is on me.",
       },
       {
-        q: "Do you travel for guest spots?",
-        a: "Yes — a few times a year I work from studios in Berlin, Madrid, and other cities. Dates are announced on Instagram a couple of months ahead; bookings open the same way as in Buenos Aires.",
+        q: "Do you travel?",
+        a: "Yes — Berlin and Madrid most years, plus the occasional one-off. Dates land on Instagram a couple of months ahead. Same booking flow as Buenos Aires.",
       },
       {
         q: "What's your style?",
-        a: "Mostly black. Mostly small. Considered drawing — pieces that hold up close and from across the room. The work speaks better than a label.",
+        a: "Mostly black. Mostly small. Drawing-first work — pieces that hold up close, and from across the room. The portfolio says it better than any label.",
       },
       {
         q: "What's the deposit?",
-        a: "A small deposit holds your date and goes toward the final price. Details are sent with your booking confirmation. Deposits are non-refundable but can be moved once with at least 48 hours' notice.",
+        a: "A small, non-refundable hold against your final price. Details come with the confirmation. Movable once if you give me 48 hours.",
       },
     ],
   },
   contact: {
     eyebrow: "06 / Contact",
-    status: "Booking from Instagram",
-    title1: "Get a",
-    title2: "tattoo.",
+    status: "Booking via Instagram",
+    title1: "Make a",
+    title2: "piece.",
     directLabel: "Email",
     instagramLabel: "Instagram (preferred)",
     bookingLabel: "WhatsApp",
