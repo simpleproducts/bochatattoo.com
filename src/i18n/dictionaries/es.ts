@@ -105,16 +105,17 @@ const es: Dictionary = {
   },
   about: {
     eyebrow: "01 / Sobre mí",
-    headingPart1: "Primero el dibujo.",
-    headingPart2: "Después el tatuaje.",
+    headingPart1: "Sebastián",
+    headingPart2: "Barrena",
     intro1:
-      "Soy Bocha. Nací y vivo en Buenos Aires. Tatúo desde 2015 desde un estudio chico en Almagro — tranquilo por elección.",
+      "Sebastián Barrena es un tatuador especializado en microrealismo ilustrativo. Su obra se caracteriza por un lenguaje visual único y distintivo, construido a partir del detalle, la precisión, las sombras suaves y las texturas sutiles." +
+      " Desde su estudio privado en Almagro, Buenos Aires, trabaja a diario en piezas personalizadas, pensadas para transformar ideas e imágenes en tatuajes de alto impacto visual.",
     intro2:
       "Trabajo en negro, casi siempre chico, casi siempre lento. Una persona en el estudio por vez. Unas semanas al año me llevo el trabajo a Berlín y a Madrid.",
     portraitAlt: "Retrato — Bocha",
     meta: {
       based: ["Ubicación", "Almagro · CABA"],
-      style: ["Estilo", "Negro, casi siempre chico"],
+      style: ["Estilo", "Fineline, microrealista, inlustrativo"],
       booking: ["Reservas", "Con turno"],
       since: ["Desde", "2015"],
     },

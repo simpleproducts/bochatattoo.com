@@ -103,23 +103,32 @@ body {
   100% { background-position: 100% 100%, 0% 0%, 80% 30%, 0% 0%; }
 }
 
-/* ---------- Custom cursor ---------- */
+/* ---------- Custom cursor (minimal: dot → ring on hover) ---------- */
 @media (pointer: fine) {
   .custom-cursor,
   .custom-cursor * { cursor: none !important; }
 }
-.cursor-ring {
+.cursor-mark {
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  margin-top: -4px;
+  border-radius: 9999px;
+  background: var(--color-fg);
+  border: 1px solid transparent;
   transition:
-    width 140ms cubic-bezier(.2,.7,.2,1),
-    height 140ms cubic-bezier(.2,.7,.2,1),
-    margin 140ms cubic-bezier(.2,.7,.2,1),
-    border-color 140ms ease;
+    width 180ms cubic-bezier(.2,.7,.2,1),
+    height 180ms cubic-bezier(.2,.7,.2,1),
+    margin 180ms cubic-bezier(.2,.7,.2,1),
+    background-color 180ms ease;
 }
-.cursor-ring.is-active {
-  width: 3rem;
-  height: 3rem;
-  margin-left: -1.5rem;
-  margin-top: -1.5rem;
+.cursor-mark.is-active {
+  width: 36px;
+  height: 36px;
+  margin-left: -18px;
+  margin-top: -18px;
+  background: transparent;
+  border-color: var(--color-fg);
 }
 
 /* ---------- Reveal ---------- */
@@ -179,4 +188,5 @@ body {
   .animate-spin-slow { animation: none; }
   .hero-spotlight { display: none; }
   .work-grid:hover .tile { opacity: 1; }
+  .cursor-mark { transition: none; }
 }

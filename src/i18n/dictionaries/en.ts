@@ -105,16 +105,17 @@ const en: Dictionary = {
   },
   about: {
     eyebrow: "01 / About",
-    headingPart1: "Drawing first.",
-    headingPart2: "Tattooing second.",
+    headingPart1: "Sebastián",
+    headingPart2: "Barrena",
     intro1:
-      "I'm Bocha. Born and based in Buenos Aires. Tattooing since 2015 from a small studio in Almagro — quiet by design.",
+      "Sebastián Barrena is a tattoo artist specializing in illustrative microrealism. His work is characterized by a unique and distinctive visual language, built from detail, precision, soft shadows and subtle textures. " +
+      "From his private studio in Almagro, Buenos Aires, he works daily on custom pieces, designed to transform ideas and images into tattoos with high visual impact.",
     intro2:
       "I work in black, mostly small, mostly slow. One person in the studio at a time. A few weeks a year I take the work to Berlin and Madrid.",
     portraitAlt: "Portrait — Bocha",
     meta: {
-      based: ["Based", "Almagro · BA"],
-      style: ["Style", "Black, mostly small"],
+      based: ["Location", "Almagro · BA"],
+      style: ["Style", "Fineline, microrealism, illustrative"],
       booking: ["Booking", "By appointment"],
       since: ["Since", "2015"],
     },
