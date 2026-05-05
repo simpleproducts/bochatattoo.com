@@ -223,8 +223,8 @@ const en: Dictionary = {
   contact: {
     eyebrow: "06 / Contact",
     status: "Booking via Instagram",
-    title1: "Make a",
-    title2: "piece.",
+    title1: "Let's plan",
+    title2: "your piece.",
     directLabel: "Email",
     instagramLabel: "Instagram (preferred)",
     bookingLabel: "WhatsApp",
