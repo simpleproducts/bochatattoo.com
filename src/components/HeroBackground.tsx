@@ -73,7 +73,34 @@ export function HeroBackground() {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="absolute inset-0 hero-placeholder" aria-hidden />
+          <picture>
+            <source
+              media="(max-width: 768px)"
+              srcSet="/site/bocha-bg-mobile.avif"
+              type="image/avif"
+            />
+            <source
+              media="(max-width: 768px)"
+              srcSet="/site/bocha-bg-mobile.webp"
+              type="image/webp"
+            />
+            <source
+              srcSet="/site/bocha-bg-desktop.avif"
+              type="image/avif"
+            />
+            <source
+              srcSet="/site/bocha-bg-desktop.webp"
+              type="image/webp"
+            />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/site/bocha-bg-desktop.webp"
+              alt=""
+              aria-hidden
+              fetchPriority="high"
+              className="w-full h-full object-cover object-center"
+            />
+          </picture>
         )}
       </div>
 
