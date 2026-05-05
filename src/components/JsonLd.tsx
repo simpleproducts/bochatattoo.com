@@ -3,22 +3,24 @@ import type { Locale } from "@/i18n";
 const SITE = "https://bochatattoo.com";
 
 /**
- * LocalBusiness JSON-LD. Values are intentional placeholders — replace with
- * real address, geo, opening hours, phone, and sameAs handles before launch.
+ * LocalBusiness + Person JSON-LD for Bocha. Real values are filled in here;
+ * email/phone/sameAs handles are placeholders until provided.
  */
 export function JsonLd({ locale }: { locale: Locale }) {
   const data = {
     "@context": "https://schema.org",
-    "@type": ["LocalBusiness", "Person"],
+    "@type": ["LocalBusiness", "TattooParlor"],
     "@id": `${SITE}#bocha`,
     name: "Bocha",
     alternateName: "Bocha Tattoo",
     description:
       locale === "es"
-        ? "Tatuador. Diseños originales, trabajo cuidado, con turno."
-        : "Tattoo artist. Original designs, considered work, by appointment.",
+        ? "Tatuador en Almagro, Ciudad de Buenos Aires, desde 2011. Trabajo a medida, con turno."
+        : "Tattoo artist in Almagro, Buenos Aires since 2011. Considered, custom work by appointment.",
     url: locale === "en" ? SITE : `${SITE}/${locale}`,
     image: `${SITE}/opengraph-image`,
+    logo: `${SITE}/icon`,
+    foundingDate: "2011",
     priceRange: "$$",
     inLanguage: locale,
     sameAs: [
@@ -27,14 +29,24 @@ export function JsonLd({ locale }: { locale: Locale }) {
     ],
     address: {
       "@type": "PostalAddress",
+      addressLocality: "Almagro",
+      addressRegion: "Ciudad Autónoma de Buenos Aires",
       addressCountry: "AR",
-      addressLocality: "Placeholder",
     },
+    areaServed: [
+      { "@type": "City", name: "Buenos Aires" },
+      { "@type": "City", name: "Berlin" },
+      { "@type": "City", name: "Madrid" },
+    ],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "booking",
       email: "hello@bochatattoo.com",
       availableLanguage: ["en", "es"],
+    },
+    founder: {
+      "@type": "Person",
+      name: "Bocha",
     },
   };
 

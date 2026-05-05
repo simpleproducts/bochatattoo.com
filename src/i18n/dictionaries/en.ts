@@ -2,9 +2,9 @@ import type { Dictionary } from "../types";
 
 const en: Dictionary = {
   meta: {
-    title: "Bocha — Tattoo Artist",
+    title: "Bocha · Tattoo Artist · Almagro, Buenos Aires",
     description:
-      "Bocha is a tattoo artist working by appointment. Original designs, considered work.",
+      "Bocha — tattoo artist working out of Almagro, Buenos Aires since 2011. Considered, custom work by appointment. Guest spots in Berlin and Madrid.",
   },
   nav: {
     work: "Work",
@@ -18,27 +18,27 @@ const en: Dictionary = {
     menuClose: "Close menu",
   },
   hero: {
-    badge: "Est. 20XX — Placeholder",
-    location: "By appointment / Worldwide",
+    badge: "Est. 2011 — Almagro BA",
+    location: "Almagro, Buenos Aires",
     booking: "Now booking",
     title1: "bocha",
     title2: "tattoo",
     intro:
-      "A tattoo studio rooted in considered drawing — placeholder copy describing the practice, the philosophy, and the wave that carries each piece from sketch to skin.",
+      "Tattoo artist working out of a quiet studio in Almagro, Buenos Aires since 2011. Considered, custom drawings — one client at a time, no rush.",
     cta: "View the work",
     scroll: "Scroll",
   },
   marquee: [
-    "Original designs",
+    "Custom designs",
     "By appointment",
-    "Custom flash",
-    "Walk-ins occasional",
-    "Black & grey",
-    "Fine line",
+    "Almagro · Buenos Aires",
+    "Since 2011",
+    "Guest spots · Berlin · Madrid",
+    "Mostly black",
   ],
   work: {
     eyebrow: "01 / Work",
-    title: "Selected pieces",
+    title: "Selected work",
     inquire: "Inquire about a piece →",
     open: "Open piece",
     pieces: [
@@ -59,63 +59,121 @@ const en: Dictionary = {
     headingPart1: "Drawing first.",
     headingPart2: "Tattooing second.",
     intro1:
-      "Placeholder bio paragraph. A short, honest description of who Bocha is, where the studio sits, and how the practice took shape over the years.",
+      "I'm Bocha. I've been tattooing since 2011, working out of a quiet, private studio in Almagro, Ciudad de Buenos Aires. Each piece starts on paper — sometimes for weeks before it touches skin.",
     intro2:
-      "Placeholder for the philosophy: how each tattoo emerges from a conversation, what kind of work the studio is most known for, and the kinds of pieces Bocha is drawn to building.",
+      "I work mostly in black, mostly small. One client at a time, no overlap, no rush. A few times a year I take the work on the road — guest spots in Berlin, Madrid, and other cities I'm fond of.",
     portraitAlt: "Portrait — Bocha",
     meta: {
-      based: ["Based", "Placeholder"],
-      style: ["Style", "Placeholder"],
-      booking: ["Booking", "By request"],
-      since: ["Since", "20XX"],
+      based: ["Based", "Almagro · BA"],
+      style: ["Style", "Mostly black"],
+      booking: ["Booking", "By appointment"],
+      since: ["Since", "2011"],
     },
   },
   process: {
     eyebrow: "03 / Process",
     title: "From sketch to skin",
     steps: [
-      { n: "01", title: "Inquiry", body: "Send a short note with your idea, references, placement, and approximate size. Placeholder copy describing the intake." },
-      { n: "02", title: "Conversation", body: "We discuss the piece — what it means, how it should feel, where it lives on the body. Placeholder copy." },
-      { n: "03", title: "Design", body: "Bocha drafts a custom design from the brief. One round of refinements before the day. Placeholder copy." },
-      { n: "04", title: "Session", body: "We meet at the studio. Sessions are private, unhurried, and focused on the work. Placeholder copy." },
+      {
+        n: "01",
+        title: "Inquiry",
+        body: "Send a short note with your idea, references, placement, and approximate size. The more honest the better — there's no perfect template.",
+      },
+      {
+        n: "02",
+        title: "Conversation",
+        body: "We talk it through. What it means, how it should feel, where it lives on the body. Sometimes that's one message, sometimes a few.",
+      },
+      {
+        n: "03",
+        title: "Design",
+        body: "I draft the piece from your brief. You see it before the day, and we have one round of changes if anything needs adjusting.",
+      },
+      {
+        n: "04",
+        title: "Session",
+        body: "We meet at the studio in Almagro. The room is quiet, sessions are private, and there's no rush to finish. Coffee or mate is on me.",
+      },
     ],
   },
   aftercare: {
     eyebrow: "04 / Aftercare",
     title: "Care for your tattoo",
     intro:
-      "Placeholder intro. The first two weeks shape how the piece settles — clean it gently, keep it covered when needed, and let your skin do the work.",
+      "The first two weeks shape how your tattoo settles. Most of the work is gentle — keep it clean, keep it covered when needed, and let your skin do the rest.",
     steps: [
-      { n: "Day 1", title: "Keep it wrapped", body: "Leave the bandage on for the time Bocha tells you (usually 2–24 hours). Placeholder copy." },
-      { n: "Days 2–4", title: "Wash & moisturize", body: "Gentle wash with fragrance-free soap, pat dry, thin layer of moisturizer 2–3 times a day. Placeholder copy." },
-      { n: "Days 5–14", title: "Don't pick", body: "It will flake and itch. Don't scratch, don't peel. Tap if it itches. Placeholder copy." },
-      { n: "Forever", title: "Sun & sea", body: "SPF 50+ once healed. Avoid pools, hot tubs and direct sun for the first month. Placeholder copy." },
+      {
+        n: "Day 1",
+        title: "Keep it wrapped",
+        body: "Leave the bandage on for the time we agreed (usually between 2 and 24 hours). Once you take it off, wash gently with warm water and unscented soap, pat dry with a clean towel.",
+      },
+      {
+        n: "Days 2–4",
+        title: "Wash and moisturize",
+        body: "Wash twice a day with unscented soap, pat dry, and apply a thin layer of fragrance-free moisturizer. Less is more — over-moisturizing slows healing.",
+      },
+      {
+        n: "Days 5–14",
+        title: "Don't pick",
+        body: "Your tattoo will flake and itch. Don't scratch, don't peel — tap it if you need to. The flakes carry colour out if you pull them.",
+      },
+      {
+        n: "Forever",
+        title: "Sun and water",
+        body: "Once fully healed, SPF 50+ whenever it sees direct sun. For the first month, avoid pools, the ocean, hot tubs, and long sun exposure.",
+      },
     ],
   },
   faq: {
     eyebrow: "05 / FAQ",
     title: "Common questions",
     items: [
-      { q: "How do I book a session?", a: "Placeholder answer. Email, Instagram DM, or WhatsApp — whichever you prefer. A small deposit holds the date." },
-      { q: "Do you take custom designs?", a: "Placeholder answer. Yes — most work is custom. Send references, placement, and rough size to start the conversation." },
-      { q: "How much does it cost?", a: "Placeholder answer. Pricing depends on size, placement, and complexity. You'll get an estimate before booking." },
-      { q: "What's your style?", a: "Placeholder answer. Predominantly black and grey, fine line, and considered illustrative work — but each piece is built around the wearer." },
-      { q: "Do you tattoo first-timers?", a: "Placeholder answer. Always welcome. Bocha will walk you through everything before the needle touches skin." },
-      { q: "Can I bring a friend?", a: "Placeholder answer. One guest is fine for support — the studio is a calm, focused space." },
+      {
+        q: "How do I book a session with you?",
+        a: "Reach out on Instagram with a short message: your idea, placement, approximate size, and any references. I check messages once a day. If we're a fit I'll send dates and a deposit link. I post current availability in my Instagram stories.",
+      },
+      {
+        q: "Do you take custom designs?",
+        a: "Almost everything I do is custom. Send references for inspiration — I won't copy another artist's work, but I'll build a piece that feels like it belongs to you.",
+      },
+      {
+        q: "How much does a tattoo cost?",
+        a: "Pricing is quoted per project, based on size, placement, complexity, and how long it'll take. You'll get a clear quote before booking — no surprises on the day.",
+      },
+      {
+        q: "Where is the studio?",
+        a: "Almagro, in the City of Buenos Aires. I'll send the exact address once your appointment is confirmed. The studio is private, calm, and easy to reach by Subte.",
+      },
+      {
+        q: "Do you tattoo first-timers?",
+        a: "All the time. I'll walk you through the whole thing before we start — what to expect, how it'll feel, what to do after. Eat something beforehand, sleep well, and we'll be fine.",
+      },
+      {
+        q: "Do you travel for guest spots?",
+        a: "Yes — a few times a year I work from studios in Berlin, Madrid, and other cities. Dates are announced on Instagram a couple of months ahead; bookings open the same way as in Buenos Aires.",
+      },
+      {
+        q: "What's your style?",
+        a: "Mostly black. Mostly small. Considered drawing — pieces that hold up close and from across the room. The work speaks better than a label.",
+      },
+      {
+        q: "What's the deposit?",
+        a: "A small deposit holds your date and goes toward the final price. Details are sent with your booking confirmation. Deposits are non-refundable but can be moved once with at least 48 hours' notice.",
+      },
     ],
   },
   contact: {
     eyebrow: "06 / Contact",
-    status: "Currently booking",
+    status: "Booking from Instagram",
     title1: "Get a",
     title2: "tattoo.",
-    directLabel: "Direct",
-    instagramLabel: "Instagram",
-    bookingLabel: "Booking",
+    directLabel: "Email",
+    instagramLabel: "Instagram (preferred)",
+    bookingLabel: "WhatsApp",
     bookingCta: "WhatsApp →",
   },
   footer: {
-    rights: "© {year} — Bocha",
+    rights: "© {year} — Bocha · Almagro, Buenos Aires",
   },
   localeSwitcher: {
     label: "Language",
