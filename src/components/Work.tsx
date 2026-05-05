@@ -28,7 +28,7 @@ export function Work({ dict }: { dict: Dictionary["work"] }) {
         </div>
       </Reveal>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+      <div className="work-grid grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
         {dict.pieces.map((p, i) => {
           const entry = getImage(p.slug);
           return (
