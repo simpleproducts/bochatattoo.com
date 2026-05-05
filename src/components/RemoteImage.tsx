@@ -1,19 +1,26 @@
-import Image, { type ImageProps } from "next/image";
-import { getImage, imageUrl, pickSize } from "@/lib/images";
+import { getImage, imageUrl } from "@/lib/images";
+import type { CSSProperties } from "react";
+
+const BASE = process.env.NEXT_PUBLIC_IMAGES_BASE_URL ?? "";
 
 type Props = {
   slug: string;
-  /** Override alt; defaults to manifest entry. */
   alt?: string;
-  /** Responsive sizes hint forwarded to next/image. Default: full-width. */
+  /** Responsive sizes hint — controls which srcSet entry the browser picks. */
   sizes?: string;
   className?: string;
   priority?: boolean;
   fill?: boolean;
-} & Pick<ImageProps, "style">;
+  style?: CSSProperties;
+};
 
-const BASE = process.env.NEXT_PUBLIC_IMAGES_BASE_URL ?? "";
-
+/**
+ * Plain <img> with a manually-built srcSet. We bypass next/image because
+ * `unoptimized: true` in next.config makes Next ignore the custom loader,
+ * which broke the URL resolution. With this component, every URL in the
+ * srcSet is stamped with NEXT_PUBLIC_IMAGES_BASE_URL at render — no Next
+ * loader, no Vercel optimizer dependency, just R2 → browser.
+ */
 export function RemoteImage({
   slug,
   alt,
@@ -25,10 +32,7 @@ export function RemoteImage({
 }: Props) {
   const entry = getImage(slug);
 
-  // No manifest entry OR no R2 base URL configured → render a labelled box so
-  // the layout works on preview deploys before env vars are wired up.
   if (!entry || !BASE) {
-    // Manifest entry missing — render a labelled box so the layout still works.
     return (
       <div
         className={`relative bg-line text-muted text-[10px] uppercase tracking-[0.2em] font-mono flex items-end p-3 ${className ?? ""}`}
@@ -39,23 +43,36 @@ export function RemoteImage({
     );
   }
 
-  const loader = ({ width }: { src: string; width: number; quality?: number }) => {
-    const chosen = pickSize(entry.sizes, width);
-    return imageUrl(slug, chosen, entry.format ?? "avif");
-  };
+  const format = entry.format ?? "avif";
+  const srcSet = entry.sizes
+    .map((w) => `${imageUrl(slug, w, format)} ${w}w`)
+    .join(", ");
+  const largest = entry.sizes[entry.sizes.length - 1];
+  const fallbackSrc = imageUrl(slug, largest, format);
 
-  const common = {
-    loader,
-    src: slug,
-    alt: alt ?? entry.alt,
-    sizes,
-    placeholder: "blur" as const,
-    blurDataURL: entry.blurDataURL,
-    className,
-    priority,
-    style,
-  };
+  const baseClass = fill
+    ? `absolute inset-0 w-full h-full ${className ?? ""}`
+    : className ?? "";
 
-  if (fill) return <Image {...common} fill />;
-  return <Image {...common} width={entry.width} height={entry.height} />;
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={fallbackSrc}
+      srcSet={srcSet}
+      sizes={sizes}
+      alt={alt ?? entry.alt}
+      loading={priority ? undefined : "lazy"}
+      decoding="async"
+      fetchPriority={priority ? "high" : undefined}
+      width={fill ? undefined : entry.width}
+      height={fill ? undefined : entry.height}
+      className={baseClass}
+      style={{
+        backgroundImage: `url("${entry.blurDataURL}")`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        ...style,
+      }}
+    />
+  );
 }
