@@ -37,6 +37,10 @@ export function JsonLd({ locale }: { locale: Locale }) {
       { "@type": "City", name: "Buenos Aires" },
       { "@type": "City", name: "Berlin" },
       { "@type": "City", name: "Madrid" },
+      { "@type": "City", name: "Barcelona" },
+      { "@type": "City", name: "Colonia" },
+      { "@type": "City", name: "Freiburgo" },
+      { "@type": "City", name: "Basilea" },
     ],
     contactPoint: {
       "@type": "ContactPoint",

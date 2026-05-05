@@ -208,7 +208,7 @@ const en: Dictionary = {
       },
       {
         q: "Do you travel?",
-        a: "Yes — Berlin and Madrid most years, plus the occasional one-off. Dates land on Instagram a couple of months ahead. Same booking flow as Buenos Aires.",
+        a: "Yes — Barcelona, Berlin, Cologne, Freiburg, Basel or Madrid most years, plus the occasional one-off. Dates land on Instagram a couple of months ahead. Same booking flow as Buenos Aires.",
       },
       {
         q: "What's your style?",
