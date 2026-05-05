@@ -18,6 +18,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* Sticky nav is ~56px scrolled / ~76px at top — 88px lands sections clear of it */
+  scroll-padding-top: 88px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
