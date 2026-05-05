@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { Magnetic } from "./Magnetic";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
@@ -87,15 +88,17 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
 
         <div className="hidden md:flex items-center gap-6">
           <LocaleSwitcher current={locale} label={switcherLabel} />
-          <a
-            href="#contact"
-            className={`inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-mono border border-current rounded-full transition-all duration-500 hover:bg-fg hover:text-bg ${
-              scrolled ? "px-3 py-1.5" : "px-4 py-2"
-            }`}
-          >
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-            {dict.book}
-          </a>
+          <Magnetic strength={0.35} range={60}>
+            <a
+              href="#contact"
+              className={`inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-mono border border-current rounded-full transition-all duration-500 hover:bg-fg hover:text-bg ${
+                scrolled ? "px-3 py-1.5" : "px-4 py-2"
+              }`}
+            >
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+              {dict.book}
+            </a>
+          </Magnetic>
         </div>
 
         <button

@@ -1,5 +1,7 @@
 import { HeroBackground } from "./HeroBackground";
 import { Reveal } from "./Reveal";
+import { SplitText } from "./SplitText";
+import { BookingBadge } from "./BookingBadge";
 import type { Dictionary } from "@/i18n/types";
 
 export function Hero({ dict }: { dict: Dictionary["hero"] }) {
@@ -19,20 +21,26 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
         </span>
       </div>
 
-      <Reveal>
-        <h1 className="font-serif leading-[0.85] tracking-tight text-[18vw] md:text-[14vw]">
-          <span className="block">{dict.title1}</span>
-          <span className="block italic text-fg/55">{dict.title2}</span>
-        </h1>
-      </Reveal>
+      <h1 className="font-serif leading-[0.85] tracking-tight text-[18vw] md:text-[14vw]">
+        <span className="block overflow-hidden">
+          <SplitText delay={300} stagger={55}>
+            {dict.title1}
+          </SplitText>
+        </span>
+        <span className="block italic text-fg/55 overflow-hidden">
+          <SplitText delay={550} stagger={55}>
+            {dict.title2}
+          </SplitText>
+        </span>
+      </h1>
 
       <div className="mt-10 grid md:grid-cols-3 gap-6 md:gap-10 items-end">
-        <Reveal delay={120} className="md:col-span-2">
+        <Reveal delay={1100} className="md:col-span-2">
           <p className="max-w-xl text-balance text-lg md:text-xl leading-snug">
             {dict.intro}
           </p>
         </Reveal>
-        <Reveal delay={240}>
+        <Reveal delay={1240}>
           <a
             href="#work"
             className="self-end inline-flex items-center gap-3 text-xs uppercase tracking-[0.2em] font-mono group"
@@ -44,6 +52,15 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
             />
           </a>
         </Reveal>
+      </div>
+
+      {/* Floating circular booking badge */}
+      <div
+        aria-hidden
+        className="absolute right-6 md:right-10 top-28 md:top-32 hidden sm:block opacity-0 animate-fade-in"
+        style={{ animationDelay: "1400ms" }}
+      >
+        <BookingBadge text={dict.booking} />
       </div>
 
       <div

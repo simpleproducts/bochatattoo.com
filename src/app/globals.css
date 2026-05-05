@@ -35,6 +35,43 @@ body {
   color: var(--color-bg);
 }
 
+/* ---------- Split text (per-character entrance) ---------- */
+.split-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(110%);
+  animation: char-up 1100ms cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes char-up {
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Generic fade-in (used by hero badge etc.) ---------- */
+@keyframes fade-in {
+  to { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 900ms ease-out both; }
+
+/* ---------- Slow rotation (booking badge) ---------- */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin-slow 24s linear infinite; }
+
+/* ---------- Hero spotlight (mouse-tracked) ---------- */
+.hero-spotlight {
+  background: radial-gradient(
+    600px circle at var(--mx) var(--my),
+    rgba(216, 200, 168, 0.18),
+    rgba(216, 200, 168, 0.06) 30%,
+    transparent 60%
+  );
+  transition: background 80ms linear;
+  mix-blend-mode: screen;
+}
+
+/* ---------- Work grid sibling-dim ---------- */
+.work-grid:hover .tile { opacity: 0.45; transition: opacity 500ms ease, transform 600ms cubic-bezier(.2,.7,.2,1); }
+.work-grid:hover .tile:hover { opacity: 1; }
+
 /* ---------- Marquee ---------- */
 @keyframes marquee {
   from { transform: translateX(0); }
@@ -137,4 +174,9 @@ body {
   .reveal { opacity: 1; transform: none; transition: none; }
   .tile, .tile-img, .tile-overlay, .tile-label { transition: none; }
   .animate-lb-in { animation: none; }
+  .split-char { opacity: 1; transform: none; animation: none; }
+  .animate-fade-in { opacity: 1; animation: none; }
+  .animate-spin-slow { animation: none; }
+  .hero-spotlight { display: none; }
+  .work-grid:hover .tile { opacity: 1; }
 }
