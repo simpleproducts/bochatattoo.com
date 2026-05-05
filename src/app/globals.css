@@ -104,7 +104,7 @@ body {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-.animate-marquee { animation: marquee 40s linear infinite; }
+.animate-marquee { animation: marquee 26.67s linear infinite; }
 
 /* ---------- Scroll cue ---------- */
 @keyframes scroll-cue {
@@ -148,6 +148,10 @@ body {
     height 180ms cubic-bezier(.2,.7,.2,1),
     margin 180ms cubic-bezier(.2,.7,.2,1),
     background-color 180ms ease;
+}
+/* Hide entirely on touch / no-hover devices — there's no mouse to follow. */
+@media (hover: none), (pointer: coarse) {
+  .cursor-mark { display: none; }
 }
 .cursor-mark.is-active {
   width: 36px;

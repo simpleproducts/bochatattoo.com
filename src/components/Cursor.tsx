@@ -17,8 +17,6 @@ export function Cursor() {
       const el = ref.current;
       if (!el) return;
       el.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
-      // Reveal on first real move so the default (0,0) corner dot never shows.
-      if (!el.classList.contains("is-ready")) el.classList.add("is-ready");
     };
 
     const onOver = (e: MouseEvent) => {
@@ -43,6 +41,8 @@ export function Cursor() {
       ref={ref}
       aria-hidden
       className="cursor-mark pointer-events-none fixed left-0 top-0 z-[100] mix-blend-difference"
+      // Start off-screen so the (0,0) corner dot never appears before the first mousemove.
+      style={{ transform: "translate3d(-100px, -100px, 0)" }}
     />
   );
 }
