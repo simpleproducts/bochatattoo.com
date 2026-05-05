@@ -15,10 +15,6 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
       <div className="relative flex items-start justify-between gap-8 mb-10 text-xs uppercase tracking-[0.2em] font-mono text-fg/60">
         <span>{dict.badge}</span>
         <span className="hidden md:inline">{dict.location}</span>
-        <span className="flex items-center gap-2">
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-fg animate-pulse" />
-          {dict.booking}
-        </span>
       </div>
 
       <h1 className="font-serif leading-[0.85] tracking-tight text-[18vw] md:text-[14vw]">
@@ -59,7 +55,11 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
         className="absolute right-6 md:right-10 top-28 md:top-32 hidden sm:block opacity-0 animate-fade-in"
         style={{ animationDelay: "1400ms" }}
       >
-        <BookingBadge text={dict.booking} href="#contact" ariaLabel={dict.booking} />
+        <BookingBadge
+          text={dict.booking}
+          href="#contact"
+          ariaLabel={dict.booking}
+        />
       </div>
 
       <div

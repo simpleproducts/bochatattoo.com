@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Magnetic } from "./Magnetic";
 import { localePath, DEFAULT_LOCALE } from "@/i18n";
@@ -19,21 +20,29 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
   const [progress, setProgress] = useState(0);
   const [open, setOpen] = useState(false);
 
+  const pathname = usePathname();
   const home = localePath(locale);
   const prefix = locale === DEFAULT_LOCALE ? "" : `/${locale}`;
   const faqUrl = `${prefix}/faq`;
   const workUrl = `${prefix}/work`;
   const homeMark = home === "/" ? "/" : home;
 
+  // Use bare "#hash" when already on the home page (avoids Next.js Link
+  // appending hashes onto an existing hash → "/#contact#about"). Use the
+  // full "/path#hash" form only for cross-page links.
+  const onHome = pathname === home;
+  const hashLink = (id: string) =>
+    onHome ? `#${id}` : `${home === "/" ? "" : home}/#${id}`.replace("//", "/");
+
   const items: [string, string][] = [
     [dict.work, workUrl],
-    [dict.about, `${home === "/" ? "" : home}/#about`.replace("//", "/")],
-    [dict.process, `${home === "/" ? "" : home}/#process`.replace("//", "/")],
+    [dict.about, hashLink("about")],
+    [dict.process, hashLink("process")],
     [dict.faq, faqUrl],
-    [dict.contact, `${home === "/" ? "" : home}/#contact`.replace("//", "/")],
+    [dict.contact, hashLink("contact")],
   ];
 
-  const bookHref = `${home === "/" ? "" : home}/#contact`.replace("//", "/");
+  const bookHref = hashLink("contact");
 
   useEffect(() => {
     let raf = 0;

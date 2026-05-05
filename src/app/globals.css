@@ -98,22 +98,34 @@ body {
 .animate-spin-slow { animation: spin-slow 24s linear infinite; }
 
 /* ---------- Hero background image ---------- */
-/* Desktop default (≥1024px) — unchanged from before */
-.hero-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+/* Desktop: frame fills layer (img inline styles do the rest — unchanged). */
+.hero-frame {
+  position: absolute;
+  inset: 0;
 }
-/* Mobile + tablet override + bottom fade-to-black */
+/* Mobile + tablet: shrink the frame so the img is shorter & shifted up. */
 @media (max-width: 1023.98px) {
-  .hero-img {
-    height: calc(100% - 250px);
-    position: relative;
+  .hero-frame {
     top: -10px;
-    -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+    height: calc(100% - 250px);
+    bottom: auto;
+  }
+}
+/* Bottom fade-to-black, mobile + tablet only. Hidden on desktop. */
+.hero-mobile-fade {
+  display: none;
+}
+@media (max-width: 1023.98px) {
+  .hero-mobile-fade {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 35%;
+    background: linear-gradient(to bottom, transparent 0%, var(--color-bg) 100%);
+    pointer-events: none;
+    z-index: 1;
   }
 }
 
