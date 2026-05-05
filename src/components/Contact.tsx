@@ -31,10 +31,10 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
               {dict.directLabel}
             </p>
             <a
-              href="mailto:hello@bochatattoo.com"
+              href="mailto:info@bochatattoo.com"
               className="text-lg md:text-xl border-b border-current pb-0.5 hover:opacity-60 transition-opacity"
             >
-              hello@bochatattoo.com
+              info@bochatattoo.com
             </a>
           </div>
           <div>
@@ -42,12 +42,12 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
               {dict.instagramLabel}
             </p>
             <a
-              href="https://instagram.com/"
+              href="https://instagram.com/@bocha.ttt"
               target="_blank"
               rel="noreferrer"
               className="text-lg md:text-xl border-b border-current pb-0.5 hover:opacity-60 transition-opacity"
             >
-              @bocha.tattoo
+              @bocha.ttt
             </a>
           </div>
           <div>

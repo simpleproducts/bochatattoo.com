@@ -10,9 +10,8 @@ export function Footer({ dict }: { dict: Dictionary["footer"] }) {
           bocha
         </span>
         <ul className="flex flex-wrap gap-x-6 gap-y-2">
-          <li><a href="https://instagram.com/" target="_blank" rel="noreferrer" className="hover:text-fg transition-colors">Instagram</a></li>
-          <li><a href="https://wa.me/" target="_blank" rel="noreferrer" className="hover:text-fg transition-colors">WhatsApp</a></li>
-          <li><a href="mailto:hello@bochatattoo.com" className="hover:text-fg transition-colors">Email</a></li>
+          <li><a href="https://instagram.com/@bocha.ttt" target="_blank" rel="noreferrer" className="hover:text-fg transition-colors">Instagram</a></li>
+          <li><a href="mailto:info@bochatattoo.com" className="hover:text-fg transition-colors">Email</a></li>
         </ul>
         <span>{rights}</span>
       </div>

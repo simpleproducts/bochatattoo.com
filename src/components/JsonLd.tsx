@@ -21,12 +21,8 @@ export function JsonLd({ locale }: { locale: Locale }) {
     image: `${SITE}/opengraph-image`,
     logo: `${SITE}/icon`,
     foundingDate: "2015",
-    priceRange: "$$",
     inLanguage: locale,
-    sameAs: [
-      "https://instagram.com/",
-      "https://wa.me/",
-    ],
+    sameAs: ["https://instagram.com/@bocha.ttt"],
     address: {
       "@type": "PostalAddress",
       addressLocality: "Almagro",
@@ -45,7 +41,7 @@ export function JsonLd({ locale }: { locale: Locale }) {
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "booking",
-      email: "hello@bochatattoo.com",
+      email: "info@bochatattoo.com",
       availableLanguage: ["en", "es"],
     },
     founder: {
