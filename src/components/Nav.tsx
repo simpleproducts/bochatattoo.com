@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Magnetic } from "./Magnetic";
 import { localePath, DEFAULT_LOCALE } from "@/i18n";
@@ -79,11 +80,18 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
         <Link
           href={homeMark}
           aria-label="Bocha Tattoo"
-          className={`font-serif italic tracking-tight transition-all duration-500 ${
-            scrolled ? "text-lg md:text-xl" : "text-xl md:text-2xl"
+          className={`relative block transition-all duration-500 ${
+            scrolled ? "w-9 h-9 md:w-10 md:h-10" : "w-11 h-11 md:w-14 md:h-14"
           }`}
         >
-          bocha
+          <Image
+            src="/logo/logo-white.png"
+            alt="Bocha Tattoo"
+            fill
+            sizes="56px"
+            priority
+            className="object-contain"
+          />
         </Link>
 
         <ul className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs uppercase tracking-[0.2em] font-mono">

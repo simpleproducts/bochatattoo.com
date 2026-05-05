@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export function PageCurtain() {
   const [lifted, setLifted] = useState(false);
@@ -27,9 +28,16 @@ export function PageCurtain() {
         lifted ? "-translate-y-full" : ""
       }`}
     >
-      <span className="font-serif italic text-fg/40 text-2xl tracking-tight curtain-mark">
-        bocha
-      </span>
+      <div className="relative w-24 h-24 md:w-32 md:h-32 opacity-50 curtain-mark">
+        <Image
+          src="/logo/logo-white.png"
+          alt="Bocha Tattoo"
+          fill
+          sizes="128px"
+          priority
+          className="object-contain"
+        />
+      </div>
     </div>
   );
 }
