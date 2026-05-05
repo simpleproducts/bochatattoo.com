@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FAQPage } from "@/components/FAQPage";
 import { getDictionary } from "@/i18n";
 
-const locale = "en" as const;
+const locale = "es" as const;
 const dict = getDictionary(locale);
 
 export const metadata: Metadata = {
@@ -11,15 +11,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/faq",
     languages: {
-      en: "/faq",
-      es: "/es/faq",
+      es: "/faq",
+      en: "/en/faq",
       "x-default": "/faq",
     },
   },
   openGraph: {
     title: dict.faq.metaTitle,
     description: dict.faq.metaDescription,
-    locale: "en_US",
+    locale: "es_ES",
     type: "website",
   },
 };
