@@ -25,7 +25,7 @@ const es: Dictionary = {
     title2: "Barrena",
     intro:
       "Finelines microrealista ilustrativo. Estudio privado en Almagro, Buenos Aires. Trabajando desde 2015.",
-    cta: "Ver la obra",
+    cta: "Ver tatuajes",
     scroll: "Scroll",
   },
   marquee: [
@@ -37,20 +37,20 @@ const es: Dictionary = {
     "Berlín · Madrid",
   ],
   work: {
-    eyebrow: "02 / Obra",
+    eyebrow: "02 / Tatuajes",
     title: "Trabajos seleccionados",
     inquire: "Preguntá por una pieza →",
     open: "Ver pieza",
     featuredCategory: "best-tattoos",
     featuredLimit: 12,
     viewAll: "Ver el archivo completo →",
-    pageTitle: "Obra.",
+    pageTitle: "Tatuajes.",
     intro:
       "Un archivo de tatuajes hechos en Almagro, Berlín, Madrid y las ciudades por las que pasé. Ordenado por tema — abrí cualquier pieza para verla de cerca.",
     back: "Volver",
-    metaTitle: "Obra · Bocha · Tatuador · Almagro, Buenos Aires",
+    metaTitle: "Tatuajes · Bocha · Tatuador · Almagro, Buenos Aires",
     metaDescription:
-      "Archivo completo de la obra de Bocha — mejores piezas, animales, botánica, retratos, películas y más. Tatuajes en negro, hechos despacio desde 2015.",
+      "Archivo completo de las trabajos de Bocha — mejores piezas, animales, botánica, retratos, películas y más. Tatuajes en negro, hechos despacio desde 2015.",
     emptyState: "El archivo está cargando. Volvé en un momento.",
     categoryOrder: [
       "best-tattoos",
