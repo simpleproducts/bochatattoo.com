@@ -30,8 +30,8 @@ export function Cursor() {
     };
 
     const tick = () => {
-      rx += (mx - rx) * 0.18;
-      ry += (my - ry) * 0.18;
+      rx += (mx - rx) * 0.45;
+      ry += (my - ry) * 0.45;
       if (ringRef.current) {
         ringRef.current.style.transform = `translate3d(${rx}px, ${ry}px, 0)`;
       }
