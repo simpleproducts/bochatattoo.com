@@ -2,7 +2,8 @@ import type { Dictionary } from "../types";
 
 const es: Dictionary = {
   meta: {
-    title: "Sebastián Barrena · Microrealismo Ilustrativo · Almagro, Buenos Aires",
+    title:
+      "Sebastián Barrena · Microrealismo Ilustrativo · Almagro, Buenos Aires",
     description:
       "Tatuador especializado en microrealismo ilustrativo. Fineline, precisión y texturas sutiles. Estudio privado en Almagro, Buenos Aires. Trabajando desde 2015.",
   },
@@ -61,7 +62,8 @@ const es: Dictionary = {
     intro:
       "Un archivo de tatuajes hechos en Almagro, Berlín, Madrid y las ciudades por las que pasé. Ordenado por tema — abrí cualquier pieza para verla de cerca.",
     back: "Volver",
-    metaTitle: "Tatuajes · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
+    metaTitle:
+      "Tatuajes · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
     metaDescription:
       "Archivo completo de trabajos de Sebastián Barrena — microrealismo ilustrativo, fineline, animales, botánica, retratos y más. Estudio privado en Almagro, Buenos Aires.",
     emptyState: "El archivo está cargando. Volvé en un momento.",
@@ -151,25 +153,26 @@ const es: Dictionary = {
     back: "Volver",
     contactPrompt: "¿Te quedó una duda?",
     contactCta: "Escribime →",
-    metaTitle: "Preguntas · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
+    metaTitle:
+      "Preguntas · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
     metaDescription:
       "Reservas, precios, señas, primer tatuaje — todo lo que querrías preguntar antes de tatuarte con Sebastián Barrena en Almagro, Buenos Aires.",
     items: [
       {
         q: "¿Cómo reservo?",
-        a: "DM de Instagram, email o <a href='#contact' class='underline hover:opacity-60 transition-opacity'>formulario de contacto</a>",
+        a: "DM de Instagram, email o <a href='#contact' class='underline hover:opacity-60 transition-opacity'>formulario de contacto</a>. Escribime unas lineas con tu idea, ubicación, tamaño aproximado e imagenes de referencia. Trato de responder siempre a la brevedad. Los cupos abiertos los anuncio en mis stories de instagram.",
       },
       {
         q: "¿Hacés diseños a medida?",
-        a: "Casi todo lo que hago es a medida. Mandame referencias para la dirección — no copio el trabajo de otro tatuador, pero te dibujo algo que es solo tuyo.",
+        a: "Casi todo lo que hago es a medida, pero no dudes en preguntarme por mis diseños. No copio trabajos de otro tatuador, solo tomo referencias para hacer un diseño unico para cada tattoo.",
       },
       {
         q: "¿Cuánto sale?",
-        a: "Cotizado por proyecto. Pesamos tamaño, ubicación, complejidad y tiempo. Tenés el número antes de comprometerte — nunca el día.",
+        a: "El precio varia dependiendo el proyecto, nivel de detalle, tamaño y ubicación en el cuerpo. No dudes en preguntar presupuesto para tu idea.",
       },
       {
         q: "¿Dónde queda el estudio?",
-        a: "Almagro, Ciudad de Buenos Aires. Espacio privado, fácil de llegar en Subte. La dirección exacta va con la confirmación del turno.",
+        a: "Tengo mi estudio privado en Almagro, Ciudad de Buenos Aires, a unas pocas cuadras del subte B. Tambien hago guest spots en otros lugares del mundo, asi que escribime para que vaya a tatuar a tu cuidad.",
       },
       {
         q: "Es mi primer tatuaje. ¿Tengo que preocuparme?",
