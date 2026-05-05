@@ -4,10 +4,10 @@ const es: Dictionary = {
   meta: {
     title: "Bocha · Tatuador · Almagro, Buenos Aires",
     description:
-      "Tatuajes en negro, hechos despacio. Estudio propio en Almagro, Buenos Aires. Trabajando desde 2011. Tours por Berlín y Madrid.",
+      "Tatuajes en negro, hechos despacio. Estudio propio en Almagro, Buenos Aires. Trabajando desde 2015. Tours por Berlín y Madrid.",
   },
   nav: {
-    work: "Obra",
+    work: "Tatuajes",
     about: "Sobre mí",
     process: "Proceso",
     aftercare: "Cuidados",
@@ -18,13 +18,13 @@ const es: Dictionary = {
     menuClose: "Cerrar menú",
   },
   hero: {
-    badge: "Desde 2011 — Almagro BA",
+    badge: "Desde 2015 — Almagro BA",
     location: "Almagro · Buenos Aires",
     booking: "Tomando reservas",
-    title1: "bocha",
-    title2: "tattoo",
+    title1: "Bocha",
+    title2: "Barrena",
     intro:
-      "Tatuajes en negro, hechos despacio. Estudio propio en Almagro, Buenos Aires. Trabajando desde 2011.",
+      "Finelines microrealista ilustrativo. Estudio privado en Almagro, Buenos Aires. Trabajando desde 2015.",
     cta: "Ver la obra",
     scroll: "Scroll",
   },
@@ -33,7 +33,7 @@ const es: Dictionary = {
     "Con turno",
     "Almagro · Buenos Aires",
     "Estudio propio",
-    "Desde 2011",
+    "Desde 2015",
     "Berlín · Madrid",
   ],
   work: {
@@ -50,7 +50,7 @@ const es: Dictionary = {
     back: "Volver",
     metaTitle: "Obra · Bocha · Tatuador · Almagro, Buenos Aires",
     metaDescription:
-      "Archivo completo de la obra de Bocha — mejores piezas, animales, botánica, retratos, películas y más. Tatuajes en negro, hechos despacio desde 2011.",
+      "Archivo completo de la obra de Bocha — mejores piezas, animales, botánica, retratos, películas y más. Tatuajes en negro, hechos despacio desde 2015.",
     emptyState: "El archivo está cargando. Volvé en un momento.",
     categoryOrder: [
       "best-tattoos",
@@ -108,7 +108,7 @@ const es: Dictionary = {
     headingPart1: "Primero el dibujo.",
     headingPart2: "Después el tatuaje.",
     intro1:
-      "Soy Bocha. Nací y vivo en Buenos Aires. Tatúo desde 2011 desde un estudio chico en Almagro — tranquilo por elección.",
+      "Soy Bocha. Nací y vivo en Buenos Aires. Tatúo desde 2015 desde un estudio chico en Almagro — tranquilo por elección.",
     intro2:
       "Trabajo en negro, casi siempre chico, casi siempre lento. Una persona en el estudio por vez. Unas semanas al año me llevo el trabajo a Berlín y a Madrid.",
     portraitAlt: "Retrato — Bocha",
@@ -116,7 +116,7 @@ const es: Dictionary = {
       based: ["Ubicación", "Almagro · CABA"],
       style: ["Estilo", "Negro, casi siempre chico"],
       booking: ["Reservas", "Con turno"],
-      since: ["Desde", "2011"],
+      since: ["Desde", "2015"],
     },
   },
   process: {

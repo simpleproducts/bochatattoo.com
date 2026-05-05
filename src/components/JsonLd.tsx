@@ -15,12 +15,12 @@ export function JsonLd({ locale }: { locale: Locale }) {
     alternateName: "Bocha Tattoo",
     description:
       locale === "es"
-        ? "Tatuador en Almagro, Ciudad de Buenos Aires, desde 2011. Trabajo a medida, con turno."
-        : "Tattoo artist in Almagro, Buenos Aires since 2011. Considered, custom work by appointment.",
+        ? "Tatuador en Almagro, Ciudad de Buenos Aires, desde 2015"
+        : "Tattoo artist in Almagro, Buenos Aires since 2015. Considered, custom work by appointment.",
     url: locale === "en" ? SITE : `${SITE}/${locale}`,
     image: `${SITE}/opengraph-image`,
     logo: `${SITE}/icon`,
-    foundingDate: "2011",
+    foundingDate: "2015",
     priceRange: "$$",
     inLanguage: locale,
     sameAs: [
