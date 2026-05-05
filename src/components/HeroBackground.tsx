@@ -1,9 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
 
-const VIDEO_URL = process.env.NEXT_PUBLIC_HERO_VIDEO_URL;
-const POSTER_URL = process.env.NEXT_PUBLIC_HERO_POSTER_URL;
-
 export function HeroBackground() {
   const rootRef = useRef<HTMLDivElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
@@ -61,47 +58,28 @@ export function HeroBackground() {
   return (
     <div ref={rootRef} className="absolute inset-0 -z-10 overflow-hidden bg-bg">
       <div ref={layerRef} className="absolute inset-0 will-change-transform">
-        {VIDEO_URL ? (
-          <video
-            src={VIDEO_URL}
-            poster={POSTER_URL}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            className="w-full h-full object-cover"
+        <picture>
+          <source
+            media="(max-width: 768px)"
+            srcSet="/site/bocha-bg-mobile.avif"
+            type="image/avif"
           />
-        ) : (
-          <picture>
-            <source
-              media="(max-width: 768px)"
-              srcSet="/site/bocha-bg-mobile.avif"
-              type="image/avif"
-            />
-            <source
-              media="(max-width: 768px)"
-              srcSet="/site/bocha-bg-mobile.webp"
-              type="image/webp"
-            />
-            <source
-              srcSet="/site/bocha-bg-desktop.avif"
-              type="image/avif"
-            />
-            <source
-              srcSet="/site/bocha-bg-desktop.webp"
-              type="image/webp"
-            />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/site/bocha-bg-desktop.webp"
-              alt=""
-              aria-hidden
-              fetchPriority="high"
-              className="w-full h-full object-cover object-[center_5%] md:object-center md:scale-[1.36] md:translate-x-[35%] md:origin-center"
-            />
-          </picture>
-        )}
+          <source
+            media="(max-width: 768px)"
+            srcSet="/site/bocha-bg-mobile.webp"
+            type="image/webp"
+          />
+          <source srcSet="/site/bocha-bg-desktop.avif" type="image/avif" />
+          <source srcSet="/site/bocha-bg-desktop.webp" type="image/webp" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/site/bocha-bg-desktop.webp"
+            alt=""
+            aria-hidden
+            fetchPriority="high"
+            className="w-full h-full object-cover object-[center_-20%] scale-125 md:object-center md:scale-[1.36] md:translate-x-[35%] md:origin-center"
+          />
+        </picture>
       </div>
 
       {/* Mouse-tracked spotlight (uses CSS vars set in the rAF loop above) */}

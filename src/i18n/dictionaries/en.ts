@@ -2,7 +2,8 @@ import type { Dictionary } from "../types";
 
 const en: Dictionary = {
   meta: {
-    title: "Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
+    title:
+      "Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
     description:
       "Tattoo artist specializing in illustrative microrealism. Fineline, precision, soft shadows and subtle textures. Private studio in Almagro, Buenos Aires. Working since 2015.",
   },
@@ -45,7 +46,8 @@ const en: Dictionary = {
     intro:
       "An archive of tattoos made in Almagro, Berlin, Madrid, and the cities I've passed through. Sorted by theme — open any piece for a closer look.",
     back: "Back",
-    metaTitle: "Work · Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
+    metaTitle:
+      "Work · Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
     metaDescription:
       "Full archive of Sebastián Barrena's tattoo work — illustrative microrealism, fineline, animals, botanical, portraits and more. Private studio in Almagro, Buenos Aires.",
     emptyState: "Archive is loading. Come back in a moment.",
@@ -151,7 +153,8 @@ const en: Dictionary = {
     back: "Back",
     contactPrompt: "Still wondering?",
     contactCta: "Send me a message →",
-    metaTitle: "FAQ · Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
+    metaTitle:
+      "FAQ · Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
     metaDescription:
       "Booking, pricing, deposits, first-timer questions — everything you'd ask before getting a tattoo with Sebastián Barrena in Almagro, Buenos Aires.",
     items: [
@@ -191,7 +194,7 @@ const en: Dictionary = {
   },
   contact: {
     eyebrow: "06 / Contact",
-    status: "Booking via Instagram",
+    status: "Book your appointment",
     title1: "Let's plan",
     title2: "your tattoo.",
     directLabel: "Email",
