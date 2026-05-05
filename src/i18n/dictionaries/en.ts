@@ -224,7 +224,7 @@ const en: Dictionary = {
     eyebrow: "06 / Contact",
     status: "Booking via Instagram",
     title1: "Let's plan",
-    title2: "your piece.",
+    title2: "your tattoo.",
     directLabel: "Email",
     instagramLabel: "Instagram (preferred)",
     bookingLabel: "WhatsApp",
