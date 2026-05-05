@@ -110,10 +110,10 @@ body {
 }
 .cursor-ring {
   transition:
-    width 220ms cubic-bezier(.2,.7,.2,1),
-    height 220ms cubic-bezier(.2,.7,.2,1),
-    margin 220ms cubic-bezier(.2,.7,.2,1),
-    border-color 220ms ease;
+    width 140ms cubic-bezier(.2,.7,.2,1),
+    height 140ms cubic-bezier(.2,.7,.2,1),
+    margin 140ms cubic-bezier(.2,.7,.2,1),
+    border-color 140ms ease;
 }
 .cursor-ring.is-active {
   width: 3rem;
