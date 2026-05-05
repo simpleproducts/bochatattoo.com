@@ -37,7 +37,7 @@ const es: Dictionary = {
     "Berlín · Madrid",
   ],
   work: {
-    eyebrow: "01 / Obra",
+    eyebrow: "02 / Obra",
     title: "Trabajos seleccionados",
     inquire: "Preguntá por una pieza →",
     open: "Ver pieza",
@@ -104,7 +104,7 @@ const es: Dictionary = {
     lightbox: { close: "Cerrar", next: "Siguiente", prev: "Anterior" },
   },
   about: {
-    eyebrow: "02 / Sobre mí",
+    eyebrow: "01 / Sobre mí",
     headingPart1: "Primero el dibujo.",
     headingPart2: "Después el tatuaje.",
     intro1:
