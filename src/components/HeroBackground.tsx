@@ -56,7 +56,7 @@ export function HeroBackground() {
   }, []);
 
   return (
-    <div ref={rootRef} className="absolute inset-0 -z-10 overflow-hidden bg-bg">
+    <div ref={rootRef} className="absolute inset-0 overflow-hidden bg-bg z-0">
       <div ref={layerRef} className="absolute inset-0 will-change-transform">
         <picture>
           <source
