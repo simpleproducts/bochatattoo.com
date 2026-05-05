@@ -7,16 +7,6 @@ export function PageCurtain() {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    // Mobile browsers (Safari especially) sometimes restore scroll to the
-    // bottom on refresh because the page content height changes as images
-    // load. Take manual control and force-top on hash-less loads.
-    if ("scrollRestoration" in history) {
-      history.scrollRestoration = "manual";
-    }
-    if (!window.location.hash) {
-      window.scrollTo(0, 0);
-    }
-
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setGone(true);
       return;

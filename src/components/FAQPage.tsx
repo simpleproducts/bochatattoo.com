@@ -83,9 +83,10 @@ export function FAQPage({ dict, locale }: Props) {
               </h2>
             </Reveal>
             <Reveal delay={140} className="md:col-span-5">
-              <p className="text-base md:text-lg leading-relaxed text-fg/85 max-w-2xl">
-                {item.a}
-              </p>
+              <p
+                className="text-base md:text-lg leading-relaxed text-fg/85 max-w-2xl [&_a]:underline [&_a]:hover:opacity-60 [&_a]:transition-opacity"
+                dangerouslySetInnerHTML={{ __html: item.a }}
+              />
             </Reveal>
           </li>
         ))}

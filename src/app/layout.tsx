@@ -39,6 +39,18 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
+      <head>
+        {/*
+          Run before React hydrates so mobile Safari doesn't briefly land at
+          the previous scroll position on refresh.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "if('scrollRestoration' in history)history.scrollRestoration='manual';if(!location.hash)scrollTo(0,0);",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-bg text-fg">
         <PageCurtain />
         {children}
