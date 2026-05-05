@@ -230,6 +230,7 @@ const en: Dictionary = {
   },
   footer: {
     rights: "© {year} — Bocha · Almagro, Buenos Aires",
+    backToTop: "Back to top ↑",
   },
   localeSwitcher: {
     label: "Language",
