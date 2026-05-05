@@ -20,10 +20,11 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
 
   const home = localePath(locale);
   const faqUrl = locale === "en" ? "/faq" : `/${locale}/faq`;
+  const workUrl = locale === "en" ? "/work" : `/${locale}/work`;
   const homeMark = home === "/" ? "/" : home;
 
   const items: [string, string][] = [
-    [dict.work, `${home === "/" ? "" : home}/#work`.replace("//", "/")],
+    [dict.work, workUrl],
     [dict.about, `${home === "/" ? "" : home}/#about`.replace("//", "/")],
     [dict.process, `${home === "/" ? "" : home}/#process`.replace("//", "/")],
     [dict.aftercare, `${home === "/" ? "" : home}/#aftercare`.replace("//", "/")],

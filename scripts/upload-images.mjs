@@ -14,13 +14,20 @@ import {
 
 const OUT_DIR = "processed-images";
 
-// Tiny .env.local loader so this script doesn't require a Next.js context.
+// Tiny env loader. Reads .env first, then .env.local (which overrides).
 async function loadEnv() {
-  if (!existsSync(".env.local")) return;
-  const text = await readFile(".env.local", "utf8");
-  for (const line of text.split("\n")) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^"|"$/g, "");
+  for (const file of [".env", ".env.local"]) {
+    if (!existsSync(file)) continue;
+    const text = await readFile(file, "utf8");
+    for (const line of text.split("\n")) {
+      const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+      if (!m) continue;
+      const value = m[2].replace(/^['"]|['"]$/g, "");
+      // .env.local takes precedence: only override if value is non-empty
+      if (file === ".env.local" || !process.env[m[1]]) {
+        process.env[m[1]] = value;
+      }
+    }
   }
 }
 
