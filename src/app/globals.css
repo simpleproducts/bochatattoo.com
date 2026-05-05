@@ -25,6 +25,20 @@ html {
   /* Prevent white scrollbar corner */
   scrollbar-color: var(--color-line) var(--color-bg);
   background: var(--color-bg);
+  /* Brand-tinted tap highlight on mobile (replaces default blue) */
+  -webkit-tap-highlight-color: rgba(216, 200, 168, 0.18);
+}
+
+/* Replace default blue focus ring with on-brand accent */
+:focus {
+  outline-color: var(--color-accent);
+}
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Webkit scrollbar styling to prevent white corners */
@@ -83,6 +97,26 @@ body {
 @keyframes spin-slow { to { transform: rotate(360deg); } }
 .animate-spin-slow { animation: spin-slow 24s linear infinite; }
 
+/* ---------- Hero background image ---------- */
+/* Desktop default (≥1024px) — unchanged from before */
+.hero-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+/* Mobile + tablet override + bottom fade-to-black */
+@media (max-width: 1023.98px) {
+  .hero-img {
+    height: calc(100% - 250px);
+    position: relative;
+    top: -10px;
+    -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+  }
+}
+
 /* ---------- Hero spotlight (mouse-tracked) ---------- */
 .hero-spotlight {
   background: radial-gradient(
@@ -104,7 +138,7 @@ body {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
-.animate-marquee { animation: marquee 26.67s linear infinite; }
+.animate-marquee { animation: marquee 19.75s linear infinite; }
 
 /* ---------- Scroll cue ---------- */
 @keyframes scroll-cue {

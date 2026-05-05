@@ -150,12 +150,12 @@ const en: Dictionary = {
       {
         n: "02",
         title: "Conversation",
-        body: "We look at references together to get on the same page and know what you like and what you don't like.",
+        body: "We look at references together to get on the same page and know what you like.",
       },
       {
         n: "03",
         title: "Design",
-        body: "On the day of your appointment I design your tattoo with you by my side for a more fluid dynamic so we can arrive at your design. You'll be able to make any necessary changes and when you're happy with it we move to the next step.",
+        body: "On the day of your appointment I design your tattoo with you by my side for a more fluid dynamic so we can arrive at your design. You'll be able to make any necessary changes and when you're happy with it we move to the next stage.",
       },
       {
         n: "04",

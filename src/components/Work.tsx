@@ -33,7 +33,7 @@ export function Work({ dict, locale }: Props) {
     .filter((img): img is NonNullable<typeof img> => Boolean(img));
 
   const featured = [...handPicked, ...fillers].slice(0, dict.featuredLimit);
-  const workHref = locale === "en" ? "/work" : `/${locale}/work`;
+  const workHref = locale === "es" ? "/work" : `/${locale}/work`;
   const home = localePath(locale);
 
   // Lightbox feeds on title from manifest alt or category label fallback
