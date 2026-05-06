@@ -30,7 +30,7 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
         </span>
       </h1>
 
-      <div className="mt-10 grid md:grid-cols-3 gap-6 md:gap-10 items-end">
+      <div className="relative z-10 mt-10 grid md:grid-cols-3 gap-6 md:gap-10 items-end">
         <Reveal delay={500} className="md:col-span-2">
           <p className="max-w-xl text-balance text-lg md:text-xl leading-snug">
             {dict.intro}
