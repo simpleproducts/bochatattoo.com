@@ -35,6 +35,12 @@ export function Lightbox({
     [index, pieces.length, onIndexChange],
   );
 
+  // Keep a stable reference to onClose so the history-handling effect below
+  // doesn't tear down/re-push when the parent re-renders.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Keyboard nav + body scroll lock (re-runs when `go` changes per slide).
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -50,6 +56,24 @@ export function Lightbox({
       document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose, go]);
+
+  // Back button (Android / browser) closes the modal instead of navigating
+  // away. Push a history entry on open; close on popstate; pop our entry on
+  // any other-route close so we don't leave a dead state behind.
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ lightbox: true }, "");
+    const onPopState = () => onCloseRef.current();
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      // If our pushed state is still on top, the close came from a non-back
+      // path (button, backdrop, Escape) — pop it ourselves.
+      if (window.history.state?.lightbox) {
+        window.history.back();
+      }
+    };
+  }, [open]);
 
   // Preload neighbours so navigation feels instant.
   useEffect(() => {
