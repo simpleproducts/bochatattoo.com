@@ -6,7 +6,7 @@ export function About({ dict }: { dict: Dictionary["about"] }) {
   return (
     <section
       id="about"
-      className="px-6 md:px-10 py-24 md:py-32 border-t border-line"
+      className="px-6 md:px-10 py-24 md:py-32 border-t border-line cv-auto"
     >
       <div className="grid md:grid-cols-12 gap-8 md:gap-12">
         <Reveal className="md:col-span-5">

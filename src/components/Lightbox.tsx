@@ -3,7 +3,15 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import { RemoteImage } from "./RemoteImage";
 import { getImage, imageUrl } from "@/lib/images";
 
-type Piece = { slug: string; title: string };
+type Piece = { slug: string; title: string; category?: string };
+
+type EndCard = {
+  title: string;
+  copy: string;
+  startOverLabel: string;
+  continueLabel: string;
+  continueHref: string;
+};
 
 type Props = {
   pieces: Piece[];
@@ -11,6 +19,8 @@ type Props = {
   onClose: () => void;
   onIndexChange: (next: number) => void;
   labels: { close: string; next: string; prev: string };
+  /** When set, advancing past the last piece shows this card instead of looping. */
+  endCard?: EndCard;
 };
 
 export function Lightbox({
@@ -19,28 +29,48 @@ export function Lightbox({
   onClose,
   onIndexChange,
   labels,
+  endCard,
 }: Props) {
   const open = index !== null;
   const [direction, setDirection] = useState<1 | -1>(1);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
+  const endIndex = endCard ? pieces.length : null;
+  const isEnd = endIndex !== null && index === endIndex;
+
   const go = useCallback(
     (delta: number) => {
       if (index === null) return;
       setDirection(delta > 0 ? 1 : -1);
-      const next = (index + delta + pieces.length) % pieces.length;
-      onIndexChange(next);
+
+      if (endIndex === null) {
+        // No end card — wrap normally.
+        const next = (index + delta + pieces.length) % pieces.length;
+        onIndexChange(next);
+        return;
+      }
+
+      if (delta > 0) {
+        // Forward: …N-2 → N-1 → end → 0 → 1 …
+        if (index === pieces.length - 1) onIndexChange(endIndex);
+        else if (index === endIndex) onIndexChange(0);
+        else onIndexChange(index + 1);
+      } else {
+        // Backward: …2 → 1 → 0 → end → N-1 → N-2 …
+        // The end card is reachable from BOTH directions so users can find it
+        // whether they navigate forward off the last piece or backward off the first.
+        if (index === 0) onIndexChange(endIndex);
+        else if (index === endIndex) onIndexChange(pieces.length - 1);
+        else onIndexChange(index - 1);
+      }
     },
-    [index, pieces.length, onIndexChange],
+    [index, pieces.length, onIndexChange, endIndex],
   );
 
-  // Keep a stable reference to onClose so the history-handling effect below
-  // doesn't tear down/re-push when the parent re-renders.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  // Keyboard nav + body scroll lock (re-runs when `go` changes per slide).
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -57,9 +87,6 @@ export function Lightbox({
     };
   }, [open, onClose, go]);
 
-  // Back button (Android / browser) closes the modal instead of navigating
-  // away. Push a history entry on open; close on popstate; pop our entry on
-  // any other-route close so we don't leave a dead state behind.
   useEffect(() => {
     if (!open) return;
     window.history.pushState({ lightbox: true }, "");
@@ -67,8 +94,6 @@ export function Lightbox({
     window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("popstate", onPopState);
-      // If our pushed state is still on top, the close came from a non-back
-      // path (button, backdrop, Escape) — pop it ourselves.
       if (window.history.state?.lightbox) {
         window.history.back();
       }
@@ -77,7 +102,7 @@ export function Lightbox({
 
   // Preload neighbours so navigation feels instant.
   useEffect(() => {
-    if (index === null) return;
+    if (index === null || isEnd) return;
     const neighbours = [-1, 1]
       .map((d) => pieces[(index + d + pieces.length) % pieces.length])
       .filter(Boolean);
@@ -91,12 +116,12 @@ export function Lightbox({
         entry.format ?? "avif",
       );
     }
-  }, [index, pieces]);
+  }, [index, pieces, isEnd]);
 
   if (!open) return null;
 
-  const piece = pieces[index];
-  const entry = getImage(piece.slug);
+  const piece = isEnd ? null : pieces[index!];
+  const entry = piece ? getImage(piece.slug) : null;
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -113,22 +138,25 @@ export function Lightbox({
     }
   };
 
+  // Header counter / label — display the category (never the image's filename)
+  const counterText = isEnd
+    ? "—"
+    : `${String((index ?? 0) + 1).padStart(2, "0")} / ${String(pieces.length).padStart(2, "0")}`;
+  const headerTitle = isEnd ? endCard!.title : (piece?.category ?? "");
+
   return (
     <div
       className="fixed inset-0 z-[200] bg-bg/95 backdrop-blur-md flex items-center justify-center animate-lb-in"
       role="dialog"
       aria-modal="true"
-      aria-label={piece.title}
+      aria-label={headerTitle}
       onClick={onClose}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
       <div className="absolute top-0 inset-x-0 flex items-center justify-between px-6 md:px-10 py-5 text-fg/80 font-mono text-xs uppercase tracking-[0.2em] z-10">
-        <span className="truncate max-w-[40%]">{piece.title}</span>
-        <span>
-          {String(index + 1).padStart(2, "0")} /{" "}
-          {String(pieces.length).padStart(2, "0")}
-        </span>
+        <span className="truncate max-w-[40%]">{headerTitle}</span>
+        <span>{counterText}</span>
         <button
           type="button"
           onClick={(e) => {
@@ -167,14 +195,40 @@ export function Lightbox({
       </button>
 
       <div
-        // key remounts the slide on each index change → CSS animation re-runs.
-        key={index}
+        key={isEnd ? "__end__" : index}
         className={`relative max-w-[88vw] max-h-[80vh] flex items-center justify-center ${
           direction === 1 ? "lb-slide-right" : "lb-slide-left"
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {entry ? (
+        {isEnd ? (
+          <div className="max-w-md text-center px-6">
+            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted mb-4">
+              {endCard!.title}
+            </p>
+            <h3 className="font-serif text-3xl md:text-4xl leading-tight mb-8 text-balance">
+              {endCard!.copy}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setDirection(1);
+                  onIndexChange(0);
+                }}
+                className="px-5 py-3 border border-fg/30 hover:border-fg hover:bg-fg hover:text-bg transition-colors font-mono text-[10px] uppercase tracking-[0.3em]"
+              >
+                ↺ {endCard!.startOverLabel}
+              </button>
+              <a
+                href={endCard!.continueHref}
+                className="px-5 py-3 border border-fg bg-fg text-bg hover:bg-transparent hover:text-fg transition-colors font-mono text-[10px] uppercase tracking-[0.3em]"
+              >
+                {endCard!.continueLabel}
+              </a>
+            </div>
+          </div>
+        ) : entry ? (
           <div
             className="relative"
             style={{
@@ -183,7 +237,7 @@ export function Lightbox({
             }}
           >
             <RemoteImage
-              slug={piece.slug}
+              slug={piece!.slug}
               fill
               sizes="88vw"
               priority
@@ -192,7 +246,7 @@ export function Lightbox({
           </div>
         ) : (
           <div className="w-[88vw] h-[80vh] max-w-[1200px] bg-line flex items-center justify-center text-muted text-xs uppercase tracking-[0.2em] font-mono">
-            {piece.slug}
+            {piece?.slug}
           </div>
         )}
       </div>

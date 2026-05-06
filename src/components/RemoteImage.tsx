@@ -9,7 +9,14 @@ type Props = {
   /** Responsive sizes hint — controls which srcSet entry the browser picks. */
   sizes?: string;
   className?: string;
+  /** Eager-load with `fetchpriority=high`. Use only for above-the-fold / LCP. */
   priority?: boolean;
+  /**
+   * Fine-grained network priority hint. Defaults to "high" when `priority`
+   * is true, otherwise unset. Pass "low" to deprioritize images that are
+   * definitely below the fold (frees bandwidth for critical resources).
+   */
+  fetchPriority?: "high" | "low" | "auto";
   fill?: boolean;
   style?: CSSProperties;
 };
@@ -27,6 +34,7 @@ export function RemoteImage({
   sizes = "100vw",
   className,
   priority,
+  fetchPriority,
   fill,
   style,
 }: Props) {
@@ -63,7 +71,7 @@ export function RemoteImage({
       alt={alt ?? entry.alt}
       loading={priority ? undefined : "lazy"}
       decoding="async"
-      fetchPriority={priority ? "high" : undefined}
+      fetchPriority={fetchPriority ?? (priority ? "high" : undefined)}
       width={fill ? undefined : entry.width}
       height={fill ? undefined : entry.height}
       className={baseClass}
