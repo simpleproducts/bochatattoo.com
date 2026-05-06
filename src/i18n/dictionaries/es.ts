@@ -134,7 +134,15 @@ const es: Dictionary = {
       ig2024: "IG 2024",
       random: "Random",
     },
-    lightbox: { close: "Cerrar", next: "Siguiente", prev: "Anterior" },
+    lightbox: {
+      close: "Cerrar",
+      next: "Siguiente",
+      prev: "Anterior",
+      endTitle: "Fin de la selección",
+      endCopy: "Viste las piezas destacadas. ¿Seguimos?",
+      startOver: "Volver al inicio",
+      continueLabel: "Ver el archivo completo →",
+    },
   },
   process: {
     eyebrow: "03 / Proceso",
