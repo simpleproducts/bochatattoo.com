@@ -214,7 +214,7 @@ const es: Dictionary = {
     label: "Newsletter",
     placeholder: "tu email",
     submit: "Suscribirme",
-    success: "Listo. Te aviso cuando abra agenda.",
+    success: "Listo. Ya estas registrado.",
     error: "No funcionó. Probá de nuevo.",
   },
   localeSwitcher: {

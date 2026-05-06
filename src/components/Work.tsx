@@ -62,7 +62,7 @@ export function Work({ dict, locale }: Props) {
                 onClick={() => setOpenIndex(i)}
                 aria-label={`${dict.open}: ${img.alt}`}
                 data-cursor
-                className="relative w-full aspect-square bg-line overflow-hidden tile block text-left"
+                className="relative w-full aspect-square bg-line overflow-hidden tile block text-left cursor-pointer"
               >
                 <RemoteImage
                   slug={img.slug}
