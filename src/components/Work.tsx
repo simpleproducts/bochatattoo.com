@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Placeholder } from "./Placeholder";
 import { RemoteImage } from "./RemoteImage";
@@ -33,21 +33,40 @@ export function Work({ dict, locale }: Props) {
     .filter((img): img is NonNullable<typeof img> => Boolean(img));
 
   const featured = [...handPicked, ...fillers].slice(0, dict.featuredLimit);
-  const workHref = locale === "es" ? "/work" : `/${locale}/work`;
   const home = localePath(locale);
+  const workHref = `${home === "/" ? "" : home}/work`;
 
-  // Lightbox header shows the category label (never the image filename).
-  // `title` is kept for the underlying aria description fallback.
-  const pieces = featured.map((img) => ({
-    slug: img.slug,
-    title: img.alt,
-    category: img.category
-      ? (dict.categoryLabels[img.category] ?? img.category)
-      : undefined,
+  // Build a per-image label "Category NN" — used for both the <img> alt and
+  // the lightbox aria. The original manifest title/filename is never exposed.
+  const catSeen: Record<string, number> = {};
+  const tiles = featured.map((img) => {
+    const cat = img.category ?? "";
+    catSeen[cat] = (catSeen[cat] ?? 0) + 1;
+    const n = String(catSeen[cat]).padStart(2, "0");
+    const catLabel = cat ? (dict.categoryLabels[cat] ?? cat) : "";
+    const altLabel = catLabel ? `${catLabel} ${n}` : n;
+    return { ...img, altLabel, catLabel };
+  });
+
+  const pieces = tiles.map((t) => ({
+    slug: t.slug,
+    alt: t.altLabel,
+    category: t.catLabel || undefined,
   }));
 
+  // Open directly to ?foto=slug on mount
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("foto");
+    if (slug) {
+      const idx = pieces.findIndex((p) => p.slug === slug);
+      if (idx !== -1) setOpenIndex(idx);
+    }
+  // pieces identity is stable after first render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <section id="work" className="px-6 md:px-10 py-24 md:py-32 cv-auto">
+    <section id="work" className="px-6 md:px-10 py-24 md:py-32">
       <Reveal>
         <div className="flex items-baseline justify-between mb-12 md:mb-16">
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
@@ -59,18 +78,18 @@ export function Work({ dict, locale }: Props) {
 
       {featured.length > 0 ? (
         <div className="work-grid grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-          {featured.map((img, i) => (
+          {tiles.map((img, i) => (
             <Reveal key={img.slug} delay={(i % 3) * 80}>
               <button
                 type="button"
                 onClick={() => setOpenIndex(i)}
-                aria-label={`${dict.open}: ${img.alt}`}
+                aria-label={`${dict.open}: ${img.altLabel}`}
                 data-cursor
                 className="relative w-full aspect-square bg-line overflow-hidden tile block text-left cursor-pointer"
               >
                 <RemoteImage
                   slug={img.slug}
-                  alt={img.alt}
+                  alt={img.altLabel}
                   fill
                   sizes="(min-width: 768px) 33vw, 50vw"
                   className="object-cover tile-img"

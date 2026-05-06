@@ -42,8 +42,14 @@ export function HeroBackground() {
             srcSet="/site/bocha-bg-mobile.webp"
             type="image/webp"
           />
-          <source srcSet="/site/bocha-bg-desktop.avif" type="image/avif" />
-          <source srcSet="/site/bocha-bg-desktop.webp" type="image/webp" />
+          <source
+            srcSet="/site/bocha-bg-desktop.avif"
+            type="image/avif"
+          />
+          <source
+            srcSet="/site/bocha-bg-desktop.webp"
+            type="image/webp"
+          />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/site/bocha-bg-desktop.webp"

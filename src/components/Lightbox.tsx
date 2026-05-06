@@ -3,7 +3,13 @@ import { useEffect, useCallback, useRef, useState } from "react";
 import { RemoteImage } from "./RemoteImage";
 import { getImage, imageUrl } from "@/lib/images";
 
-type Piece = { slug: string; title: string; category?: string };
+type Piece = {
+  slug: string;
+  /** Alt text shown nowhere visually — used only for screen-reader / aria. */
+  alt: string;
+  /** Visible category label in the lightbox header. */
+  category?: string;
+};
 
 type EndCard = {
   title: string;
@@ -21,6 +27,8 @@ type Props = {
   labels: { close: string; next: string; prev: string };
   /** When set, advancing past the last piece shows this card instead of looping. */
   endCard?: EndCard;
+  /** Called whenever the visible slug changes so the parent can sync ?foto= */
+  onSlugChange?: (slug: string | null) => void;
 };
 
 export function Lightbox({
@@ -30,6 +38,7 @@ export function Lightbox({
   onIndexChange,
   labels,
   endCard,
+  onSlugChange,
 }: Props) {
   const open = index !== null;
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -87,18 +96,44 @@ export function Lightbox({
     };
   }, [open, onClose, go]);
 
+  // Sync ?foto=slug into the URL whenever the open piece changes.
+  useEffect(() => {
+    if (!open || isEnd) {
+      onSlugChange?.(null);
+      return;
+    }
+    const slug = pieces[index!]?.slug ?? null;
+    onSlugChange?.(slug);
+  }, [open, index, isEnd, pieces, onSlugChange]);
+
   useEffect(() => {
     if (!open) return;
-    window.history.pushState({ lightbox: true }, "");
+    const slug = pieces[index!]?.slug;
+    const url = new URL(window.location.href);
+    if (slug) url.searchParams.set("foto", slug);
+    window.history.pushState({ lightbox: true }, "", url.toString());
     const onPopState = () => onCloseRef.current();
     window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("popstate", onPopState);
       if (window.history.state?.lightbox) {
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete("foto");
         window.history.back();
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // While open, update the URL slug in-place as the user navigates.
+  useEffect(() => {
+    if (!open || isEnd) return;
+    const slug = pieces[index!]?.slug;
+    if (!slug) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("foto", slug);
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, [open, index, isEnd, pieces]);
 
   // Preload neighbours so navigation feels instant.
   useEffect(() => {
@@ -143,13 +178,14 @@ export function Lightbox({
     ? "—"
     : `${String((index ?? 0) + 1).padStart(2, "0")} / ${String(pieces.length).padStart(2, "0")}`;
   const headerTitle = isEnd ? endCard!.title : (piece?.category ?? "");
+  const dialogLabel = isEnd ? endCard!.title : (piece?.alt ?? "");
 
   return (
     <div
       className="fixed inset-0 z-[200] bg-bg/95 backdrop-blur-md flex items-center justify-center animate-lb-in"
       role="dialog"
       aria-modal="true"
-      aria-label={headerTitle}
+      aria-label={dialogLabel}
       onClick={onClose}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -238,6 +274,7 @@ export function Lightbox({
           >
             <RemoteImage
               slug={piece!.slug}
+              alt={piece!.alt}
               fill
               sizes="88vw"
               priority
