@@ -18,13 +18,13 @@ const en: Dictionary = {
     menuClose: "Close menu",
   },
   hero: {
-    badge: "Est. 2015 — Almagro BA",
+    badge: "Est. 2015",
     location: "Almagro · Buenos Aires",
     booking: "Now booking",
-    title1: "bocha",
-    title2: "tattoo",
+    title1: "Bocha",
+    title2: "Barrena",
     intro:
-      "Tattoos in black, made slowly. Solo studio in Almagro, Buenos Aires. Working since 2015.",
+      "Illustrative microrealism fineline. Private studio in Almagro, Buenos Aires. Working since 2015.",
     cta: "View the work",
     scroll: "Scroll",
   },
@@ -124,8 +124,8 @@ const en: Dictionary = {
   },
   about: {
     eyebrow: "01 / About",
-    headingPart1: "Sebastián",
-    headingPart2: "Barrena",
+    headingPart1: "@bocha",
+    headingPart2: ".ttt",
     intro1:
       "Sebastián Barrena is a tattoo artist specializing in illustrative microrealism. His work is characterized by a unique and distinctive visual language, built from detail, precision, soft shadows and subtle textures. ",
     intro2:
@@ -160,7 +160,7 @@ const en: Dictionary = {
       {
         n: "04",
         title: "Session",
-        body: "We transfer the stencil to your skin, defining placement and size beforehand, and once you're happy we tattoo.",
+        body: "We transfer the stencil to your skin, defining placement and size beforehand, and once you're happy with it, we tattoo.",
       },
     ],
   },

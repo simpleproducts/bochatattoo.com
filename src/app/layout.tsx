@@ -39,7 +39,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-fg">
+      <body
+        className="min-h-full flex flex-col bg-bg text-fg"
+        suppressHydrationWarning
+      >
         <PageCurtain />
         {children}
         <Grain />

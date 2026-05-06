@@ -19,7 +19,7 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
       </Reveal>
 
       <Reveal>
-        <h2 className="font-serif text-[14vw] md:text-[10vw] leading-[0.9] tracking-tight">
+        <h2 className="font-serif text-[12vw] md:text-[10vw] leading-[0.9] tracking-tight">
           {dict.title1} <span className="italic text-muted">{dict.title2}</span>
         </h2>
       </Reveal>

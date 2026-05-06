@@ -31,37 +31,34 @@ export function HeroBackground() {
   return (
     <div ref={rootRef} className="absolute inset-0 overflow-hidden bg-bg z-0">
       <div ref={layerRef} className="absolute inset-0 will-change-transform">
-        <div className="hero-frame">
-          <picture>
-            <source
-              media="(max-width: 768px)"
-              srcSet="/site/bocha-bg-mobile.avif"
-              type="image/avif"
-            />
-            <source
-              media="(max-width: 768px)"
-              srcSet="/site/bocha-bg-mobile.webp"
-              type="image/webp"
-            />
-            <source srcSet="/site/bocha-bg-desktop.avif" type="image/avif" />
-            <source srcSet="/site/bocha-bg-desktop.webp" type="image/webp" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/site/bocha-bg-desktop.webp"
-              alt=""
-              aria-hidden
-              fetchPriority="high"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                objectPosition: "center",
-                display: "block",
-              }}
-            />
-          </picture>
-          <div aria-hidden className="hero-img-fade" />
-        </div>
+        <picture>
+          <source
+            media="(max-width: 768px)"
+            srcSet="/site/bocha-bg-mobile.avif"
+            type="image/avif"
+          />
+          <source
+            media="(max-width: 768px)"
+            srcSet="/site/bocha-bg-mobile.webp"
+            type="image/webp"
+          />
+          <source srcSet="/site/bocha-bg-desktop.avif" type="image/avif" />
+          <source srcSet="/site/bocha-bg-desktop.webp" type="image/webp" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/site/bocha-bg-desktop.webp"
+            alt=""
+            aria-hidden
+            fetchPriority="high"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              objectPosition: "center",
+              display: "block",
+            }}
+          />
+        </picture>
       </div>
 
       {/* Vignette + bottom fade so text stays legible */}
