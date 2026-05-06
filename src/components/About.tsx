@@ -10,7 +10,7 @@ export function About({ dict }: { dict: Dictionary["about"] }) {
     >
       <div className="grid md:grid-cols-12 gap-8 md:gap-12">
         <Reveal className="md:col-span-5">
-          <figure className="relative aspect-[3/4] overflow-hidden bg-line">
+          <figure className="portrait-frame relative aspect-[3/4] overflow-hidden bg-line">
             <picture>
               <source srcSet="/site/about-me.avif" type="image/avif" />
               <source srcSet="/site/about-me.webp" type="image/webp" />
@@ -20,7 +20,7 @@ export function About({ dict }: { dict: Dictionary["about"] }) {
                 alt={dict.portraitAlt}
                 loading="lazy"
                 decoding="async"
-                className="absolute inset-0 w-full h-full object-cover"
+                className="portrait-img absolute inset-0 w-full h-full object-cover"
               />
             </picture>
           </figure>

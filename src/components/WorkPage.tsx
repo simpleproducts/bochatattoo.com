@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SiteShell } from "./SiteShell";
 import { Reveal } from "./Reveal";
@@ -30,6 +30,8 @@ export function WorkPage({
   const work = dict.work;
   const home = localePath(locale);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [activeSlug, setActiveSlug] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
 
   const sections = useMemo<Section[]>(() => {
     const skip = new Set(work.skipCategories);
@@ -87,6 +89,63 @@ export function WorkPage({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Scroll-spy: track which section is currently in view so the category
+  // nav can highlight it. Trigger line sits just below the sticky nav strip.
+  useEffect(() => {
+    if (sections.length === 0) return;
+    const elements = sections
+      .map((s) => document.getElementById(s.slug))
+      .filter((el): el is HTMLElement => el !== null);
+    if (elements.length === 0) return;
+
+    const headerOffset = window.matchMedia("(min-width: 768px)").matches
+      ? 128 // 72px top nav + ~56px sticky strip
+      : 116; // 60px top nav + ~56px sticky strip
+
+    const visible = new Set<string>();
+    const pickActive = () => {
+      // Prefer the deepest section whose top has crossed below the sticky
+      // header (most recently scrolled into the active window).
+      let best: { slug: string; top: number } | null = null;
+      for (const el of elements) {
+        if (!visible.has(el.id)) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= headerOffset && (!best || top > best.top)) {
+          best = { slug: el.id, top };
+        }
+      }
+      if (best) return setActiveSlug(best.slug);
+      // None has crossed yet — fall back to the first one still in view.
+      const firstVisible = elements.find((el) => visible.has(el.id));
+      if (firstVisible) setActiveSlug(firstVisible.id);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        }
+        pickActive();
+      },
+      {
+        rootMargin: `-${headerOffset}px 0px -55% 0px`,
+        threshold: 0,
+      },
+    );
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [sections]);
+
+  // Keep the active link in view inside the horizontal-scrolling nav strip.
+  useEffect(() => {
+    if (!activeSlug || !navRef.current) return;
+    const link = navRef.current.querySelector<HTMLAnchorElement>(
+      `a[data-slug="${activeSlug}"]`,
+    );
+    link?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [activeSlug]);
+
   return (
     <SiteShell dict={dict} locale={locale}>
       {/* Hero */}
@@ -122,21 +181,29 @@ export function WorkPage({
       {/* Category index — horizontal scroll on mobile, sticky strip on desktop */}
       {sections.length > 0 && (
         <nav
+          ref={navRef}
           aria-label="Categories"
           className="border-y border-line px-6 md:px-10 py-4 sticky top-[60px] md:top-[72px] z-30 bg-bg/80 backdrop-blur-md overflow-x-auto"
         >
           <ul className="flex items-center gap-6 text-xs uppercase tracking-[0.2em] font-mono whitespace-nowrap">
-            {sections.map((s) => (
-              <li key={s.slug}>
-                <a
-                  href={`#${s.slug}`}
-                  className="text-muted hover:text-fg transition-colors"
-                >
-                  {s.label}{" "}
-                  <span className="opacity-50">{s.images.length}</span>
-                </a>
-              </li>
-            ))}
+            {sections.map((s) => {
+              const isActive = activeSlug === s.slug;
+              return (
+                <li key={s.slug}>
+                  <a
+                    href={`#${s.slug}`}
+                    data-slug={s.slug}
+                    aria-current={isActive ? "true" : undefined}
+                    className={`transition-colors ${
+                      isActive ? "text-fg" : "text-muted hover:text-fg"
+                    }`}
+                  >
+                    {s.label}{" "}
+                    <span className="opacity-50">{s.images.length}</span>
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       )}
