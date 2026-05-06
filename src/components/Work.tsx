@@ -36,14 +36,18 @@ export function Work({ dict, locale }: Props) {
   const workHref = locale === "es" ? "/work" : `/${locale}/work`;
   const home = localePath(locale);
 
-  // Lightbox feeds on title from manifest alt or category label fallback
+  // Lightbox header shows the category label (never the image filename).
+  // `title` is kept for the underlying aria description fallback.
   const pieces = featured.map((img) => ({
     slug: img.slug,
     title: img.alt,
+    category: img.category
+      ? (dict.categoryLabels[img.category] ?? img.category)
+      : undefined,
   }));
 
   return (
-    <section id="work" className="px-6 md:px-10 py-24 md:py-32">
+    <section id="work" className="px-6 md:px-10 py-24 md:py-32 cv-auto">
       <Reveal>
         <div className="flex items-baseline justify-between mb-12 md:mb-16">
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
@@ -70,6 +74,8 @@ export function Work({ dict, locale }: Props) {
                   fill
                   sizes="(min-width: 768px) 33vw, 50vw"
                   className="object-cover tile-img"
+                  priority={i < 3}
+                  fetchPriority={i < 3 ? "high" : "low"}
                 />
                 <div
                   aria-hidden
@@ -117,6 +123,13 @@ export function Work({ dict, locale }: Props) {
         onClose={() => setOpenIndex(null)}
         onIndexChange={setOpenIndex}
         labels={dict.lightbox}
+        endCard={{
+          title: dict.lightbox.endTitle,
+          copy: dict.lightbox.endCopy,
+          startOverLabel: dict.lightbox.startOver,
+          continueLabel: dict.lightbox.continueLabel,
+          continueHref: workHref,
+        }}
       />
     </section>
   );

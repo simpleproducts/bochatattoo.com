@@ -61,6 +61,9 @@ export function WorkPage({
   const lightboxPieces = flat.map((img) => ({
     slug: img.slug,
     title: img.alt,
+    category: img.category
+      ? (work.categoryLabels[img.category] ?? img.category)
+      : undefined,
   }));
 
   // Map slug → global index for lightbox open
@@ -137,7 +140,7 @@ export function WorkPage({
             <section
               key={section.slug}
               id={section.slug}
-              className="py-20 md:py-28 border-t border-line first:border-t-0"
+              className="py-20 md:py-28 border-t border-line first:border-t-0 cv-auto"
             >
               <Reveal>
                 <header className="grid grid-cols-3 items-baseline mb-10 md:mb-14 gap-4">
@@ -154,8 +157,12 @@ export function WorkPage({
               </Reveal>
 
               <div className="work-grid columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4 [column-fill:_balance]">
-                {section.images.map((img) => {
+                {section.images.map((img, iIdx) => {
                   const globalIdx = indexBySlug.get(img.slug) ?? 0;
+                  // Eager-load the first row of the first category so the page
+                  // has visible content immediately. Everything else is lazy +
+                  // low-priority so it doesn't compete with critical resources.
+                  const isFirstRow = sIdx === 0 && iIdx < 4;
                   return (
                     <button
                       key={img.slug}
@@ -172,6 +179,8 @@ export function WorkPage({
                         fill
                         sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
                         className="object-cover tile-img"
+                        priority={isFirstRow}
+                        fetchPriority={isFirstRow ? "high" : "low"}
                       />
                     </button>
                   );

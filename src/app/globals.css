@@ -164,6 +164,16 @@ body {
   border-color: var(--color-fg);
 }
 
+/* ---------- Offscreen render skip ----------
+   `content-visibility: auto` lets the browser skip rendering, layout, paint,
+   AND lazy-image loads inside this section while it's far from the viewport.
+   `contain-intrinsic-size` reserves a believable height so scrollbars don't
+   jump as sections virtualize in/out. */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
+
 /* ---------- Reveal ---------- */
 .reveal {
   opacity: 0;

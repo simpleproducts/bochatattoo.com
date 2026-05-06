@@ -12,9 +12,6 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
             {dict.eyebrow}
           </span>
-          <span className="hidden md:inline font-mono text-xs uppercase tracking-[0.2em] text-muted">
-            {dict.status}
-          </span>
         </div>
       </Reveal>
 
@@ -22,7 +19,7 @@ export function Contact({ dict }: { dict: Dictionary["contact"] }) {
         <h2 className="font-serif text-[12vw] md:text-[10vw] leading-[0.9] tracking-tight">
           {dict.title1} <span className="italic text-muted">{dict.title2}</span>
         </h2>
-        <p className="md:hidden mt-4 font-mono text-xs uppercase tracking-[0.2em] text-muted">
+        <p className="mt-4 font-mono text-xs uppercase tracking-[0.2em] text-muted">
           {dict.status}
         </p>
       </Reveal>
