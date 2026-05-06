@@ -52,7 +52,16 @@ export type Dictionary = {
     /** Slug → display label per locale */
     categoryLabels: Record<string, string>;
     /** Lightbox UI labels */
-    lightbox: { close: string; next: string; prev: string };
+    lightbox: {
+      close: string;
+      next: string;
+      prev: string;
+      /** Shown only on the home (featured) lightbox after the last piece */
+      endTitle: string;
+      endCopy: string;
+      startOver: string;
+      continueLabel: string;
+    };
   };
   about: {
     eyebrow: string;

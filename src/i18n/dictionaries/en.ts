@@ -118,7 +118,15 @@ const en: Dictionary = {
       ig2024: "IG 2024",
       random: "Random",
     },
-    lightbox: { close: "Close", next: "Next", prev: "Previous" },
+    lightbox: {
+      close: "Close",
+      next: "Next",
+      prev: "Previous",
+      endTitle: "End of selection",
+      endCopy: "You've seen the featured pieces. Want to keep going?",
+      startOver: "Start over",
+      continueLabel: "See the full archive →",
+    },
   },
   about: {
     eyebrow: "01 / About",
