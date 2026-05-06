@@ -22,7 +22,7 @@ export function SiteShell({ dict, locale, children }: Props) {
         switcherLabel={dict.localeSwitcher.label}
       />
       <main className="flex-1">{children}</main>
-      <Footer dict={dict.footer} />
+      <Footer dict={dict.footer} newsletter={dict.newsletter} />
     </>
   );
 }

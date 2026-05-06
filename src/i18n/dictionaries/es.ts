@@ -80,7 +80,7 @@ const es: Dictionary = {
     viewAll: "Ver el archivo completo →",
     pageTitle: "Tatuajes.",
     intro:
-      "Un archivo de tatuajes hechos en Almagro, Berlín, Madrid y las ciudades por las que pasé. Ordenado por tema — abrí cualquier pieza para verla de cerca.",
+      "Un archivo de tatuajes ordenado por tema, es tu guía para descubrir el estilo que más te guste.",
     back: "Volver",
     metaTitle:
       "Tatuajes · Sebastián Barrena · Microrealismo · Almagro, Buenos Aires",
@@ -209,6 +209,13 @@ const es: Dictionary = {
   footer: {
     rights: "© {year} — Bocha · Almagro, Buenos Aires",
     backToTop: "Volver arriba ↑",
+  },
+  newsletter: {
+    label: "Newsletter",
+    placeholder: "tu email",
+    submit: "Suscribirme",
+    success: "Listo. Te aviso cuando abra agenda.",
+    error: "No funcionó. Probá de nuevo.",
   },
   localeSwitcher: {
     label: "Idioma",
