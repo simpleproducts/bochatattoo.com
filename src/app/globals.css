@@ -167,10 +167,10 @@ body {
 /* ---------- Reveal ---------- */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
+  transform: translateY(20px);
   transition:
-    opacity 900ms cubic-bezier(.2,.7,.2,1),
-    transform 900ms cubic-bezier(.2,.7,.2,1);
+    opacity 500ms cubic-bezier(.2,.7,.2,1),
+    transform 500ms cubic-bezier(.2,.7,.2,1);
 }
 .reveal.is-visible {
   opacity: 1;

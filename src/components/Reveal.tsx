@@ -19,6 +19,15 @@ export function Reveal({ children, className = "", delay = 0 }: Props) {
       setVisible(true);
       return;
     }
+
+    // Already on-screen at mount → reveal immediately, skip the observer.
+    // Avoids the "fades in only after I scroll" feel for above-the-fold blocks.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setVisible(true);
+      return;
+    }
+
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {

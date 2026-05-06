@@ -31,12 +31,12 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
       </h1>
 
       <div className="mt-10 grid md:grid-cols-3 gap-6 md:gap-10 items-end">
-        <Reveal delay={1100} className="md:col-span-2">
+        <Reveal delay={500} className="md:col-span-2">
           <p className="max-w-xl text-balance text-lg md:text-xl leading-snug">
             {dict.intro}
           </p>
         </Reveal>
-        <Reveal delay={1240}>
+        <Reveal delay={600}>
           <a
             href="#work"
             className="self-end inline-flex items-center gap-3 text-xs uppercase tracking-[0.2em] font-mono group"
