@@ -134,8 +134,6 @@ const en: Dictionary = {
     headingPart2: ".ttt",
     intro1:
       "Sebastián Barrena is a tattoo artist specializing in illustrative microrealism. His work is characterized by a unique and distinctive visual language, built from detail, precision, soft shadows and subtle textures. ",
-    intro2:
-      "From his private studio in Almagro, Buenos Aires, he works daily on custom pieces, designed to transform ideas and images into tattoos with high visual impact.",
     portraitAlt: "Portrait — Bocha",
     meta: {
       based: ["Location", "Almagro · BA"],
@@ -171,7 +169,7 @@ const en: Dictionary = {
     ],
   },
   faq: {
-    eyebrow: "05 / FAQ",
+    eyebrow: "04 / FAQ",
     title: "Common questions",
     pageTitle: "Common\nquestions.",
     intro:
@@ -186,7 +184,7 @@ const en: Dictionary = {
     items: [
       {
         q: "How do I book?",
-        a: "Instagram DM, email or <a href='#contact' class='underline hover:opacity-60 transition-opacity'>contact form</a>. Send me a few lines with your idea, placement, approximate size and reference images. I try to respond as soon as possible. Open spots are announced on my Instagram stories.",
+        a: "Instagram DM or email. Send me a few lines with your idea, placement, approximate size and reference images. I try to respond as soon as possible. Open spots are announced on my Instagram stories.",
       },
       {
         q: "Do you take custom designs?",
@@ -207,7 +205,7 @@ const en: Dictionary = {
     ],
   },
   contact: {
-    eyebrow: "06 / Contact",
+    eyebrow: "05 / Contact",
     status: "Book your appointment",
     title1: "Let's plan",
     title2: "your tattoo.",

@@ -40,8 +40,6 @@ const es: Dictionary = {
     headingPart2: ".ttt",
     intro1:
       "Sebastián Barrena es un tatuador especializado en microrealismo ilustrativo. Su obra se caracteriza por un lenguaje visual único y distintivo, construido a partir del detalle, la precisión, las sombras suaves y las texturas sutiles.",
-    intro2:
-      "From his private studio in Almagro, Buenos Aires, he works daily on custom pieces, designed to transform ideas and images into tattoos with high visual impact.",
     portraitAlt: "Retrato — Bocha",
     meta: {
       based: ["Ubicación", "Almagro · CABA"],
@@ -171,7 +169,7 @@ const es: Dictionary = {
     ],
   },
   faq: {
-    eyebrow: "05 / Preguntas",
+    eyebrow: "04 / Preguntas",
     title: "Preguntas frecuentes",
     pageTitle: "Preguntas\nfrecuentes.",
     intro:
@@ -186,7 +184,7 @@ const es: Dictionary = {
     items: [
       {
         q: "¿Cómo reservo?",
-        a: "DM de Instagram, email o <a href='#contact' class='underline hover:opacity-60 transition-opacity'>formulario de contacto</a>. Escribime unas líneas con tu idea, ubicación, tamaño aproximado e imágenes de referencia. Trato de responder siempre a la brevedad. Los cupos abiertos los anuncio en mis stories de instagram.",
+        a: "DM de Instagram o email. Escribime unas líneas con tu idea, ubicación, tamaño aproximado e imágenes de referencia. Trato de responder siempre a la brevedad. Los cupos abiertos los anuncio en mis stories de instagram.",
       },
       {
         q: "¿Hacés diseños a medida?",
@@ -207,7 +205,7 @@ const es: Dictionary = {
     ],
   },
   contact: {
-    eyebrow: "06 / Contacto",
+    eyebrow: "05 / Contacto",
     status: "Reserva tu turno",
     title1: "Pensemos",
     title2: "tu tatuaje.",
@@ -222,7 +220,7 @@ const es: Dictionary = {
     label: "Newsletter",
     placeholder: "tu email",
     submit: "Suscribirme",
-    success: "Listo. Ya estas registrado.",
+    success: "Listo. Ya estás registrado.",
     error: "No funcionó. Probá de nuevo.",
   },
   localeSwitcher: {

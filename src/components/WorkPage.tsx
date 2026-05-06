@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { SiteShell } from "./SiteShell";
 import { Reveal } from "./Reveal";
@@ -30,6 +30,7 @@ export function WorkPage({
   const work = dict.work;
   const home = localePath(locale);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
 
   const sections = useMemo<Section[]>(() => {
     const skip = new Set(work.skipCategories);
@@ -58,13 +59,16 @@ export function WorkPage({
     [sections],
   );
   const totalCount = flat.length;
-  const lightboxPieces = flat.map((img) => ({
-    slug: img.slug,
-    title: img.alt,
-    category: img.category
-      ? (work.categoryLabels[img.category] ?? img.category)
-      : undefined,
-  }));
+  // Build a "Category NN" label for each image — used as alt text and
+  // as the lightbox aria description. The original filename never appears.
+  const lightboxPieces = sections.flatMap((section) => {
+    const catLabel = work.categoryLabels[section.slug] ?? section.label;
+    return section.images.map((img, i) => ({
+      slug: img.slug,
+      alt: `${catLabel} ${String(i + 1).padStart(2, "0")}`,
+      category: catLabel,
+    }));
+  });
 
   // Map slug → global index for lightbox open
   const indexBySlug = useMemo(() => {
@@ -72,6 +76,18 @@ export function WorkPage({
     flat.forEach((img, i) => m.set(img.slug, i));
     return m;
   }, [flat]);
+
+  // Open directly to ?foto=slug on mount
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("foto");
+    if (slug) {
+      const idx = indexBySlug.get(slug);
+      if (idx !== undefined) setOpenIndex(idx);
+    }
+    setReady(true);
+  // indexBySlug is stable after mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <SiteShell dict={dict} locale={locale}>
@@ -140,7 +156,7 @@ export function WorkPage({
             <section
               key={section.slug}
               id={section.slug}
-              className="py-20 md:py-28 border-t border-line first:border-t-0 cv-auto"
+              className="py-20 md:py-28 border-t border-line first:border-t-0"
             >
               <Reveal>
                 <header className="grid grid-cols-3 items-baseline mb-10 md:mb-14 gap-4">
@@ -159,23 +175,21 @@ export function WorkPage({
               <div className="work-grid columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4 [column-fill:_balance]">
                 {section.images.map((img, iIdx) => {
                   const globalIdx = indexBySlug.get(img.slug) ?? 0;
-                  // Eager-load the first row of the first category so the page
-                  // has visible content immediately. Everything else is lazy +
-                  // low-priority so it doesn't compete with critical resources.
                   const isFirstRow = sIdx === 0 && iIdx < 4;
+                  const altLabel = `${section.label} ${String(iIdx + 1).padStart(2, "0")}`;
                   return (
                     <button
                       key={img.slug}
                       type="button"
                       onClick={() => setOpenIndex(globalIdx)}
-                      aria-label={`${work.open}: ${img.alt}`}
+                      aria-label={`${work.open}: ${altLabel}`}
                       data-cursor
                       className="tile relative block w-full mb-3 md:mb-4 break-inside-avoid bg-line overflow-hidden text-left"
                       style={{ aspectRatio: `${img.width} / ${img.height}` }}
                     >
                       <RemoteImage
                         slug={img.slug}
-                        alt={img.alt}
+                        alt={altLabel}
                         fill
                         sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
                         className="object-cover tile-img"

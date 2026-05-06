@@ -68,7 +68,6 @@ export type Dictionary = {
     headingPart1: string;
     headingPart2: string;
     intro1: string;
-    intro2: string;
     portraitAlt: string;
     meta: {
       based: [string, string];
