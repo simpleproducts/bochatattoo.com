@@ -56,13 +56,9 @@ export function HeroBackground() {
             alt=""
             aria-hidden
             fetchPriority="high"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center",
-              display: "block",
-            }}
+            // Mobile crops the subject too low; nudge the image up by 140px on
+            // small screens. Desktop keeps the natural centered framing.
+            className="block w-full h-full object-cover object-center relative -top-[140px] md:top-0"
           />
         </picture>
       </div>
