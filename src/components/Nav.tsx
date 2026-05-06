@@ -23,7 +23,6 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
   const pathname = usePathname();
   const home = localePath(locale);
   const prefix = locale === DEFAULT_LOCALE ? "" : `/${locale}`;
-  const faqUrl = `${prefix}/faq`;
   const workUrl = `${prefix}/work`;
   const homeMark = home === "/" ? "/" : home;
 
@@ -38,7 +37,7 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
     [dict.work, workUrl],
     [dict.about, hashLink("about")],
     [dict.process, hashLink("process")],
-    [dict.faq, faqUrl],
+    [dict.faq, hashLink("faq")],
     [dict.contact, hashLink("contact")],
   ];
 
