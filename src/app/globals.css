@@ -229,6 +229,28 @@ body {
 .lb-slide-right { animation: lb-slide-right 280ms cubic-bezier(.2,.7,.2,1) both; }
 .lb-slide-left  { animation: lb-slide-left  280ms cubic-bezier(.2,.7,.2,1) both; }
 
+/* ---------- About portrait: ambient breathing + soft vignette ---------- */
+.portrait-frame { position: relative; isolation: isolate; }
+.portrait-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse at 50% 38%, transparent 58%, rgba(0,0,0,0.28) 95%, rgba(0,0,0,0.45) 100%);
+  mix-blend-mode: multiply;
+}
+.portrait-img {
+  transform-origin: 50% 38%;
+  animation: portrait-breath 16s ease-in-out infinite alternate;
+  will-change: transform, filter;
+}
+@keyframes portrait-breath {
+  0%   { transform: scale(1.015) translate3d(0, 0, 0);     filter: saturate(0.96) contrast(1.00); }
+  100% { transform: scale(1.06)  translate3d(0, -0.8%, 0); filter: saturate(1.04) contrast(1.03); }
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -242,6 +264,7 @@ body {
   .split-char { opacity: 1; transform: none; animation: none; }
   .animate-fade-in { opacity: 1; animation: none; }
   .animate-spin-slow { animation: none; }
+  .portrait-img { animation: none; transform: none; }
   .work-grid:hover .tile { opacity: 1; }
   .cursor-mark { transition: none; }
 }

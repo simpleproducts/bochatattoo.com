@@ -1,4 +1,5 @@
 import manifest from "@/data/images.json";
+import { HIDDEN_SLUGS } from "@/data/hidden-slugs";
 
 export type ImageEntry = {
   alt: string;
@@ -17,15 +18,23 @@ export type ImageManifest = Record<string, ImageEntry>;
 export type ImageWithSlug = { slug: string } & ImageEntry;
 
 const MANIFEST = manifest as ImageManifest;
+const HIDDEN = new Set(HIDDEN_SLUGS);
 
 const BASE = process.env.NEXT_PUBLIC_IMAGES_BASE_URL ?? "";
 
+export function isHidden(slug: string): boolean {
+  return HIDDEN.has(slug);
+}
+
 export function getImage(slug: string): ImageEntry | undefined {
+  if (HIDDEN.has(slug)) return undefined;
   return MANIFEST[slug];
 }
 
 export function listImages(): ImageWithSlug[] {
-  return Object.entries(MANIFEST).map(([slug, entry]) => ({ slug, ...entry }));
+  return Object.entries(MANIFEST)
+    .filter(([slug]) => !HIDDEN.has(slug))
+    .map(([slug, entry]) => ({ slug, ...entry }));
 }
 
 export function listImagesByCategory(category: string): ImageWithSlug[] {
@@ -36,8 +45,8 @@ export function listImagesByCategory(category: string): ImageWithSlug[] {
 
 export function getCategoryCounts(): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const entry of Object.values(MANIFEST)) {
-    if (!entry.category) continue;
+  for (const [slug, entry] of Object.entries(MANIFEST)) {
+    if (HIDDEN.has(slug) || !entry.category) continue;
     counts[entry.category] = (counts[entry.category] ?? 0) + 1;
   }
   return counts;
