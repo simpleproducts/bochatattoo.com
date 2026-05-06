@@ -55,13 +55,41 @@ export default function OG() {
           </div>
           <div
             style={{
-              fontSize: 28,
-              color: "#cfcfcf",
-              maxWidth: 900,
-              lineHeight: 1.2,
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              gap: 32,
             }}
           >
-            {dict.meta.description}
+            <div
+              style={{
+                fontSize: 26,
+                color: "#cfcfcf",
+                maxWidth: 760,
+                lineHeight: 1.2,
+              }}
+            >
+              {dict.meta.description}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "16px 24px",
+                background: "#ededed",
+                color: "#0a0a0a",
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                fontSize: 18,
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span>Reservá un turno</span>
+              <span>→</span>
+            </div>
           </div>
         </div>
       </div>
