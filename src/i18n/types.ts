@@ -29,8 +29,6 @@ export type Dictionary = {
     title: string;
     inquire: string;
     open: string;
-    /** Category slug pulled into the home featured grid (fallback) */
-    featuredCategory: string;
     /** Max number of pieces shown on home */
     featuredLimit: number;
     /** Hand-picked slugs for the home Work grid. Empty = fallback to one-per-category. */
