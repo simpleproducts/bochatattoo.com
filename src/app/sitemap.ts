@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 import { LOCALES, DEFAULT_LOCALE } from "@/i18n";
 
 const BASE = "https://bochatattoo.com";
-type Segment = "" | "/work" | "/faq";
-const SEGMENTS: Segment[] = ["", "/work", "/faq"];
+type Segment = "" | "/work";
+const SEGMENTS: Segment[] = ["", "/work"];
 
 function pathFor(locale: string, segment: Segment): string {
   const prefix = locale === DEFAULT_LOCALE ? "" : `/${locale}`;
