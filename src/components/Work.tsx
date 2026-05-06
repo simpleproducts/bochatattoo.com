@@ -69,10 +69,10 @@ export function Work({ dict, locale }: Props) {
     <section id="work" className="px-6 md:px-10 py-24 md:py-32">
       <Reveal>
         <div className="flex items-baseline justify-between mb-12 md:mb-16">
+          <h2 className="font-serif italic text-3xl md:text-5xl">{dict.title}</h2>
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
             {dict.eyebrow}
           </span>
-          <h2 className="font-serif italic text-3xl md:text-5xl">{dict.title}</h2>
         </div>
       </Reveal>
 
