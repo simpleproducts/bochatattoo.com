@@ -136,6 +136,7 @@ const es: Dictionary = {
       close: "Cerrar",
       next: "Siguiente",
       prev: "Anterior",
+      share: "Compartir",
       endTitle: "Fin de la selección",
       endCopy: "Viste las piezas destacadas. ¿Seguimos?",
       startOver: "Volver al inicio",

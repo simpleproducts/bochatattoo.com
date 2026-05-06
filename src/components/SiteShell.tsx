@@ -1,6 +1,5 @@
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
-import { HtmlLang } from "./HtmlLang";
 import { JsonLd } from "./JsonLd";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
@@ -15,7 +14,6 @@ export function SiteShell({ dict, locale, children }: Props) {
   return (
     <>
       <JsonLd locale={locale} />
-      <HtmlLang locale={locale} />
       <Nav
         dict={dict.nav}
         locale={locale}

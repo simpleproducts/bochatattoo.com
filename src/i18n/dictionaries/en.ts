@@ -122,6 +122,7 @@ const en: Dictionary = {
       close: "Close",
       next: "Next",
       prev: "Previous",
+      share: "Share",
       endTitle: "End of selection",
       endCopy: "You've seen the featured pieces. Want to keep going?",
       startOver: "Start over",

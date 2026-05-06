@@ -56,6 +56,7 @@ export type Dictionary = {
       close: string;
       next: string;
       prev: string;
+      share: string;
       /** Shown only on the home (featured) lightbox after the last piece */
       endTitle: string;
       endCopy: string;
