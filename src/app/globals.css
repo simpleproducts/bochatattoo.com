@@ -200,7 +200,8 @@ body {
   transform-origin: right;
   transition: transform 380ms cubic-bezier(.2,.7,.2,1);
 }
-.nav-link:hover::after { transform: scaleX(1); transform-origin: left; }
+.nav-link:hover::after,
+.nav-link.is-active::after { transform: scaleX(1); transform-origin: left; }
 
 /* ---------- Work tile hover ---------- */
 .tile { transition: transform 600ms cubic-bezier(.2,.7,.2,1); }

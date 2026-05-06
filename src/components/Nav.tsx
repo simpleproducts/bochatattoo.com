@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -19,6 +19,7 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const [open, setOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const pathname = usePathname();
   const home = localePath(locale);
@@ -60,6 +61,45 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
       cancelAnimationFrame(raf);
     };
   }, []);
+
+  // Section-in-viewport tracking — only relevant on the home page.
+  // The middle-band rootMargin means the section currently crossing the
+  // vertical centre of the viewport is the "active" one, and there's no
+  // ambiguity between two sections being intersecting at once.
+  const sectionIds = useMemo(
+    () => ["about", "work", "process", "faq", "contact"] as const,
+    [],
+  );
+  useEffect(() => {
+    if (!onHome) {
+      setActiveId(null);
+      return;
+    }
+    const elements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => Boolean(el));
+    if (elements.length === 0) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActiveId(e.target.id);
+        }
+      },
+      { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+    );
+    for (const el of elements) io.observe(el);
+    return () => io.disconnect();
+  }, [onHome, sectionIds]);
+
+  const isActive = (href: string) => {
+    // Cross-page link (e.g. /work) — active when pathname matches.
+    if (!href.includes("#")) {
+      return pathname === href || pathname.startsWith(`${href}/`);
+    }
+    // Hash link — active when matching section is the one in the middle band.
+    const m = href.match(/#(.+)$/);
+    return Boolean(m && activeId === m[1]);
+  };
 
   return (
     <header
@@ -104,7 +144,13 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
         <ul className="hidden lg:flex items-center gap-6 xl:gap-8 text-xs uppercase tracking-[0.2em] font-mono">
           {items.map(([label, href]) => (
             <li key={label}>
-              <Link href={href} className="nav-link relative inline-block py-1">
+              <Link
+                href={href}
+                aria-current={isActive(href) ? "true" : undefined}
+                className={`nav-link relative inline-block py-1${
+                  isActive(href) ? " is-active" : ""
+                }`}
+              >
                 {label}
               </Link>
             </li>
