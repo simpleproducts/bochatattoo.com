@@ -2,10 +2,9 @@ import type { Dictionary } from "../types";
 
 const en: Dictionary = {
   meta: {
-    title:
-      "Sebastián Barrena · Illustrative Microrealism · Almagro, Buenos Aires",
+    title: "Bocha Barrena Tattoo · Fineline Microrealismo Ilustrativo· Almagro, Buenos Aires",
     description:
-      "Tattoo artist specializing in illustrative microrealism. Fineline, precision, soft shadows and subtle textures. Private studio in Almagro, Buenos Aires. Working since 2015.",
+      "Tattoo artist specializing in illustrative microrealism. Fineline, precision, soft shadows and subtle textures. Private studio in Almagro, Buenos Aires. Since 2015.",
   },
   nav: {
     work: "Work",
