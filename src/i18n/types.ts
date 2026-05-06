@@ -94,5 +94,12 @@ export type Dictionary = {
     instagramLabel: string;
   };
   footer: { rights: string; backToTop: string };
+  newsletter: {
+    label: string;
+    placeholder: string;
+    submit: string;
+    success: string;
+    error: string;
+  };
   localeSwitcher: { label: string };
 };

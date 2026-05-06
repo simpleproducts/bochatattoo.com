@@ -210,6 +210,13 @@ const en: Dictionary = {
     rights: "© {year} — Bocha · Almagro, Buenos Aires",
     backToTop: "Back to top ↑",
   },
+  newsletter: {
+    label: "Newsletter",
+    placeholder: "your email",
+    submit: "Subscribe",
+    success: "Done — I'll let you know when slots open.",
+    error: "Something went wrong. Try again.",
+  },
   localeSwitcher: {
     label: "Language",
   },

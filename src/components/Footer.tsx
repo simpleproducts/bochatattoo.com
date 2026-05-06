@@ -1,11 +1,20 @@
+import { Newsletter } from "./Newsletter";
 import type { Dictionary } from "@/i18n/types";
 
-export function Footer({ dict }: { dict: Dictionary["footer"] }) {
+type Props = {
+  dict: Dictionary["footer"];
+  newsletter: Dictionary["newsletter"];
+};
+
+export function Footer({ dict, newsletter }: Props) {
   const year = new Date().getFullYear();
   const rights = dict.rights.replace("{year}", String(year));
   return (
     <footer className="px-6 md:px-10 py-10 border-t border-line mt-auto">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-xs uppercase tracking-[0.2em] font-mono text-muted">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-10 mb-10">
+        <Newsletter dict={newsletter} />
+      </div>
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 text-xs uppercase tracking-[0.2em] font-mono text-muted pt-6 border-t border-line">
         <a
           href="#top"
           className="group inline-flex items-center gap-2 hover:text-fg transition-colors"
