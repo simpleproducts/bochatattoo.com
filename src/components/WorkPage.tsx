@@ -30,7 +30,6 @@ export function WorkPage({
   const work = dict.work;
   const home = localePath(locale);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [ready, setReady] = useState(false);
 
   const sections = useMemo<Section[]>(() => {
     const skip = new Set(work.skipCategories);
@@ -77,14 +76,13 @@ export function WorkPage({
     return m;
   }, [flat]);
 
-  // Open directly to ?foto=slug on mount
+  // Open directly to ?tattoo=slug on mount
   useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("foto");
+    const slug = new URLSearchParams(window.location.search).get("tattoo");
     if (slug) {
       const idx = indexBySlug.get(slug);
       if (idx !== undefined) setOpenIndex(idx);
     }
-    setReady(true);
   // indexBySlug is stable after mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -54,9 +54,9 @@ export function Work({ dict, locale }: Props) {
     category: t.catLabel || undefined,
   }));
 
-  // Open directly to ?foto=slug on mount
+  // Open directly to ?tattoo=slug on mount
   useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("foto");
+    const slug = new URLSearchParams(window.location.search).get("tattoo");
     if (slug) {
       const idx = pieces.findIndex((p) => p.slug === slug);
       if (idx !== -1) setOpenIndex(idx);

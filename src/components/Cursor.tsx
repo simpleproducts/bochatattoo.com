@@ -40,7 +40,7 @@ export function Cursor() {
     <div
       ref={ref}
       aria-hidden
-      className="cursor-mark pointer-events-none fixed left-0 top-0 z-[100] mix-blend-difference"
+      className="cursor-mark pointer-events-none fixed left-0 top-0 z-[400] mix-blend-difference"
       // Start off-screen so the (0,0) corner dot never appears before the first mousemove.
       style={{ transform: "translate3d(-100px, -100px, 0)" }}
     />

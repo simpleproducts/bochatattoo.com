@@ -42,6 +42,7 @@ export function About({ dict }: { dict: Dictionary["about"] }) {
                 className="hover:opacity-60 transition-opacity"
               >
                 {dict.headingPart1}
+                <span className="text-muted">{dict.headingPart2}</span>
               </a>
             </h2>
           </Reveal>

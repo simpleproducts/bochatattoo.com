@@ -14,8 +14,10 @@ declare global {
           callback: (token: string) => void;
           "error-callback"?: () => void;
           "expired-callback"?: () => void;
-          size?: "normal" | "compact" | "invisible" | "flexible";
+          size?: "normal" | "compact" | "flexible";
           theme?: "light" | "dark" | "auto";
+          execution?: "render" | "execute";
+          appearance?: "always" | "execute" | "interaction-only";
         },
       ) => string;
       reset: (id?: string) => void;
@@ -64,7 +66,12 @@ export function Newsletter({ dict }: { dict: Dictionary["newsletter"] }) {
       if (widgetIdRef.current) return;
       widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
         sitekey: SITE_KEY!,
-        size: "invisible",
+        // Modern Turnstile: "invisible" is gone. Use a flexible widget that
+        // only renders visible UI when an interactive challenge is required,
+        // and only runs the challenge when execute() is called on submit.
+        size: "flexible",
+        execution: "execute",
+        appearance: "interaction-only",
         theme: "dark",
         callback: (token) => {
           tokenRef.current = token;
@@ -215,8 +222,9 @@ export function Newsletter({ dict }: { dict: Dictionary["newsletter"] }) {
         />
       </label>
 
-      {/* Turnstile mounts here; invisible mode renders nothing visible */}
-      <div ref={turnstileRef} aria-hidden="true" />
+      {/* Turnstile mounts here. With appearance="interaction-only" it stays
+          empty unless Cloudflare flags the request and needs a challenge. */}
+      <div ref={turnstileRef} aria-hidden="true" className="mt-3 empty:mt-0" />
 
       <p
         role="status"
