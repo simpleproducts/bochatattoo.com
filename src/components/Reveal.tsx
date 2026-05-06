@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
@@ -9,20 +9,20 @@ type Props = {
 
 export function Reveal({ children, className = "", delay = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      el.classList.add("is-visible");
+      setVisible(true);
       return;
     }
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
           if (e.isIntersecting) {
-            el.style.transitionDelay = `${delay}ms`;
-            el.classList.add("is-visible");
+            setVisible(true);
             io.unobserve(el);
           }
         }
@@ -31,10 +31,14 @@ export function Reveal({ children, className = "", delay = 0 }: Props) {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [delay]);
+  }, []);
 
   return (
-    <div ref={ref} className={`reveal ${className}`}>
+    <div
+      ref={ref}
+      className={`reveal ${visible ? "is-visible" : ""} ${className}`}
+      style={visible ? { transitionDelay: `${delay}ms` } : undefined}
+    >
       {children}
     </div>
   );

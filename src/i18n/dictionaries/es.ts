@@ -18,7 +18,7 @@ const es: Dictionary = {
     menuClose: "Cerrar menú",
   },
   hero: {
-    badge: "Desde 2015 — Almagro BA",
+    badge: "Desde 2015",
     location: "Almagro · Buenos Aires",
     booking: "Agenda abierta",
     title1: "Bocha",

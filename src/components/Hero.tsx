@@ -17,7 +17,7 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
         <span className="hidden md:inline">{dict.location}</span>
       </div>
 
-      <h1 className="font-serif leading-[0.85] tracking-tight text-[18vw] md:text-[14vw]">
+      <h1 className="font-serif leading-[0.85] tracking-tight text-[18vw] md:text-[12vw]">
         <span className="block overflow-hidden">
           <SplitText delay={300} stagger={55}>
             {dict.title1}
