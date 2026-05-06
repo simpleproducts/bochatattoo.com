@@ -64,7 +64,7 @@ export function Hero({ dict }: { dict: Dictionary["hero"] }) {
 
       <div
         aria-hidden
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-mono text-fg/50"
+        className="hidden md:flex absolute bottom-6 left-1/2 -translate-x-1/2 flex-col items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-mono text-fg/50"
       >
         <span>{dict.scroll}</span>
         <span className="block h-8 w-px bg-current animate-scroll-cue origin-top" />
