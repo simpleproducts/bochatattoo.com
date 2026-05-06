@@ -72,7 +72,6 @@ const en: Dictionary = {
       "Full archive of Sebastián Barrena's tattoo work — illustrative microrealism, fineline, animals, botanical, portraits and more. Private studio in Almagro, Buenos Aires.",
     emptyState: "Archive is loading. Come back in a moment.",
     categoryOrder: [
-      "best-tattoos",
       "animales",
       "botanica",
       "retratos",
@@ -91,12 +90,12 @@ const en: Dictionary = {
       "flashes",
       "dibujos",
       "compo",
-      "ig2024",
+      "varios",
+      "featured",
       "random",
     ],
     skipCategories: [],
     categoryLabels: {
-      "best-tattoos": "Best work",
       animales: "Animals",
       botanica: "Botanical",
       retratos: "Portraits",
@@ -114,8 +113,9 @@ const en: Dictionary = {
       minis: "Minis",
       flashes: "Flash",
       dibujos: "Drawings",
+      featured: "Featured",
       compo: "Compositions",
-      ig2024: "IG 2024",
+      varios: "Miscellaneous",
       random: "Random",
     },
     lightbox: {

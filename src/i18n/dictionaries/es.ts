@@ -86,7 +86,6 @@ const es: Dictionary = {
       "Archivo completo de trabajos de Sebastián Barrena — microrealismo ilustrativo, fineline, animales, botánica, retratos y más. Estudio privado en Almagro, Buenos Aires.",
     emptyState: "El archivo está cargando. Volvé en un momento.",
     categoryOrder: [
-      "best-tattoos",
       "animales",
       "botanica",
       "retratos",
@@ -105,12 +104,12 @@ const es: Dictionary = {
       "flashes",
       "dibujos",
       "compo",
-      "ig2024",
+      "varios",
+      "featured",
       "random",
     ],
     skipCategories: [],
     categoryLabels: {
-      "best-tattoos": "Mejores",
       animales: "Animales",
       botanica: "Botánica",
       retratos: "Retratos",
@@ -128,8 +127,9 @@ const es: Dictionary = {
       minis: "Minis",
       flashes: "Flashes",
       dibujos: "Dibujos",
+      featured: "Destacados",
       compo: "Composiciones",
-      ig2024: "IG 2024",
+      varios: "Varios",
       random: "Random",
     },
     lightbox: {
