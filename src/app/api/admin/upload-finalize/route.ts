@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import {
   bustImagesCache,
+  deleteKey,
   getBytes,
+  headObject,
   loadManifest,
   originalKey,
   putBytes,
@@ -21,7 +23,17 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
-const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "avif", "heic", "heif", "tiff"]);
+const ALLOWED_EXT = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "avif",
+  "heic",
+  "heif",
+  "tiff",
+]);
+const MAX_BYTES = 50 * 1024 * 1024;
 
 export async function POST(req: Request) {
   const guard = await assertAdminApi(req);
@@ -38,7 +50,6 @@ export async function POST(req: Request) {
   if (!slug || !ext) {
     return NextResponse.json({ error: "missing-fields" }, { status: 400 });
   }
-  // Reject slugs that could escape the bucket prefix or look like paths.
   if (!SLUG_RE.test(slug) || slug.length > 120) {
     return NextResponse.json({ error: "bad-slug" }, { status: 400 });
   }
@@ -46,50 +57,89 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad-ext" }, { status: 400 });
   }
 
-  // Reject overwrites — a finalize call must register a new entry, never
-  // clobber an existing one (collision is exceedingly rare given the random
-  // suffix, but treat it as an error so we don't lose data).
   const manifest = await loadManifest();
   if (manifest.images[slug]) {
     return NextResponse.json({ error: "slug-taken" }, { status: 409 });
   }
 
-  // Re-derive the originals key server-side. Never trust a client-supplied key.
   const key = originalKey(slug, ext.toLowerCase());
+
+  // Best-effort cleanup helper — delete the original we just refused so we
+  // don't leave orphans in R2.
+  const cleanup = async () => {
+    try {
+      await deleteKey(key);
+    } catch (err) {
+      console.error(`finalize: failed to delete ${key}`, err);
+    }
+  };
+
+  // Server-side size enforcement. Browser-side check is also in place but
+  // never trust the client.
+  const head = await headObject(key);
+  if (!head) {
+    return NextResponse.json(
+      { error: "original-not-found" },
+      { status: 404 },
+    );
+  }
+  if (head.contentLength > MAX_BYTES) {
+    await cleanup();
+    return NextResponse.json(
+      {
+        error: "too-large",
+        size: head.contentLength,
+        max: MAX_BYTES,
+      },
+      { status: 413 },
+    );
+  }
 
   let bytes: Uint8Array;
   try {
     bytes = await getBytes(key);
   } catch (err) {
+    await cleanup();
     return NextResponse.json(
-      { error: "original-not-found", message: (err as Error).message },
-      { status: 404 },
+      { error: "fetch-failed", message: (err as Error).message },
+      { status: 500 },
     );
   }
 
   let processed;
   try {
-    processed = await processImage(
-      bytes,
-      alt || slug.replace(/-/g, " "),
-    );
+    processed = await processImage(bytes, alt || slug.replace(/-/g, " "));
   } catch (err) {
+    await cleanup();
     return NextResponse.json(
       { error: "process-failed", message: (err as Error).message },
       { status: 500 },
     );
   }
 
-  // Upload variants in parallel — IO bound.
-  await Promise.all(
-    processed.variants.map((v) =>
-      putBytes(
-        variantKey(slug, v.width, v.ext),
-        v.bytes,
-        CONTENT_TYPES[v.ext] ?? "application/octet-stream",
+  try {
+    await Promise.all(
+      processed.variants.map((v) =>
+        putBytes(
+          variantKey(slug, v.width, v.ext),
+          v.bytes,
+          CONTENT_TYPES[v.ext] ?? "application/octet-stream",
+        ),
       ),
-    ),
-  );
+    );
+  } catch (err) {
+    // Best-effort: also try to clean up any variants we partially uploaded.
+    await Promise.allSettled([
+      cleanup(),
+      ...processed.variants.map((v) =>
+        deleteKey(variantKey(slug, v.width, v.ext)).catch(() => undefined),
+      ),
+    ]);
+    return NextResponse.json(
+      { error: "variant-upload-failed", message: (err as Error).message },
+      { status: 500 },
+    );
+  }
 
   const entry: ImageEntry = {
     ...processed.entry,
@@ -99,6 +149,15 @@ export async function POST(req: Request) {
   manifest.images[slug] = entry;
   await saveManifest(manifest);
   bustImagesCache();
+
+  // Variants are uploaded and the manifest entry is committed — we don't
+  // need the original anymore. Best-effort delete; an orphan won't break
+  // the site, just costs a few cents in R2 storage.
+  try {
+    await deleteKey(key);
+  } catch (err) {
+    console.error(`finalize: failed to delete original ${key}`, err);
+  }
 
   return NextResponse.json({ ok: true, slug, entry });
 }

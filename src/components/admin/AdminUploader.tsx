@@ -13,6 +13,8 @@ type Item = {
   slug?: string;
 };
 
+const MAX_BYTES = 50 * 1024 * 1024;
+
 export function AdminUploader({ categories, onDone }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<string>(categories[0]?.slug ?? "");
@@ -25,18 +27,26 @@ export function AdminUploader({ categories, onDone }: Props) {
       alert("Pick a category first.");
       return;
     }
-    const next: Item[] = Array.from(files).map((file) => ({
-      file,
-      status: "idle",
-    }));
+    const next: Item[] = Array.from(files).map((file) => {
+      if (file.size > MAX_BYTES) {
+        return {
+          file,
+          status: "error" as const,
+          message: `too-large (${(file.size / 1_000_000).toFixed(1)} MB > 50 MB)`,
+        };
+      }
+      return { file, status: "idle" as const };
+    });
     setItems(next);
     setRunning(true);
 
     let i = 0;
     for (const item of next) {
-      const updated = await uploadOne(item.file, category);
-      next[i] = { ...item, ...updated };
-      setItems([...next]);
+      if (item.status !== "error") {
+        const updated = await uploadOne(item.file, category);
+        next[i] = { ...item, ...updated };
+        setItems([...next]);
+      }
       i++;
     }
     setRunning(false);

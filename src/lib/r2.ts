@@ -13,6 +13,7 @@ import type {
   ImagesManifest,
   ImageEntry,
 } from "./images-types";
+import { ADMIN_STATE_KEY, invalidateAdminEpochCache } from "./admin-epoch";
 
 /** Single place to invalidate the images data cache after a write. */
 export function bustImagesCache(): void {
@@ -143,6 +144,51 @@ export async function objectExists(key: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** HEAD an object — used to check uploaded file size before processing. */
+export async function headObject(
+  key: string,
+): Promise<{ contentLength: number; contentType?: string } | null> {
+  try {
+    const out = await r2Client().send(
+      new HeadObjectCommand({ Bucket: r2Bucket(), Key: key }),
+    );
+    return {
+      contentLength: out.ContentLength ?? 0,
+      contentType: out.ContentType,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Increment the admin session epoch — invalidates every outstanding cookie. */
+export async function bumpAdminEpoch(): Promise<number> {
+  let current = 0;
+  try {
+    const out = await r2Client().send(
+      new GetObjectCommand({ Bucket: r2Bucket(), Key: ADMIN_STATE_KEY }),
+    );
+    const text = await out.Body!.transformToString();
+    const data = JSON.parse(text) as { epoch?: number };
+    current = typeof data.epoch === "number" ? data.epoch : 0;
+  } catch {
+    current = 0;
+  }
+  const next = current + 1;
+  await r2Client().send(
+    new PutObjectCommand({
+      Bucket: r2Bucket(),
+      Key: ADMIN_STATE_KEY,
+      Body: JSON.stringify({ epoch: next }),
+      ContentType: "application/json",
+      // No cache — must always reflect latest after logout.
+      CacheControl: "no-store, max-age=0",
+    }),
+  );
+  invalidateAdminEpochCache();
+  return next;
 }
 
 export async function presignPut(

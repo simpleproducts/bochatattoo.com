@@ -5,6 +5,7 @@ import {
   createSessionCookie,
   passwordsMatch,
 } from "@/lib/admin-auth";
+import { getAdminEpoch } from "@/lib/admin-epoch";
 
 export const runtime = "nodejs";
 
@@ -78,7 +79,8 @@ export async function POST(req: Request) {
   }
   clearAttempt(ip);
 
-  const cookie = await createSessionCookie(secret);
+  const epoch = await getAdminEpoch();
+  const cookie = await createSessionCookie(secret, epoch);
   const res = NextResponse.redirect(new URL(from, req.url), 303);
   res.cookies.set(ADMIN_COOKIE, cookie, {
     httpOnly: true,

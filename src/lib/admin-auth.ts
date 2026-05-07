@@ -20,7 +20,7 @@ const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
 export const ADMIN_COOKIE = COOKIE_NAME;
 export const ADMIN_TTL = SESSION_TTL_SECONDS;
 
-type Payload = { v: 1; exp: number };
+type Payload = { v: 1; exp: number; ep: number };
 
 function toBase64Url(bytes: Uint8Array): string {
   let binary = "";
@@ -66,10 +66,11 @@ async function hmac(value: string, secret: string): Promise<Uint8Array> {
 
 export async function createSessionCookie(
   secret: string,
+  epoch: number,
   ttlSeconds = SESSION_TTL_SECONDS,
 ): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + ttlSeconds;
-  const payload: Payload = { v: 1, exp };
+  const payload: Payload = { v: 1, exp, ep: epoch };
   const payloadB64 = toBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
   const sig = toBase64Url(await hmac(payloadB64, secret));
   return `${payloadB64}.${sig}`;
@@ -78,7 +79,8 @@ export async function createSessionCookie(
 export async function verifySessionCookie(
   cookie: string | undefined,
   secret: string,
-): Promise<{ valid: true; exp: number } | { valid: false }> {
+  currentEpoch: number,
+): Promise<{ valid: true; exp: number; ep: number } | { valid: false }> {
   if (!cookie) return { valid: false };
   const [payloadB64, sigB64] = cookie.split(".");
   if (!payloadB64 || !sigB64) return { valid: false };
@@ -96,9 +98,17 @@ export async function verifySessionCookie(
   } catch {
     return { valid: false };
   }
-  if (payload.v !== 1 || typeof payload.exp !== "number") return { valid: false };
+  if (
+    payload.v !== 1 ||
+    typeof payload.exp !== "number" ||
+    typeof payload.ep !== "number"
+  ) {
+    return { valid: false };
+  }
   if (payload.exp < Math.floor(Date.now() / 1000)) return { valid: false };
-  return { valid: true, exp: payload.exp };
+  // Logout / "kick everyone" check.
+  if (payload.ep < currentEpoch) return { valid: false };
+  return { valid: true, exp: payload.exp, ep: payload.ep };
 }
 
 /** Constant-time string compare (fine for short equal-length passwords). */
@@ -117,13 +127,15 @@ export function passwordsMatch(a: string, b: string): boolean {
 export async function requireAdmin(): Promise<void> {
   const { cookies } = await import("next/headers");
   const { redirect } = await import("next/navigation");
+  const { getAdminEpoch } = await import("./admin-epoch");
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) {
     redirect("/admin/login");
     return;
   }
-  const cookie = (await cookies()).get(ADMIN_COOKIE)?.value;
-  const result = await verifySessionCookie(cookie, secret);
+  const [cookieJar, epoch] = await Promise.all([cookies(), getAdminEpoch()]);
+  const cookie = cookieJar.get(ADMIN_COOKIE)?.value;
+  const result = await verifySessionCookie(cookie, secret, epoch);
   if (!result.valid) redirect("/admin/login");
 }
 
@@ -172,8 +184,10 @@ export async function assertAdminApi(req: Request): Promise<Response | null> {
     }
   }
   const { cookies } = await import("next/headers");
-  const cookie = (await cookies()).get(ADMIN_COOKIE)?.value;
-  const result = await verifySessionCookie(cookie, secret);
+  const { getAdminEpoch } = await import("./admin-epoch");
+  const [cookieJar, epoch] = await Promise.all([cookies(), getAdminEpoch()]);
+  const cookie = cookieJar.get(ADMIN_COOKIE)?.value;
+  const result = await verifySessionCookie(cookie, secret, epoch);
   if (!result.valid) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
