@@ -37,5 +37,5 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## TODO:
 - [ ] Add contact form?
-- [ ] Subcripcion mail form and newsletter management.
-- [ ] Config info@bochatattoo.com on bocha's gmail
+- [x] Subcripcion mail form and newsletter management.
+- [x] Config info@bochatattoo.com on bocha's gmail
