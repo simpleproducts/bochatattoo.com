@@ -5,6 +5,7 @@ import {
   shortId,
   slugify,
 } from "@/lib/r2";
+import { assertAdminApi } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,9 @@ function extFromContentType(ct: string): string {
 }
 
 export async function POST(req: Request) {
+  const guard = await assertAdminApi(req);
+  if (guard) return guard;
+
   let body: { filename?: string; contentType?: string; category?: string };
   try {
     body = await req.json();

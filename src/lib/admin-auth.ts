@@ -108,3 +108,77 @@ export function passwordsMatch(a: string, b: string): boolean {
   const be = new TextEncoder().encode(b);
   return timingSafeEqual(ae, be);
 }
+
+/**
+ * Server-side guard for admin pages. Belt-and-suspenders alongside middleware:
+ * if anything ever causes the matcher to miss a path, the page itself still
+ * refuses to render unauthorized content.
+ */
+export async function requireAdmin(): Promise<void> {
+  const { cookies } = await import("next/headers");
+  const { redirect } = await import("next/navigation");
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) {
+    redirect("/admin/login");
+    return;
+  }
+  const cookie = (await cookies()).get(ADMIN_COOKIE)?.value;
+  const result = await verifySessionCookie(cookie, secret);
+  if (!result.valid) redirect("/admin/login");
+}
+
+/**
+ * API-route guard. Returns a 401 Response if the request is not authenticated
+ * OR if the Origin header is not the same as the request host (basic CSRF
+ * defense). Returns null when the request is good — caller should continue.
+ *
+ * Pattern in routes:
+ *   const guard = await assertAdminApi(req);
+ *   if (guard) return guard;
+ */
+export async function assertAdminApi(req: Request): Promise<Response | null> {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) {
+    return new Response(JSON.stringify({ error: "admin-not-configured" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  // CSRF: any mutating verb must come from the same origin.
+  const method = req.method.toUpperCase();
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    const origin = req.headers.get("origin");
+    const host = req.headers.get("host");
+    if (!origin || !host) {
+      return new Response(JSON.stringify({ error: "missing-origin" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    let originHost: string;
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      return new Response(JSON.stringify({ error: "bad-origin" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (originHost !== host) {
+      return new Response(JSON.stringify({ error: "cross-origin-blocked" }), {
+        status: 403,
+        headers: { "content-type": "application/json" },
+      });
+    }
+  }
+  const { cookies } = await import("next/headers");
+  const cookie = (await cookies()).get(ADMIN_COOKIE)?.value;
+  const result = await verifySessionCookie(cookie, secret);
+  if (!result.valid) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: { "content-type": "application/json" },
+    });
+  }
+  return null;
+}

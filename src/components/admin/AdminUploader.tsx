@@ -155,7 +155,7 @@ async function uploadOne(
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         slug: init.slug,
-        key: init.key,
+        ext: init.ext,
         category,
         alt: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
       }),
