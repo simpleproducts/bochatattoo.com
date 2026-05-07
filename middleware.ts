@@ -5,6 +5,7 @@ import {
   createSessionCookie,
   verifySessionCookie,
 } from "@/lib/admin-auth";
+import { getAdminEpoch } from "@/lib/admin-epoch";
 
 export const config = {
   // Explicit list — `/admin/:path*` does NOT reliably match the bare `/admin`
@@ -31,7 +32,8 @@ export async function middleware(req: NextRequest) {
   }
 
   const cookie = req.cookies.get(ADMIN_COOKIE)?.value;
-  const result = await verifySessionCookie(cookie, secret);
+  const epoch = await getAdminEpoch();
+  const result = await verifySessionCookie(cookie, secret, epoch);
 
   if (!result.valid) {
     if (pathname.startsWith("/api/")) {
@@ -46,7 +48,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const remaining = result.exp - Math.floor(Date.now() / 1000);
   if (remaining < 24 * 60 * 60) {
-    const fresh = await createSessionCookie(secret);
+    const fresh = await createSessionCookie(secret, epoch);
     res.cookies.set(ADMIN_COOKIE, fresh, {
       httpOnly: true,
       sameSite: "lax",
