@@ -6,10 +6,11 @@ import { Reveal } from "./Reveal";
 import { RemoteImage } from "./RemoteImage";
 import { Lightbox } from "./Lightbox";
 import {
-  listImages,
-  listImagesByCategory,
-  type ImageWithSlug,
-} from "@/lib/images";
+  useAllImages,
+  useCategories,
+  useImagesMap,
+} from "./ImagesProvider";
+import type { ImageWithSlug } from "@/lib/images-types";
 import { localePath } from "@/i18n";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
@@ -32,28 +33,49 @@ export function WorkPage({
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
+  const allImages = useAllImages();
+  const categories = useCategories();
+  const { hiddenSet } = useImagesMap();
 
   const sections = useMemo<Section[]>(() => {
-    const skip = new Set(work.skipCategories);
-    const ordered = work.categoryOrder.filter((c) => !skip.has(c));
-    const seen = new Set(ordered);
-    const allCategories = Array.from(
+    // Categories visible in the archive, ordered by `order`. Slugs not in
+    // categories.json fall through to a "tail" sorted alphabetically.
+    const visibleCats = categories.filter((c) => !c.hidden);
+    const known = new Set(visibleCats.map((c) => c.slug));
+    const tailSlugs = Array.from(
       new Set(
-        listImages()
+        allImages
           .map((i) => i.category)
-          .filter((c): c is string => Boolean(c) && !skip.has(c!)),
+          .filter((c): c is string => typeof c === "string" && !known.has(c)),
       ),
-    );
-    // Append any categories present in the manifest but missing from explicit order
-    const tail = allCategories.filter((c) => !seen.has(c)).sort();
-    return [...ordered, ...tail]
+    ).sort();
+
+    const orderedSlugs = [
+      ...[...visibleCats]
+        .sort((a, b) => a.order - b.order)
+        .map((c) => c.slug),
+      ...tailSlugs,
+    ];
+
+    const labelOf = (slug: string): string => {
+      const c = categories.find((c) => c.slug === slug);
+      return (
+        c?.labels?.[locale] ??
+        c?.labels?.es ??
+        slug.replace(/-/g, " ")
+      );
+    };
+
+    return orderedSlugs
       .map((slug) => ({
         slug,
-        label: work.categoryLabels[slug] ?? slug.replace(/-/g, " "),
-        images: listImagesByCategory(slug),
+        label: labelOf(slug),
+        images: allImages
+          .filter((i) => i.category === slug && !hiddenSet.has(i.slug))
+          .sort((a, b) => a.slug.localeCompare(b.slug)),
       }))
       .filter((s) => s.images.length > 0);
-  }, [work]);
+  }, [allImages, categories, hiddenSet, locale]);
 
   const flat = useMemo(
     () => sections.flatMap((s) => s.images),
@@ -62,14 +84,13 @@ export function WorkPage({
   const totalCount = flat.length;
   // Build a "Category NN" label for each image — used as alt text and
   // as the lightbox aria description. The original filename never appears.
-  const lightboxPieces = sections.flatMap((section) => {
-    const catLabel = work.categoryLabels[section.slug] ?? section.label;
-    return section.images.map((img, i) => ({
+  const lightboxPieces = sections.flatMap((section) =>
+    section.images.map((img, i) => ({
       slug: img.slug,
-      alt: `${catLabel} ${String(i + 1).padStart(2, "0")}`,
-      category: catLabel,
-    }));
-  });
+      alt: `${section.label} ${String(i + 1).padStart(2, "0")}`,
+      category: section.label,
+    })),
+  );
 
   // Map slug → global index for lightbox open
   const indexBySlug = useMemo(() => {

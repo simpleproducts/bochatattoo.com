@@ -5,7 +5,11 @@ import { Placeholder } from "./Placeholder";
 import { RemoteImage } from "./RemoteImage";
 import { Reveal } from "./Reveal";
 import { Lightbox } from "./Lightbox";
-import { getImage, listImagesByCategory } from "@/lib/images";
+import {
+  useImagesMap,
+  useCategories,
+  useFeaturedSlugs,
+} from "./ImagesProvider";
 import { localePath } from "@/i18n";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
@@ -14,22 +18,42 @@ type Props = { dict: Dictionary["work"]; locale: Locale };
 
 export function Work({ dict, locale }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const { images, hiddenSet } = useImagesMap();
+  const categories = useCategories();
+  const featuredSlugs = useFeaturedSlugs();
 
-  // 1) hand-picked slugs first, 2) then top-up with one-per-category until
-  // featuredLimit is reached. Skips categories listed in skipCategories.
-  const skip = new Set(dict.skipCategories);
+  // 1) hand-picked slugs first, 2) top-up with one-per-category until
+  // featuredLimit is reached. Hidden categories are skipped.
+  const visibleCategoryOrder = [...categories]
+    .filter((c) => !c.hidden)
+    .sort((a, b) => a.order - b.order)
+    .map((c) => c.slug);
+
+  const labelOf = (slug: string): string => {
+    const c = categories.find((c) => c.slug === slug);
+    return c?.labels?.[locale] ?? c?.labels?.es ?? slug.replace(/-/g, " ");
+  };
+
   const seen = new Set<string>();
-  const handPicked = (dict.featuredSlugs ?? [])
+  const handPicked = featuredSlugs
     .map((slug) => {
-      const entry = getImage(slug);
+      if (hiddenSet.has(slug)) return null;
+      const entry = images[slug];
       return entry ? { slug, ...entry } : null;
     })
     .filter((img): img is NonNullable<typeof img> => Boolean(img));
   for (const img of handPicked) seen.add(img.slug);
 
-  const fillers = dict.categoryOrder
-    .filter((c) => !skip.has(c))
-    .map((c) => listImagesByCategory(c).find((img) => !seen.has(img.slug)))
+  const fillers = visibleCategoryOrder
+    .map((c) => {
+      return Object.entries(images)
+        .filter(
+          ([slug, e]) =>
+            e.category === c && !seen.has(slug) && !hiddenSet.has(slug),
+        )
+        .map(([slug, e]) => ({ slug, ...e }))
+        .sort((a, b) => a.slug.localeCompare(b.slug))[0];
+    })
     .filter((img): img is NonNullable<typeof img> => Boolean(img));
 
   const featured = [...handPicked, ...fillers].slice(0, dict.featuredLimit);
@@ -43,7 +67,7 @@ export function Work({ dict, locale }: Props) {
     const cat = img.category ?? "";
     catSeen[cat] = (catSeen[cat] ?? 0) + 1;
     const n = String(catSeen[cat]).padStart(2, "0");
-    const catLabel = cat ? (dict.categoryLabels[cat] ?? cat) : "";
+    const catLabel = cat ? labelOf(cat) : "";
     const altLabel = catLabel ? `${catLabel} ${n}` : n;
     return { ...img, altLabel, catLabel };
   });

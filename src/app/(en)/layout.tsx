@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
 import { RootShell } from "@/components/RootShell";
+import { ImagesProvider } from "@/components/ImagesProvider";
+import { getImagesData } from "@/lib/images-store";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bochatattoo.com"),
 };
 
-export default function Layout({
+export default async function Layout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <RootShell lang="en">{children}</RootShell>;
+  const data = await getImagesData();
+  return (
+    <RootShell lang="en">
+      <ImagesProvider data={data}>{children}</ImagesProvider>
+    </RootShell>
+  );
 }

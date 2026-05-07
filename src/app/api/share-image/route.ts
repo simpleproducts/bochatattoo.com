@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
-import { getImage, imageUrl } from "@/lib/images";
+import { getImagesData } from "@/lib/images-store";
+import { imageUrl } from "@/lib/images";
 
 export const runtime = "nodejs";
 
@@ -24,8 +25,9 @@ export async function GET(req: Request) {
   if (!slug) {
     return NextResponse.json({ error: "missing-slug" }, { status: 400 });
   }
-  const entry = getImage(slug);
-  if (!entry) {
+  const { manifest } = await getImagesData();
+  const entry = manifest.images[slug];
+  if (!entry || entry.hidden) {
     return NextResponse.json({ error: "not-found" }, { status: 404 });
   }
   const width = entry.sizes[entry.sizes.length - 1];

@@ -1,4 +1,6 @@
-import { getImage, imageUrl } from "@/lib/images";
+"use client";
+import { useImage } from "./ImagesProvider";
+import { imageUrl } from "@/lib/images";
 import type { CSSProperties } from "react";
 
 const BASE = process.env.NEXT_PUBLIC_IMAGES_BASE_URL ?? "";
@@ -21,13 +23,6 @@ type Props = {
   style?: CSSProperties;
 };
 
-/**
- * Plain <img> with a manually-built srcSet. We bypass next/image because
- * `unoptimized: true` in next.config makes Next ignore the custom loader,
- * which broke the URL resolution. With this component, every URL in the
- * srcSet is stamped with NEXT_PUBLIC_IMAGES_BASE_URL at render — no Next
- * loader, no Vercel optimizer dependency, just R2 → browser.
- */
 export function RemoteImage({
   slug,
   alt,
@@ -38,7 +33,7 @@ export function RemoteImage({
   fill,
   style,
 }: Props) {
-  const entry = getImage(slug);
+  const entry = useImage(slug);
 
   if (!entry || !BASE) {
     return (

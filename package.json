@@ -9,23 +9,25 @@
     "lint": "eslint",
     "images:process": "node scripts/process-images.mjs",
     "images:upload": "node scripts/upload-images.mjs",
-    "images:sync": "pnpm images:process \"${SRC:-raw-images}\" && pnpm images:upload"
+    "images:sync": "pnpm images:process \"${SRC:-raw-images}\" && pnpm images:upload",
+    "images:migrate": "node scripts/migrate-to-r2.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1040.0",
+    "@aws-sdk/s3-request-presigner": "^3.1044.0",
     "@vercel/analytics": "^2.0.1",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
-    "@aws-sdk/client-s3": "^3.1040.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

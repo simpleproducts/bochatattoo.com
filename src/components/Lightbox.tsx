@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { RemoteImage } from "./RemoteImage";
-import { getImage, imageUrl } from "@/lib/images";
+import { useImagesMap } from "./ImagesProvider";
+import { imageUrl } from "@/lib/images";
 
 type Piece = {
   slug: string;
@@ -44,6 +45,9 @@ export function Lightbox({
   const [direction, setDirection] = useState<1 | -1>(1);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const { images, hiddenSet } = useImagesMap();
+  const lookup = (slug: string) =>
+    hiddenSet.has(slug) ? undefined : images[slug];
 
   const endIndex = endCard ? pieces.length : null;
   const isEnd = endIndex !== null && index === endIndex;
@@ -142,7 +146,7 @@ export function Lightbox({
       .map((d) => pieces[(index + d + pieces.length) % pieces.length])
       .filter(Boolean);
     for (const p of neighbours) {
-      const entry = getImage(p.slug);
+      const entry = lookup(p.slug);
       if (!entry) continue;
       const img = new Image();
       img.src = imageUrl(
@@ -151,12 +155,14 @@ export function Lightbox({
         entry.format ?? "avif",
       );
     }
+  // lookup is derived from context; safe to omit
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, pieces, isEnd]);
 
   if (!open) return null;
 
   const piece = isEnd ? null : pieces[index!];
-  const entry = piece ? getImage(piece.slug) : null;
+  const entry = piece ? lookup(piece.slug) : null;
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;

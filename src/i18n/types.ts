@@ -31,8 +31,6 @@ export type Dictionary = {
     open: string;
     /** Max number of pieces shown on home */
     featuredLimit: number;
-    /** Hand-picked slugs for the home Work grid. Empty = fallback to one-per-category. */
-    featuredSlugs: string[];
     /** Link from home Work section to the full archive */
     viewAll: string;
     /** Standalone /work page */
@@ -43,12 +41,6 @@ export type Dictionary = {
     metaDescription: string;
     /** Empty-state copy for when the manifest has no images yet */
     emptyState: string;
-    /** Display order for category sections; entries not listed go after, alpha */
-    categoryOrder: string[];
-    /** Categories to hide entirely from the archive (mockups, etc.) */
-    skipCategories: string[];
-    /** Slug → display label per locale */
-    categoryLabels: Record<string, string>;
     /** Lightbox UI labels */
     lightbox: {
       close: string;
