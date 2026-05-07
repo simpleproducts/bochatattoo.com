@@ -5,12 +5,15 @@ import {
   loadManifest,
   saveCategories,
 } from "@/lib/r2";
+import { assertAdminApi } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
 export async function PATCH(req: Request, ctx: RouteContext) {
+  const guard = await assertAdminApi(req);
+  if (guard) return guard;
   const { slug } = await ctx.params;
   let body: {
     labels?: { es?: string; en?: string };
@@ -41,7 +44,9 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   return NextResponse.json({ ok: true, category: entry });
 }
 
-export async function DELETE(_req: Request, ctx: RouteContext) {
+export async function DELETE(req: Request, ctx: RouteContext) {
+  const guard = await assertAdminApi(req);
+  if (guard) return guard;
   const { slug } = await ctx.params;
   const manifest = await loadManifest();
   const inUse = Object.values(manifest.images).some((e) => e.category === slug);

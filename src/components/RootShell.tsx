@@ -1,9 +1,9 @@
 import "@/app/globals.css";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import { Cursor } from "./Cursor";
 import { Grain } from "./Grain";
 import { PageCurtain } from "./PageCurtain";
+import { Tracking } from "./Tracking";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -46,7 +46,7 @@ export function RootShell({
         {children}
         <Grain />
         <Cursor />
-        <Analytics />
+        <Tracking />
       </body>
     </html>
   );

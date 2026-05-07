@@ -6,15 +6,20 @@ import {
   slugify,
 } from "@/lib/r2";
 import type { CategoryEntry } from "@/lib/images-types";
+import { assertAdminApi } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const guard = await assertAdminApi(req);
+  if (guard) return guard;
   const data = await loadCategories();
   return NextResponse.json(data);
 }
 
 export async function POST(req: Request) {
+  const guard = await assertAdminApi(req);
+  if (guard) return guard;
   let body: {
     slug?: string;
     labels?: { es?: string; en?: string };
@@ -60,6 +65,8 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const guard = await assertAdminApi(req);
+  if (guard) return guard;
   // Replace the entire ordered list. Useful for drag-to-reorder UI.
   let body: { categories?: CategoryEntry[] };
   try {

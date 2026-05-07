@@ -7,7 +7,14 @@ import {
 } from "@/lib/admin-auth";
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  // Explicit list — `/admin/:path*` does NOT reliably match the bare `/admin`
+  // in Next.js's matcher compiler, so list both forms for /admin and /api/admin.
+  matcher: [
+    "/admin",
+    "/admin/:path*",
+    "/api/admin",
+    "/api/admin/:path*",
+  ],
 };
 
 const PUBLIC_PATHS = new Set(["/admin/login", "/api/admin/login"]);
