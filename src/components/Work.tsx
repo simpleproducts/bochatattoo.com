@@ -83,6 +83,7 @@ export function Work({ dict, locale }: Props) {
     const slug = new URLSearchParams(window.location.search).get("tattoo");
     if (slug) {
       const idx = pieces.findIndex((p) => p.slug === slug);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (idx !== -1) setOpenIndex(idx);
     }
   // pieces identity is stable after first render

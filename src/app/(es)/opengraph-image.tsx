@@ -1,12 +1,20 @@
 import { ImageResponse } from "next/og";
 import { getDictionary } from "@/i18n";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Bocha — Tatuador";
+export const alt = "Bocha Barrena — Tatuador";
 
-export default function OG() {
+export default async function OG() {
   const dict = getDictionary("es");
+
+  const logoData = await readFile(
+    path.join(process.cwd(), "public/logo/logo-white.png"),
+  );
+  const logoSrc = `data:image/png;base64,${logoData.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -14,45 +22,56 @@ export default function OG() {
           width: "100%",
           height: "100%",
           background:
-            "radial-gradient(ellipse at 25% 25%, #2a221a 0%, transparent 55%), radial-gradient(ellipse at 75% 70%, #1a1f28 0%, transparent 55%), #0a0a0a",
+            "radial-gradient(ellipse at 20% 20%, #2a221a 0%, transparent 50%), radial-gradient(ellipse at 80% 75%, #1a1f28 0%, transparent 50%), #0a0a0a",
           color: "#ededed",
-          padding: 80,
+          padding: 72,
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
           fontFamily: "Georgia, serif",
         }}
       >
+        {/* Top bar */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            fontFamily:
-              "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-            fontSize: 18,
-            color: "#a0a0a0",
-            textTransform: "uppercase",
-            letterSpacing: "0.2em",
+            alignItems: "center",
           }}
         >
-          <span>Bocha · Tattoo</span>
-          <span>· {dict.hero.booking}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoSrc} width={56} height={56} alt="" />
+          <span
+            style={{
+              fontFamily:
+                "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+              fontSize: 16,
+              color: "#6b6b6b",
+              textTransform: "uppercase",
+              letterSpacing: "0.2em",
+            }}
+          >
+            {dict.hero.location}
+          </span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {/* Main content */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               fontStyle: "italic",
-              fontSize: 220,
-              lineHeight: 0.86,
-              letterSpacing: "-0.04em",
+              fontSize: 168,
+              lineHeight: 0.88,
+              letterSpacing: "-0.03em",
             }}
           >
-            <span>bocha</span>
-            <span style={{ color: "#7a7a7a" }}>tattoo</span>
+            <span>Bocha</span>
+            <span>Barrena</span>
           </div>
+
+          {/* Bottom row */}
           <div
             style={{
               display: "flex",
@@ -63,32 +82,43 @@ export default function OG() {
           >
             <div
               style={{
-                fontSize: 26,
-                color: "#cfcfcf",
-                maxWidth: 760,
-                lineHeight: 1.2,
+                fontSize: 22,
+                color: "#a0a0a0",
+                maxWidth: 680,
+                lineHeight: 1.3,
+                fontFamily:
+                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
               }}
             >
-              {dict.meta.description}
+              Tatuajes · Fineline · Microrealismo · Ilustrativo
             </div>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 14,
-                padding: "16px 24px",
-                background: "#ededed",
-                color: "#0a0a0a",
+                gap: 12,
+                padding: "14px 22px",
+                border: "1px solid #ededed",
                 fontFamily:
                   "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                fontSize: 18,
+                fontSize: 16,
                 textTransform: "uppercase",
                 letterSpacing: "0.18em",
                 whiteSpace: "nowrap",
+                color: "#ededed",
               }}
             >
-              <span>Reservá un turno</span>
-              <span>→</span>
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: "#ededed",
+                }}
+              />
+              <span>{dict.hero.booking}</span>
             </div>
           </div>
         </div>

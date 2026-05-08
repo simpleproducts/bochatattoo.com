@@ -4,16 +4,29 @@ import { useRouter } from "next/navigation";
 import { RemoteImage } from "@/components/RemoteImage";
 import { AdminUploader } from "./AdminUploader";
 import { AdminCategories } from "./AdminCategories";
+import { categoryLabel } from "./category-label";
 import type { ImagesData, ImageWithSlug } from "@/lib/images-types";
 
 type Props = { initialData: ImagesData };
 
 type Tab = "images" | "categories";
 
+const ALL = "__all__";
+
+async function readError(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as { message?: string; error?: string };
+    return data.message || data.error || `HTTP ${res.status}`;
+  } catch {
+    return `HTTP ${res.status}`;
+  }
+}
+
 export function AdminGallery({ initialData }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("images");
   const [filter, setFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>(ALL);
   const [busy, startTransition] = useTransition();
 
   const allImages: ImageWithSlug[] = useMemo(
@@ -35,7 +48,6 @@ export function AdminGallery({ initialData }: Props) {
     for (const arr of map.values()) {
       arr.sort((a, b) => a.slug.localeCompare(b.slug));
     }
-    // Order by categories.json `order`, with unknown cats at the end alpha.
     const known = new Map(
       initialData.categoriesData.categories.map((c) => [c.slug, c.order]),
     );
@@ -50,19 +62,20 @@ export function AdminGallery({ initialData }: Props) {
   }, [allImages, initialData.categoriesData.categories]);
 
   const visibleGrouped = useMemo(() => {
-    if (!filter) return grouped;
-    const q = filter.toLowerCase();
+    const q = filter.trim().toLowerCase();
     return grouped
-      .map(([cat, imgs]) => [
-        cat,
-        imgs.filter(
+      .filter(([cat]) => categoryFilter === ALL || cat === categoryFilter)
+      .map(([cat, imgs]) => {
+        if (!q) return [cat, imgs] as const;
+        const next = imgs.filter(
           (i) =>
             i.slug.toLowerCase().includes(q) ||
             (i.alt ?? "").toLowerCase().includes(q),
-        ),
-      ] as const)
+        );
+        return [cat, next] as const;
+      })
       .filter(([, imgs]) => imgs.length > 0);
-  }, [grouped, filter]);
+  }, [grouped, filter, categoryFilter]);
 
   const refresh = () => {
     startTransition(() => router.refresh());
@@ -82,7 +95,7 @@ export function AdminGallery({ initialData }: Props) {
           <form action="/api/admin/logout" method="post">
             <button
               type="submit"
-              className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg"
+              className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
             >
               Sign out
             </button>
@@ -96,7 +109,7 @@ export function AdminGallery({ initialData }: Props) {
             key={t}
             type="button"
             onClick={() => setTab(t)}
-            className={`px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono border-b-2 transition-colors ${
+            className={`px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono border-b-2 transition-colors cursor-pointer ${
               tab === t
                 ? "border-fg text-fg"
                 : "border-transparent text-muted hover:text-fg"
@@ -114,22 +127,54 @@ export function AdminGallery({ initialData }: Props) {
             onDone={refresh}
           />
 
-          <div className="flex items-center gap-3">
-            <input
-              type="search"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter by slug or alt"
-              className="bg-transparent border border-line px-3 py-2 text-sm w-full max-w-sm focus:outline-none focus:border-fg"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-mono uppercase tracking-[0.2em] text-muted">
+                Category
+              </span>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="bg-transparent border border-line px-2 py-2 cursor-pointer"
+              >
+                <option value={ALL}>All categories</option>
+                {[...initialData.categoriesData.categories]
+                  .sort((a, b) =>
+                    categoryLabel(a).localeCompare(categoryLabel(b)),
+                  )
+                  .map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {categoryLabel(c)}
+                    </option>
+                  ))}
+                {/* "uncategorized" pseudo-bucket — only show if any image has no category */}
+                {allImages.some((i) => !i.category) ? (
+                  <option value="uncategorized">(uncategorized)</option>
+                ) : null}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs flex-1 min-w-[200px]">
+              <span className="font-mono uppercase tracking-[0.2em] text-muted">
+                Search
+              </span>
+              <input
+                type="search"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="slug or alt text"
+                className="bg-transparent border border-line px-3 py-2 text-sm focus:outline-none focus:border-fg"
+              />
+            </label>
             {busy ? (
-              <span className="text-xs font-mono text-muted">refreshing…</span>
+              <span className="text-xs font-mono text-muted self-end pb-2">
+                refreshing…
+              </span>
             ) : null}
           </div>
 
           <section className="flex flex-col gap-10">
             {visibleGrouped.length === 0 ? (
-              <p className="text-muted text-sm">No images yet.</p>
+              <p className="text-muted text-sm">No images match.</p>
             ) : (
               visibleGrouped.map(([cat, imgs]) => (
                 <CategorySection
@@ -164,11 +209,13 @@ function CategorySection({
   categories: ImagesData["categoriesData"]["categories"];
   onChange: () => void;
 }) {
+  const entry = categories.find((c) => c.slug === category);
+  const label = entry ? categoryLabel(entry) : category.replace(/-/g, " ");
   return (
     <div className="flex flex-col gap-3">
       <header className="flex items-baseline justify-between gap-3">
         <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-          {category} · {images.length}
+          {label} · {images.length}
         </h2>
       </header>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -207,9 +254,8 @@ function ImageCard({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await readError(res));
       onChange();
-      setOpen(false);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -227,7 +273,7 @@ function ImageCard({
       const res = await fetch(`/api/admin/images/${image.slug}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await readError(res));
       onChange();
     } catch (e) {
       setErr((e as Error).message);
@@ -257,14 +303,14 @@ function ImageCard({
       </div>
 
       {open ? (
-        <div className="absolute inset-0 z-10 bg-bg/95 backdrop-blur-sm p-3 flex flex-col gap-2 text-xs">
+        <div className="absolute inset-0 z-10 bg-bg/95 backdrop-blur-sm p-4 pt-12 flex flex-col gap-3 text-xs">
           <button
             type="button"
             aria-label="Close"
             onClick={() => setOpen(false)}
-            className="absolute top-2 right-2 font-mono uppercase tracking-[0.2em] text-muted hover:text-fg"
+            className="absolute top-1 right-1 w-9 h-9 flex items-center justify-center text-2xl leading-none text-muted hover:text-fg cursor-pointer"
           >
-            ✕
+            ×
           </button>
           <label className="flex flex-col gap-1">
             <span className="text-muted uppercase tracking-[0.2em] font-mono">
@@ -273,32 +319,39 @@ function ImageCard({
             <select
               defaultValue={image.category ?? ""}
               onChange={(e) => patch({ category: e.target.value || null })}
-              className="bg-transparent border border-line px-2 py-1"
+              className="bg-transparent border border-line px-2 py-1 cursor-pointer"
             >
               <option value="">(none)</option>
-              {categories.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.slug}
-                </option>
-              ))}
+              {[...categories]
+                .sort((a, b) =>
+                  categoryLabel(a).localeCompare(categoryLabel(b)),
+                )
+                .map((c) => (
+                  <option key={c.slug} value={c.slug}>
+                    {categoryLabel(c)}
+                  </option>
+                ))}
             </select>
           </label>
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               defaultChecked={image.hidden ?? false}
               onChange={(e) => patch({ hidden: e.target.checked })}
+              className="cursor-pointer"
             />
             <span>Hidden</span>
           </label>
           <button
             type="button"
             onClick={remove}
-            className="mt-2 border border-red-400 text-red-400 px-2 py-1 uppercase tracking-[0.2em] font-mono text-[10px] hover:bg-red-400 hover:text-bg"
+            className="mt-2 border border-red-400 text-red-400 px-2 py-1 uppercase tracking-[0.2em] font-mono text-[10px] hover:bg-red-400 hover:text-bg cursor-pointer"
           >
             Delete
           </button>
-          {err ? <span className="text-red-400">{err}</span> : null}
+          {err ? (
+            <span className="text-red-400 break-words">{err}</span>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -70,8 +70,19 @@ async function getJson<T>(key: string, fallback: T): Promise<T> {
     );
     const text = await out.Body!.transformToString();
     return JSON.parse(text) as T;
-  } catch {
-    return fallback;
+  } catch (err) {
+    // Genuine "file not yet created" → use the empty fallback.
+    const e = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+    if (
+      e?.name === "NoSuchKey" ||
+      e?.name === "NotFound" ||
+      e?.$metadata?.httpStatusCode === 404
+    ) {
+      return fallback;
+    }
+    // Anything else (credentials wrong, R2 unreachable, malformed JSON,
+    // permissions) is a real error — bubble it so the route can surface it.
+    throw err;
   }
 }
 

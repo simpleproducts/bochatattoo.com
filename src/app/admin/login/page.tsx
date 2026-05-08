@@ -44,7 +44,7 @@ export default async function LoginPage({
 
         <button
           type="submit"
-          className="border border-fg px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors"
+          className="border border-fg px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors cursor-pointer"
         >
           Enter
         </button>
