@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import type { CategoryEntry } from "@/lib/images-types";
+import { categoryLabel } from "./category-label";
 
 type Props = { categories: CategoryEntry[]; onDone: () => void };
 
@@ -14,12 +15,15 @@ type Item = {
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
+const ACCEPT =
+  "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,image/tiff";
 
 export function AdminUploader({ categories, onDone }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<string>(categories[0]?.slug ?? "");
   const [items, setItems] = useState<Item[]>([]);
   const [running, setRunning] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -53,42 +57,93 @@ export function AdminUploader({ categories, onDone }: Props) {
     onDone();
   }
 
+  const disabled = running || !category;
+
   return (
-    <section className="border border-line p-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs">
-          <span className="font-mono uppercase tracking-[0.2em] text-muted">
-            Category
-          </span>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="bg-transparent border border-line px-2 py-1"
-          >
-            {categories.length === 0 ? (
-              <option value="">(create a category first)</option>
-            ) : (
-              categories.map((c) => (
+    <section className="flex flex-col gap-3">
+      <label className="flex flex-col gap-1 text-xs max-w-xs">
+        <span className="font-mono uppercase tracking-[0.2em] text-muted">
+          Upload to category
+        </span>
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="bg-transparent border border-line px-2 py-2 cursor-pointer"
+        >
+          {categories.length === 0 ? (
+            <option value="">(create a category first)</option>
+          ) : (
+            [...categories]
+              .sort((a, b) =>
+                categoryLabel(a).localeCompare(categoryLabel(b)),
+              )
+              .map((c) => (
                 <option key={c.slug} value={c.slug}>
-                  {c.slug}
+                  {categoryLabel(c)}
                 </option>
               ))
-            )}
-          </select>
-        </label>
+          )}
+        </select>
+      </label>
 
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-disabled={disabled}
+        onClick={() => !disabled && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (disabled) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onDragOver={(e) => {
+          if (disabled) return;
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          if (disabled) return;
+          e.preventDefault();
+          setDragOver(false);
+          void handleFiles(e.dataTransfer.files);
+        }}
+        className={[
+          "border-2 border-dashed rounded-md p-10 flex flex-col items-center justify-center gap-3 text-center transition-colors",
+          disabled
+            ? "border-line opacity-50 cursor-not-allowed"
+            : "cursor-pointer hover:border-fg hover:bg-fg/5",
+          dragOver ? "border-fg bg-fg/10" : "border-line",
+        ].join(" ")}
+      >
+        <div className="text-3xl leading-none">↑</div>
+        <div className="font-serif italic text-xl">
+          {dragOver ? "Drop to upload" : "Drag images here"}
+        </div>
+        <div className="text-xs font-mono uppercase tracking-[0.2em] text-muted">
+          or click to choose files
+        </div>
+        <div className="text-[10px] font-mono text-muted/70">
+          jpg · png · webp · avif · heic · tiff — up to 50 MB each · multi-select OK
+        </div>
+        {!category ? (
+          <div className="text-xs text-red-400 font-mono mt-2">
+            Pick a category above first
+          </div>
+        ) : null}
         <input
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,image/tiff"
+          accept={ACCEPT}
           multiple
-          disabled={running || !category}
+          disabled={disabled}
           onChange={(e) => {
             void handleFiles(e.target.files);
-            // Reset so picking the same files again works.
             e.target.value = "";
           }}
-          className="text-xs"
+          className="hidden"
         />
       </div>
 
@@ -128,7 +183,6 @@ async function uploadOne(
   category: string,
 ): Promise<Partial<Item>> {
   try {
-    // 1) ask the server for a presigned URL
     const initRes = await fetch("/api/admin/upload-init", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -149,17 +203,19 @@ async function uploadOne(
       putUrl: string;
     };
 
-    // 2) PUT the file directly to R2
     const putRes = await fetch(init.putUrl, {
       method: "PUT",
       headers: { "content-type": file.type || "image/jpeg" },
       body: file,
     });
     if (!putRes.ok) {
-      return { status: "error", message: `put: ${putRes.status}`, slug: init.slug };
+      return {
+        status: "error",
+        message: `put: ${putRes.status}`,
+        slug: init.slug,
+      };
     }
 
-    // 3) ask the server to process + register
     const finalRes = await fetch("/api/admin/upload-finalize", {
       method: "POST",
       headers: { "content-type": "application/json" },

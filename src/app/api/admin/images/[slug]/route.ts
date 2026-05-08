@@ -7,10 +7,31 @@ import {
   variantKey,
 } from "@/lib/r2";
 import { assertAdminApi } from "@/lib/admin-auth";
+import type { ImagesManifest } from "@/lib/images-types";
 
 export const runtime = "nodejs";
 
 type RouteContext = { params: Promise<{ slug: string }> };
+
+async function safeLoadManifest(): Promise<
+  { ok: true; manifest: ImagesManifest } | { ok: false; response: Response }
+> {
+  try {
+    const manifest = await loadManifest();
+    return { ok: true, manifest };
+  } catch (err) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        {
+          error: "manifest-load-failed",
+          message: (err as Error).message,
+        },
+        { status: 500 },
+      ),
+    };
+  }
+}
 
 export async function PATCH(req: Request, ctx: RouteContext) {
   const guard = await assertAdminApi(req);
@@ -27,10 +48,20 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     return NextResponse.json({ error: "bad-json" }, { status: 400 });
   }
 
-  const manifest = await loadManifest();
+  const loaded = await safeLoadManifest();
+  if (!loaded.ok) return loaded.response;
+  const manifest = loaded.manifest;
+
   const entry = manifest.images[slug];
   if (!entry) {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error: "not-found",
+        message: `Slug "${slug}" is not in the live manifest. Refresh and try again.`,
+        manifestSize: Object.keys(manifest.images).length,
+      },
+      { status: 404 },
+    );
   }
 
   if (body.category !== undefined) {
@@ -44,7 +75,14 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   }
 
   manifest.images[slug] = entry;
-  await saveManifest(manifest);
+  try {
+    await saveManifest(manifest);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "manifest-save-failed", message: (err as Error).message },
+      { status: 500 },
+    );
+  }
   bustImagesCache();
   return NextResponse.json({ ok: true, slug, entry });
 }
@@ -53,10 +91,20 @@ export async function DELETE(req: Request, ctx: RouteContext) {
   const guard = await assertAdminApi(req);
   if (guard) return guard;
   const { slug } = await ctx.params;
-  const manifest = await loadManifest();
+
+  const loaded = await safeLoadManifest();
+  if (!loaded.ok) return loaded.response;
+  const manifest = loaded.manifest;
+
   const entry = manifest.images[slug];
   if (!entry) {
-    return NextResponse.json({ error: "not-found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error: "not-found",
+        message: `Slug "${slug}" is not in the live manifest.`,
+      },
+      { status: 404 },
+    );
   }
 
   // Best-effort variant cleanup. We don't fail the request on individual
@@ -71,7 +119,14 @@ export async function DELETE(req: Request, ctx: RouteContext) {
   delete manifest.images[slug];
   // Also drop from featured if present.
   manifest.featuredSlugs = manifest.featuredSlugs.filter((s) => s !== slug);
-  await saveManifest(manifest);
+  try {
+    await saveManifest(manifest);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "manifest-save-failed", message: (err as Error).message },
+      { status: 500 },
+    );
+  }
   bustImagesCache();
   return NextResponse.json({ ok: true, slug });
 }

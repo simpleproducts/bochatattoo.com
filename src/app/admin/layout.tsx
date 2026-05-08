@@ -2,7 +2,7 @@ import "@/app/globals.css";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { ImagesProvider } from "@/components/ImagesProvider";
-import { getImagesData } from "@/lib/images-store";
+import { getImagesDataFresh } from "@/lib/images-store";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -21,10 +21,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const data = await getImagesData();
+  const data = await getImagesDataFresh();
   return (
     <html
       lang="en"

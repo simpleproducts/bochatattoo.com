@@ -41,12 +41,17 @@ export function WorkPage({
     // Categories visible in the archive, ordered by `order`. Slugs not in
     // categories.json fall through to a "tail" sorted alphabetically.
     const visibleCats = categories.filter((c) => !c.hidden);
-    const known = new Set(visibleCats.map((c) => c.slug));
+    // Tail = images whose category isn't registered AT ALL in categories.json.
+    // Images whose category is registered but hidden must NOT leak through here.
+    const declaredSlugs = new Set(categories.map((c) => c.slug));
     const tailSlugs = Array.from(
       new Set(
         allImages
           .map((i) => i.category)
-          .filter((c): c is string => typeof c === "string" && !known.has(c)),
+          .filter(
+            (c): c is string =>
+              typeof c === "string" && !declaredSlugs.has(c),
+          ),
       ),
     ).sort();
 
@@ -104,6 +109,7 @@ export function WorkPage({
     const slug = new URLSearchParams(window.location.search).get("tattoo");
     if (slug) {
       const idx = indexBySlug.get(slug);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (idx !== undefined) setOpenIndex(idx);
     }
   // indexBySlug is stable after mount

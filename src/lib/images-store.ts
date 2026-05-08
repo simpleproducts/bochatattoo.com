@@ -23,7 +23,11 @@ async function fetchJson<T>(path: string, fallback: T): Promise<T> {
   if (!BASE) return fallback;
   try {
     const res = await fetch(`${BASE}/${path}`, {
-      next: { tags: ["images"], revalidate: 3600 },
+      // Short revalidate so admin edits show up on the public site within
+      // ~60s even if the bustImagesCache → revalidateTag path doesn't fully
+      // propagate (e.g. CDN in front of Vercel). The tag is still the
+      // primary invalidation mechanism — admin actions wipe it instantly.
+      next: { tags: ["images"], revalidate: 60 },
     });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
@@ -43,4 +47,26 @@ export const getImagesData = cache(async (): Promise<ImagesData> => {
     fetchJson<CategoriesData>("categories.json", EMPTY_CATEGORIES),
   ]);
   return { manifest, categoriesData };
+});
+
+/**
+ * Always-fresh variant for the admin dashboard. Bypasses Next's data cache
+ * and CDN caching by reading from R2 directly via the S3 SDK. Use only on
+ * pages that already opt into dynamic rendering (e.g. /admin/page.tsx).
+ */
+export const getImagesDataFresh = cache(async (): Promise<ImagesData> => {
+  // Lazy-import so the bundle for non-admin routes doesn't pull the S3 SDK.
+  const { loadManifest, loadCategories } = await import("./r2");
+  try {
+    const [manifest, categoriesData] = await Promise.all([
+      loadManifest(),
+      loadCategories(),
+    ]);
+    return { manifest, categoriesData };
+  } catch {
+    // If R2 creds are missing on the server, fall back to the cached path so
+    // the admin page still renders (the user will see the empty/stale view
+    // and any subsequent action surfaces the real error).
+    return getImagesData();
+  }
 });
