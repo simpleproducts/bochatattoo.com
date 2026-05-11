@@ -7,7 +7,7 @@
  *
  * Reads:
  *   - src/data/images.json                (legacy flat manifest)
- *   - src/data/hidden-slugs.ts            (TS file, parsed as text)
+ *   - src/data/hidden-slugs.ts            (optional, no-op if removed)
  *
  * Writes to R2:
  *   - manifest.json                       (new shape: { version, images, featuredSlugs })

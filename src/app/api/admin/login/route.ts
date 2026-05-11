@@ -19,9 +19,14 @@ const FAILURE_DELAY_MS = 1_000;
 const attempts = new Map<string, { count: number; firstAt: number }>();
 
 function ipFromHeaders(req: Request): string {
+  // On Vercel, `x-real-ip` is set by the platform itself (after stripping
+  // any client-supplied version). `x-forwarded-for` can include
+  // client-supplied prefixes — use it only as a fallback. `cf-connecting-ip`
+  // covers a Cloudflare proxy in front of Vercel.
   return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );
 }

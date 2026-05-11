@@ -53,3 +53,15 @@ export type ImagesData = {
   manifest: ImagesManifest;
   categoriesData: CategoriesData;
 };
+
+/** Shared empty fallbacks — used by both the public store and the admin S3 reader. */
+export const EMPTY_MANIFEST: ImagesManifest = {
+  version: 1,
+  images: {},
+  featuredSlugs: [],
+};
+
+export const EMPTY_CATEGORIES: CategoriesData = {
+  version: 1,
+  categories: [],
+};

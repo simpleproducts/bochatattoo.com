@@ -1,33 +1,25 @@
 import "server-only";
 import { cache } from "react";
-import type {
-  CategoriesData,
-  ImagesData,
-  ImagesManifest,
+import {
+  EMPTY_CATEGORIES,
+  EMPTY_MANIFEST,
+  type CategoriesData,
+  type ImagesData,
+  type ImagesManifest,
 } from "./images-types";
 
 const BASE = process.env.NEXT_PUBLIC_IMAGES_BASE_URL ?? "";
-
-const EMPTY_MANIFEST: ImagesManifest = {
-  version: 1,
-  images: {},
-  featuredSlugs: [],
-};
-
-const EMPTY_CATEGORIES: CategoriesData = {
-  version: 1,
-  categories: [],
-};
 
 async function fetchJson<T>(path: string, fallback: T): Promise<T> {
   if (!BASE) return fallback;
   try {
     const res = await fetch(`${BASE}/${path}`, {
-      // Short revalidate so admin edits show up on the public site within
-      // ~60s even if the bustImagesCache → revalidateTag path doesn't fully
-      // propagate (e.g. CDN in front of Vercel). The tag is still the
-      // primary invalidation mechanism — admin actions wipe it instantly.
-      next: { tags: ["images"], revalidate: 60 },
+      // Tag-based invalidation is the primary mechanism — every admin write
+      // calls revalidateTag('images'), which wipes this entry instantly.
+      // The TTL is just a safety net for cases where the tag invalidation
+      // doesn't fully propagate (e.g., a CDN sitting in front of Vercel).
+      // 5 minutes is a reasonable balance between freshness and R2 GET cost.
+      next: { tags: ["images"], revalidate: 300 },
     });
     if (!res.ok) return fallback;
     return (await res.json()) as T;

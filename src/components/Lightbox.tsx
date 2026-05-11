@@ -48,6 +48,13 @@ export function Lightbox({
   const { images, hiddenSet } = useImagesMap();
   const lookup = (slug: string) =>
     hiddenSet.has(slug) ? undefined : images[slug];
+  const preloaded = useRef<Set<string>>(new Set());
+
+  // Reset slide direction whenever the lightbox transitions closed → open,
+  // so the first navigation after re-opening doesn't use stale direction.
+  useEffect(() => {
+    if (open) setDirection(1);
+  }, [open]);
 
   const endIndex = endCard ? pieces.length : null;
   const isEnd = endIndex !== null && index === endIndex;
@@ -92,11 +99,19 @@ export function Lightbox({
       else if (e.key === "ArrowLeft") go(-1);
     };
     window.addEventListener("keydown", onKey);
+    // Lock body scroll AND compensate for the scrollbar gutter so the page
+    // doesn't jump rightward on desktop when the scrollbar disappears.
     const prevOverflow = document.body.style.overflow;
+    const prevPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPaddingRight;
     };
   }, [open, onClose, go]);
 
@@ -139,15 +154,19 @@ export function Lightbox({
     window.history.replaceState(window.history.state, "", url.toString());
   }, [open, index, isEnd, pieces]);
 
-  // Preload neighbours so navigation feels instant.
+  // Preload neighbours so navigation feels instant. Dedupe via a Set ref —
+  // browser cache also helps but the explicit set avoids creating Image()
+  // objects on every index flick during fast keyboard arrow nav.
   useEffect(() => {
     if (index === null || isEnd) return;
     const neighbours = [-1, 1]
       .map((d) => pieces[(index + d + pieces.length) % pieces.length])
       .filter(Boolean);
     for (const p of neighbours) {
+      if (preloaded.current.has(p.slug)) continue;
       const entry = lookup(p.slug);
       if (!entry) continue;
+      preloaded.current.add(p.slug);
       const img = new Image();
       img.src = imageUrl(
         p.slug,
@@ -198,7 +217,9 @@ export function Lightbox({
     if (!piece || !entry) return;
     const url = `/api/share-image?slug=${encodeURIComponent(piece.slug)}`;
     try {
-      const res = await fetch(url, { cache: "force-cache" });
+      // Always re-fetch — if the image was hidden/deleted in admin, the
+      // route returns 404 and we shouldn't serve a stale cached blob.
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error("fetch-failed");
       // Force the MIME type to image/jpeg regardless of what the blob reports
       // — some user agents read it back as the original (avif/webp) which

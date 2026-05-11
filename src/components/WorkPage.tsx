@@ -156,7 +156,12 @@ export function WorkPage({
         pickActive();
       },
       {
-        rootMargin: `-${headerOffset}px 0px -55% 0px`,
+        // Top: clamp to just below the sticky header strip so a section
+        // becomes "active" the moment its top reaches the strip.
+        // Bottom: -45% keeps the active band in the upper half of the
+        // viewport without being so aggressive that fast scroll lags by
+        // a section.
+        rootMargin: `-${headerOffset}px 0px -45% 0px`,
         threshold: 0,
       },
     );
