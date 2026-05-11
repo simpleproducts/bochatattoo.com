@@ -8,10 +8,12 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { revalidateTag } from "next/cache";
-import type {
-  CategoriesData,
-  ImagesManifest,
-  ImageEntry,
+import {
+  EMPTY_CATEGORIES,
+  EMPTY_MANIFEST,
+  type CategoriesData,
+  type ImagesManifest,
+  type ImageEntry,
 } from "./images-types";
 import { ADMIN_STATE_KEY, invalidateAdminEpochCache } from "./admin-epoch";
 
@@ -19,14 +21,6 @@ import { ADMIN_STATE_KEY, invalidateAdminEpochCache } from "./admin-epoch";
 export function bustImagesCache(): void {
   revalidateTag("images", "default");
 }
-
-const EMPTY_MANIFEST: ImagesManifest = {
-  version: 1,
-  images: {},
-  featuredSlugs: [],
-};
-
-const EMPTY_CATEGORIES: CategoriesData = { version: 1, categories: [] };
 
 export const MANIFEST_KEY = "manifest.json";
 export const CATEGORIES_KEY = "categories.json";

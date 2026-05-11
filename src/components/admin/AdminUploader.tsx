@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CategoryEntry } from "@/lib/images-types";
 import { categoryLabel } from "./category-label";
 
@@ -12,6 +12,7 @@ type Item = {
   status: Status;
   message?: string;
   slug?: string;
+  previewUrl?: string;
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -25,6 +26,16 @@ export function AdminUploader({ categories, onDone }: Props) {
   const [running, setRunning] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  // Revoke any object URLs from the previous batch when the items list is
+  // replaced or the component unmounts. Without this, blob URLs leak.
+  useEffect(() => {
+    return () => {
+      for (const it of items) {
+        if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
+      }
+    };
+  }, [items]);
+
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     if (!category) {
@@ -32,14 +43,18 @@ export function AdminUploader({ categories, onDone }: Props) {
       return;
     }
     const next: Item[] = Array.from(files).map((file) => {
+      const previewUrl = file.type.startsWith("image/")
+        ? URL.createObjectURL(file)
+        : undefined;
       if (file.size > MAX_BYTES) {
         return {
           file,
+          previewUrl,
           status: "error" as const,
           message: `too-large (${(file.size / 1_000_000).toFixed(1)} MB > 50 MB)`,
         };
       }
-      return { file, status: "idle" as const };
+      return { file, previewUrl, status: "idle" as const };
     });
     setItems(next);
     setRunning(true);
@@ -148,12 +163,29 @@ export function AdminUploader({ categories, onDone }: Props) {
       </div>
 
       {items.length > 0 ? (
-        <ul className="flex flex-col gap-1 text-xs font-mono">
+        <ul className="flex flex-col gap-2 text-xs font-mono">
           {items.map((it, i) => (
             <li
               key={`${it.file.name}-${i}`}
-              className="flex items-center gap-3"
+              className="flex items-center gap-3 border border-line p-2"
             >
+              {it.previewUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={it.previewUrl}
+                  alt=""
+                  className="w-10 h-10 object-cover bg-line shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-line shrink-0" />
+              )}
+              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                <span className="truncate">{it.file.name}</span>
+                <span className="text-muted">
+                  {(it.file.size / 1_000_000).toFixed(1)} MB
+                  {it.slug ? ` · ${it.slug}` : ""}
+                </span>
+              </div>
               <span
                 className={
                   it.status === "error"
@@ -165,10 +197,10 @@ export function AdminUploader({ categories, onDone }: Props) {
               >
                 [{it.status}]
               </span>
-              <span className="flex-1 truncate">{it.file.name}</span>
-              {it.slug ? <span className="text-muted">{it.slug}</span> : null}
               {it.message ? (
-                <span className="text-red-400">{it.message}</span>
+                <span className="text-red-400 text-[10px] max-w-[40%] break-words">
+                  {it.message}
+                </span>
               ) : null}
             </li>
           ))}

@@ -111,6 +111,26 @@ export async function verifySessionCookie(
   return { valid: true, exp: payload.exp, ep: payload.ep };
 }
 
+/**
+ * Standard JSON error response for admin API routes. Always returns the
+ * same shape — `{ error: <code>, message: <human-readable> }` — so the
+ * client only has to look in one place.
+ */
+export function adminError(
+  code: string,
+  message: string,
+  status = 400,
+  extra?: Record<string, unknown>,
+): Response {
+  return new Response(
+    JSON.stringify({ error: code, message, ...(extra ?? {}) }),
+    {
+      status,
+      headers: { "content-type": "application/json" },
+    },
+  );
+}
+
 /** Constant-time string compare (fine for short equal-length passwords). */
 export function passwordsMatch(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -151,10 +171,11 @@ export async function requireAdmin(): Promise<void> {
 export async function assertAdminApi(req: Request): Promise<Response | null> {
   const secret = process.env.ADMIN_SESSION_SECRET;
   if (!secret) {
-    return new Response(JSON.stringify({ error: "admin-not-configured" }), {
-      status: 503,
-      headers: { "content-type": "application/json" },
-    });
+    return adminError(
+      "admin-not-configured",
+      "ADMIN_SESSION_SECRET is not set on the server.",
+      503,
+    );
   }
   // CSRF: any mutating verb must come from the same origin.
   const method = req.method.toUpperCase();
@@ -162,25 +183,24 @@ export async function assertAdminApi(req: Request): Promise<Response | null> {
     const origin = req.headers.get("origin");
     const host = req.headers.get("host");
     if (!origin || !host) {
-      return new Response(JSON.stringify({ error: "missing-origin" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return adminError(
+        "missing-origin",
+        "Request is missing the Origin or Host header.",
+        400,
+      );
     }
     let originHost: string;
     try {
       originHost = new URL(origin).host;
     } catch {
-      return new Response(JSON.stringify({ error: "bad-origin" }), {
-        status: 400,
-        headers: { "content-type": "application/json" },
-      });
+      return adminError("bad-origin", "Origin header is not a valid URL.", 400);
     }
     if (originHost !== host) {
-      return new Response(JSON.stringify({ error: "cross-origin-blocked" }), {
-        status: 403,
-        headers: { "content-type": "application/json" },
-      });
+      return adminError(
+        "cross-origin-blocked",
+        "Cross-origin admin requests are not allowed.",
+        403,
+      );
     }
   }
   const { cookies } = await import("next/headers");
@@ -189,10 +209,11 @@ export async function assertAdminApi(req: Request): Promise<Response | null> {
   const cookie = cookieJar.get(ADMIN_COOKIE)?.value;
   const result = await verifySessionCookie(cookie, secret, epoch);
   if (!result.valid) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: { "content-type": "application/json" },
-    });
+    return adminError(
+      "unauthorized",
+      "Session is missing, expired, or revoked. Sign in again.",
+      401,
+    );
   }
   return null;
 }

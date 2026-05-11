@@ -6,7 +6,6 @@ import type {
   ImageWithSlug,
   ImagesData,
 } from "@/lib/images-types";
-import { HIDDEN_SLUGS } from "@/data/hidden-slugs";
 
 type Ctx = {
   images: Record<string, ImageEntry>;
@@ -25,7 +24,11 @@ export function ImagesProvider({
   children: ReactNode;
 }) {
   const value = useMemo<Ctx>(() => {
-    const hiddenSet = new Set<string>(HIDDEN_SLUGS);
+    // Hidden slugs come exclusively from the manifest's per-image `hidden`
+    // flag, which the admin toggles. This used to also union with a static
+    // HIDDEN_SLUGS list under src/data/, but that was ambiguous with two
+    // sources of truth and is now removed.
+    const hiddenSet = new Set<string>();
     for (const [slug, entry] of Object.entries(data.manifest.images)) {
       if (entry.hidden) hiddenSet.add(slug);
     }
