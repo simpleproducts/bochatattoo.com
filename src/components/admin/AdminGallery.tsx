@@ -295,7 +295,13 @@ function ImageCard({
           fill
           sizes="(min-width: 1024px) 16vw, (min-width: 768px) 25vw, 50vw"
           className="object-cover"
+          showHidden
         />
+        {image.hidden ? (
+          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-bg/80 text-fg font-mono uppercase tracking-[0.2em] text-[9px]">
+            Hidden
+          </span>
+        ) : null}
       </div>
 
       <div className="px-2 py-2 text-[10px] font-mono break-all">
