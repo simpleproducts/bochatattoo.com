@@ -1,5 +1,5 @@
 "use client";
-import { useImage } from "./ImagesProvider";
+import { useImage, useImagesMap } from "./ImagesProvider";
 import { imageUrl } from "@/lib/images";
 import type { CSSProperties } from "react";
 
@@ -21,6 +21,12 @@ type Props = {
   fetchPriority?: "high" | "low" | "auto";
   fill?: boolean;
   style?: CSSProperties;
+  /**
+   * When true, render the image even if it's flagged hidden. Used by the
+   * admin gallery so the artist can see what's been hidden (with a dimmed
+   * overlay) rather than the "Missing" placeholder.
+   */
+  showHidden?: boolean;
 };
 
 export function RemoteImage({
@@ -32,8 +38,11 @@ export function RemoteImage({
   fetchPriority,
   fill,
   style,
+  showHidden,
 }: Props) {
-  const entry = useImage(slug);
+  const filtered = useImage(slug);
+  const raw = useImagesMap();
+  const entry = showHidden ? raw.images[slug] : filtered;
 
   if (!entry || !BASE) {
     return (
