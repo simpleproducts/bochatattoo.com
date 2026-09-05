@@ -101,4 +101,106 @@ export type Dictionary = {
     error: string;
   };
   localeSwitcher: { label: string };
+  /**
+   * Private-link client booking flow (/book/<token>). Every string here is
+   * client-facing: nothing in this block is ever shown to the admin.
+   */
+  booking: {
+    metaTitle: string;
+    header: { home: string };
+    card: { eyebrow: string; studioTime: string; deposit: string };
+    /** The three steps of the flow, mirrored by the progress rail. */
+    rail: { details: string; terms: string; receipt: string };
+    form: {
+      eyebrow: string;
+      intro: string;
+      name: string;
+      email: string;
+      emailHint: string;
+      instagram: string;
+      phone: string;
+      note: string;
+      optional: string;
+      /** Marks a field the studio filled in before the link was sent. */
+      prefilled: string;
+      nameRequired: string;
+      emailRequired: string;
+      invalidEmail: string;
+      invalidInstagram: string;
+      invalidPhone: string;
+      continue: string;
+      sending: string;
+      edit: string;
+      savedSummary: string;
+    };
+    terms: {
+      title: string;
+      scrollHint: string;
+      accept: string;
+      /** Contains a literal {version}, replaced at render like footer.rights's {year}. */
+      version: string;
+      back: string;
+      confirm: string;
+    };
+    payment: {
+      eyebrow: string;
+      intro: string;
+      alias: string;
+      cbu: string;
+      holder: string;
+      bank: string;
+      amount: string;
+      copy: string;
+      copied: string;
+    };
+    receipt: {
+      eyebrow: string;
+      intro: string;
+      drop: string;
+      tap: string;
+      formats: string;
+      change: string;
+      uploading: string;
+      verifying: string;
+      uploaded: string;
+      replace: string;
+      retry: string;
+    };
+    done: {
+      eyebrow: string;
+      title: string;
+      body: string;
+      sentTo: string;
+      addToCalendar: string;
+      /** Event summary written into the .ics file. */
+      calendarTitle: string;
+    };
+    /** One panel, four variants — the page picks by why the link was refused. */
+    invalid: {
+      expired: string;
+      revoked: string;
+      cancelled: string;
+      notFound: string;
+      help: string;
+      emailCta: string;
+      instagramCta: string;
+    };
+    /** Client-facing labels for the derived status. "cancelled" never reaches this page. */
+    status: { pending: string; awaitingReceipt: string; confirmed: string };
+    /** Keyed by the camelCased API error code; `generic` covers anything unmapped. */
+    errors: {
+      generic: string;
+      network: string;
+      rateLimited: string;
+      tooLarge: string;
+      unsupportedType: string;
+      invalidLink: string;
+      linkExpired: string;
+      bookingLocked: string;
+      termsRequired: string;
+      tooManyAttempts: string;
+      conflict: string;
+      missingContact: string;
+    };
+  };
 };
