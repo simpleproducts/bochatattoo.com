@@ -1,5 +1,9 @@
 /**
- * The admin area's top-level tab bar: Gallery | Calendar.
+ * The admin area's tab bar: Calendar | Images | Categories.
+ *
+ * One row for all three, because they are peers — the calendar is not a
+ * different section of the admin, it is the screen Bocha opens first. Calendar
+ * leads, and /admin redirects to it, so signing in lands on the schedule.
  *
  * Rendered BY EACH PAGE, never by src/app/admin/layout.tsx. The login page is
  * a child of that layout and is one of middleware's PUBLIC_PATHS, so a nav
@@ -7,21 +11,21 @@
  * advertising and linking into the protected area.
  *
  * A server component on purpose: `active` is decided by whichever page renders
- * it, so there is nothing here for the client bundle to do.
- *
- * The class strings are lifted verbatim from the images/categories tab bar in
- * AdminGallery.tsx so the two rows of tabs are indistinguishable.
+ * it, so there is nothing here for the client bundle to do. Images and
+ * Categories are two views of one page and switch by query string; Next
+ * client-navigates between them, so the tab still feels instant.
  */
 import Link from "next/link";
 
+export type AdminTab = "calendar" | "images" | "categories";
+
 const TABS = [
-  { key: "gallery", href: "/admin", label: "Gallery" },
   { key: "calendar", href: "/admin/calendar", label: "Calendar" },
+  { key: "images", href: "/admin/gallery", label: "Images" },
+  { key: "categories", href: "/admin/gallery?tab=categories", label: "Categories" },
 ] as const;
 
-type Props = { active: "gallery" | "calendar" };
-
-export function AdminNav({ active }: Props) {
+export function AdminNav({ active }: { active: AdminTab }) {
   return (
     <nav className="flex items-center gap-2 border-b border-line">
       {TABS.map((tab) => (
