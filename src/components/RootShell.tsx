@@ -25,9 +25,21 @@ const instrumentSerif = Instrument_Serif({
 export function RootShell({
   lang,
   children,
+  tracking = true,
 }: {
   lang: "es" | "en";
   children: React.ReactNode;
+  /**
+   * Analytics opt-out, for routes where the URL itself is a secret.
+   *
+   * GA4, the Meta Pixel and Vercel Analytics all report the full path they are
+   * rendered on, so a page whose URL carries a bearer token would post that
+   * token to three external logs on every legitimate visit. No response header
+   * can restrain a first-party script reading `location.href` — the only fix is
+   * not to render it. The private booking pages set this to false; see
+   * src/app/(book-es)/layout.tsx.
+   */
+  tracking?: boolean;
 }) {
   return (
     <html
@@ -46,7 +58,7 @@ export function RootShell({
         {children}
         <Grain />
         <Cursor />
-        <Tracking />
+        {tracking ? <Tracking /> : null}
       </body>
     </html>
   );

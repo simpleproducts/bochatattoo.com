@@ -82,6 +82,17 @@ const SECURITY_HEADERS = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
 ];
 
+/**
+ * Private booking pages. The URL itself is the credential, so it must never
+ * leak in a Referer header, never be indexed, and never sit in a CDN or
+ * browser cache where the next person on the device could find it.
+ */
+const BOOKING_HEADERS = [
+  { key: "Referrer-Policy", value: "no-referrer" },
+  { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+  { key: "Cache-Control", value: "no-store, max-age=0, must-revalidate" },
+];
+
 const nextConfig: NextConfig = {
   images: {
     // Variants are pre-generated to 640/1280/2560 AVIF+WebP and served straight
@@ -94,6 +105,14 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: SECURITY_HEADERS,
+      },
+      {
+        source: "/book/:path*",
+        headers: BOOKING_HEADERS,
+      },
+      {
+        source: "/en/book/:path*",
+        headers: BOOKING_HEADERS,
       },
     ];
   },
