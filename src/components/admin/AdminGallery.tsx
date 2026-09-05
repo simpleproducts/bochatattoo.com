@@ -9,15 +9,18 @@ import { categoryLabel } from "./category-label";
 import { readError } from "./read-error";
 import type { ImagesData, ImageWithSlug } from "@/lib/images-types";
 
-type Props = { initialData: ImagesData };
+type Props = {
+  initialData: ImagesData;
+  /** Which view to show. A URL concern now — the tab bar lives in AdminNav. */
+  tab: Tab;
+};
 
 type Tab = "images" | "categories";
 
 const ALL = "__all__";
 
-export function AdminGallery({ initialData }: Props) {
+export function AdminGallery({ initialData, tab }: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("images");
   const [filter, setFilter] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL);
   const [busy, startTransition] = useTransition();
@@ -76,7 +79,7 @@ export function AdminGallery({ initialData }: Props) {
 
   return (
     <main className="flex-1 px-4 md:px-8 py-6 flex flex-col gap-6">
-      <AdminNav active="gallery" />
+      <AdminNav active={tab} />
 
       <header className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-baseline gap-4">
@@ -97,23 +100,6 @@ export function AdminGallery({ initialData }: Props) {
           </form>
         </div>
       </header>
-
-      <nav className="flex items-center gap-2 border-b border-line">
-        {(["images", "categories"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono border-b-2 transition-colors cursor-pointer ${
-              tab === t
-                ? "border-fg text-fg"
-                : "border-transparent text-muted hover:text-fg"
-            }`}
-          >
-            {t}
-          </button>
-        ))}
-      </nav>
 
       {tab === "images" ? (
         <>
