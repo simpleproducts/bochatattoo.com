@@ -1,27 +1,42 @@
 "use client";
 import { useState } from "react";
 import type { CategoryEntry } from "@/lib/images-types";
+import type { AdminDictionary } from "@/i18n/admin";
 
-type Props = { categories: CategoryEntry[]; onChange: () => void };
+type Props = {
+  categories: CategoryEntry[];
+  onChange: () => void;
+  dict: AdminDictionary;
+};
 
-export function AdminCategories({ categories, onChange }: Props) {
+export function AdminCategories({ categories, onChange, dict }: Props) {
   return (
     <section className="flex flex-col gap-6">
-      <NewCategoryForm onCreated={onChange} />
+      <NewCategoryForm onCreated={onChange} dict={dict} />
 
       <div className="flex flex-col gap-2">
+        {/* The same word as the tab that got you here, so it can only ever be
+            translated once. */}
         <h2 className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-          Categories
+          {dict.nav.categories}
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-xs uppercase tracking-[0.2em] font-mono text-muted">
               <tr className="border-b border-line">
-                <th className="text-left py-2 pr-3">Slug</th>
-                <th className="text-left py-2 pr-3">ES</th>
-                <th className="text-left py-2 pr-3">EN</th>
-                <th className="text-left py-2 pr-3">Order</th>
-                <th className="text-left py-2 pr-3">Hidden</th>
+                <th className="text-left py-2 pr-3">
+                  {dict.categories.columns.slug}
+                </th>
+                <th className="text-left py-2 pr-3">
+                  {dict.categories.columns.es}
+                </th>
+                <th className="text-left py-2 pr-3">
+                  {dict.categories.columns.en}
+                </th>
+                <th className="text-left py-2 pr-3">
+                  {dict.categories.columns.order}
+                </th>
+                <th className="text-left py-2 pr-3">{dict.common.hidden}</th>
                 <th></th>
               </tr>
             </thead>
@@ -33,6 +48,7 @@ export function AdminCategories({ categories, onChange }: Props) {
                     key={c.slug}
                     category={c}
                     onChange={onChange}
+                    dict={dict}
                   />
                 ))}
             </tbody>
@@ -43,7 +59,13 @@ export function AdminCategories({ categories, onChange }: Props) {
   );
 }
 
-function NewCategoryForm({ onCreated }: { onCreated: () => void }) {
+function NewCategoryForm({
+  onCreated,
+  dict,
+}: {
+  onCreated: () => void;
+  dict: AdminDictionary;
+}) {
   const [slug, setSlug] = useState("");
   const [es, setEs] = useState("");
   const [en, setEn] = useState("");
@@ -82,19 +104,19 @@ function NewCategoryForm({ onCreated }: { onCreated: () => void }) {
     >
       <label className="flex flex-col gap-1 text-xs flex-1">
         <span className="font-mono uppercase tracking-[0.2em] text-muted">
-          New slug
+          {dict.categories.newSlug}
         </span>
         <input
           required
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
-          placeholder="best-tattoos"
+          placeholder={dict.categories.slugPlaceholder}
           className="bg-transparent border border-line px-2 py-1"
         />
       </label>
       <label className="flex flex-col gap-1 text-xs flex-1">
         <span className="font-mono uppercase tracking-[0.2em] text-muted">
-          ES label
+          {dict.categories.esLabel}
         </span>
         <input
           value={es}
@@ -104,7 +126,7 @@ function NewCategoryForm({ onCreated }: { onCreated: () => void }) {
       </label>
       <label className="flex flex-col gap-1 text-xs flex-1">
         <span className="font-mono uppercase tracking-[0.2em] text-muted">
-          EN label
+          {dict.categories.enLabel}
         </span>
         <input
           value={en}
@@ -117,7 +139,7 @@ function NewCategoryForm({ onCreated }: { onCreated: () => void }) {
         disabled={busy || !slug || (!es && !en)}
         className="border border-fg px-3 py-1 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors disabled:opacity-40"
       >
-        Add
+        {dict.common.add}
       </button>
       {err ? <span className="text-red-400 text-xs">{err}</span> : null}
     </form>
@@ -127,9 +149,11 @@ function NewCategoryForm({ onCreated }: { onCreated: () => void }) {
 function CategoryRow({
   category,
   onChange,
+  dict,
 }: {
   category: CategoryEntry;
   onChange: () => void;
+  dict: AdminDictionary;
 }) {
   const [draft, setDraft] = useState(category);
   const [busy, setBusy] = useState(false);
@@ -166,7 +190,8 @@ function CategoryRow({
   }
 
   async function remove() {
-    if (!confirm(`Delete category "${category.slug}"?`)) return;
+    if (!confirm(dict.categories.confirmDelete.replace("{slug}", category.slug)))
+      return;
     setBusy(true);
     setErr(null);
     try {
@@ -228,7 +253,7 @@ function CategoryRow({
           onClick={patch}
           className="border border-fg px-2 py-1 text-[10px] uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors disabled:opacity-30"
         >
-          Save
+          {dict.common.save}
         </button>
         <button
           type="button"
@@ -236,7 +261,7 @@ function CategoryRow({
           onClick={remove}
           className="border border-red-400 text-red-400 px-2 py-1 text-[10px] uppercase tracking-[0.2em] font-mono hover:bg-red-400 hover:text-bg disabled:opacity-30"
         >
-          Delete
+          {dict.common.delete}
         </button>
         {err ? <span className="text-red-400 text-xs">{err}</span> : null}
       </td>

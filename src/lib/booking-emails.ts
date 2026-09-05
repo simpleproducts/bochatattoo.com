@@ -69,7 +69,12 @@ import {
   type Recipient,
   type TransactionalMessage,
 } from "./email";
-import { SITE_EMAIL, SITE_URL } from "./site";
+import {
+  INSTAGRAM_DM_URL,
+  SITE_EMAIL,
+  SITE_URL,
+  STUDIO_MAPS_URL,
+} from "./site";
 
 export type BuiltEmail = { subject: string; html: string; text: string };
 
@@ -213,6 +218,18 @@ function htmlPara(text: string): string {
   );
 }
 
+/**
+ * Same paragraph, but the caller has already built the markup and escaped
+ * every value inside it. The only caller is outroHtml, which needs anchors —
+ * everything else must keep using htmlPara so escaping stays automatic.
+ */
+function htmlParaRaw(html: string): string {
+  return (
+    `<p style="margin:0 0 20px;font-family:${FONT_BODY};font-size:15px;` +
+    `line-height:1.6;color:${INK};">${html}</p>`
+  );
+}
+
 function htmlNote(text: string): string {
   return (
     `<p style="margin:0 0 20px;font-family:${FONT_BODY};font-size:13px;` +
@@ -323,6 +340,10 @@ type ClientCopy = {
   eyebrowConfirmed: string;
   titleConfirmed: string;
   leadConfirmed: string;
+  /** Carries {studio} and {contact} placeholders — see outroHtml/outroText. */
+  outroConfirmed: string;
+  studioLink: string;
+  contactLink: string;
   ctaOpen: string;
   ctaView: string;
   linkHint: string;
@@ -356,6 +377,9 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     eyebrowConfirmed: "Turno confirmado",
     titleConfirmed: "Listo, tu turno está confirmado",
     leadConfirmed: "Recibimos tu comprobante. Nos vemos el {date} a las {time}.",
+    outroConfirmed: "Nos vemos en {studio}. Cualquier cosa, {contact}.",
+    studioLink: "el estudio",
+    contactLink: "escribinos",
     ctaOpen: "Abrir mi turno",
     ctaView: "Ver mi turno",
     linkHint: "El link es personal: no lo compartas.",
@@ -387,6 +411,9 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     eyebrowConfirmed: "Appointment confirmed",
     titleConfirmed: "You're all set",
     leadConfirmed: "We got your receipt. See you on {date} at {time}.",
+    outroConfirmed: "See you at {studio}. Any questions, {contact}.",
+    studioLink: "the studio",
+    contactLink: "write to us",
     ctaOpen: "Open my appointment",
     ctaView: "View my appointment",
     linkHint: "This link is personal — please don't share it.",
@@ -612,6 +639,34 @@ export function buildClientSubmitted(b: BookingRecord, token: string): BuiltEmai
 }
 
 /**
+ * The closing line, with its two placeholders resolved.
+ *
+ * HTML gets real anchors; the plain-text twin gets the label followed by the
+ * bare URL in parentheses, because a text-only client cannot click anything
+ * and "escribinos" with no address is a dead end. `esc` is applied to the
+ * labels for the same reason it is applied everywhere else in this file — the
+ * URLs are our own constants, the labels come from the copy table.
+ */
+function outroHtml(c: ClientCopy): string {
+  const filled = c.outroConfirmed
+    .replace(
+      "{studio}",
+      `<a href="${STUDIO_MAPS_URL}" style="color:${INK};">${esc(c.studioLink)}</a>`,
+    )
+    .replace(
+      "{contact}",
+      `<a href="${INSTAGRAM_DM_URL}" style="color:${INK};">${esc(c.contactLink)}</a>`,
+    );
+  return htmlParaRaw(filled);
+}
+
+function outroText(c: ClientCopy): string {
+  return c.outroConfirmed
+    .replace("{studio}", `${c.studioLink} (${STUDIO_MAPS_URL})`)
+    .replace("{contact}", `${c.contactLink} (${INSTAGRAM_DM_URL})`);
+}
+
+/**
  * `token` is optional only so a caller holding just a record can still build
  * this mail; `sendBookingEmails` always passes one, because a confirmation the
  * client cannot click back into is a worse confirmation.
@@ -638,6 +693,7 @@ export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEma
         greeting ? htmlPara(greeting) : "",
         htmlPara(lead),
         htmlRows(rows),
+        outroHtml(c),
         link ? htmlCta(link, c.ctaView) : "",
         htmlNote(c.reply),
       ].join(""),
@@ -649,6 +705,7 @@ export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEma
       greeting,
       lead,
       textRows(rows),
+      outroText(c),
       link ? `${c.ctaView}:\n${link}` : "",
       c.reply,
       `—\n${c.footer}`,

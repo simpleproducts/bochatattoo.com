@@ -169,7 +169,15 @@ export type Dictionary = {
     done: {
       eyebrow: string;
       title: string;
+      /**
+       * Carries two link placeholders, {studio} and {contact}, replaced at
+       * render by anchors to the studio's map pin and to Bocha's Instagram
+       * DMs. The labels below are the anchor text, so each language keeps its
+       * own word order instead of being glued together from fragments.
+       */
       body: string;
+      studioLink: string;
+      contactLink: string;
       sentTo: string;
       addToCalendar: string;
       /** Event summary written into the .ics file. */

@@ -224,7 +224,9 @@ const en: Dictionary = {
     done: {
       eyebrow: "Appointment confirmed",
       title: "You're all set.",
-      body: "See you in Almagro. Any questions, just write to us.",
+      body: "See you at {studio}. Any questions, {contact}.",
+      studioLink: "the studio",
+      contactLink: "write to us",
       sentTo: "We sent your confirmation to",
       addToCalendar: "Add to calendar",
       calendarTitle: "Appointment with Bocha",

@@ -225,7 +225,9 @@ const es: Dictionary = {
     done: {
       eyebrow: "Turno confirmado",
       title: "Listo, está todo.",
-      body: "Nos vemos en Almagro. Cualquier cosa, escribinos.",
+      body: "Nos vemos en {studio}. Cualquier cosa, {contact}.",
+      studioLink: "el estudio",
+      contactLink: "escribinos",
       sentTo: "Te mandamos la confirmación a",
       addToCalendar: "Agregar al calendario",
       calendarTitle: "Turno con Bocha",

@@ -34,6 +34,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
+import { AdminLocaleSwitcher } from "@/components/admin/AdminLocaleSwitcher";
 import { readError } from "@/components/admin/read-error";
 import {
   dayKeyOf,
@@ -48,6 +49,8 @@ import type {
   BookingEmailKind,
   BookingId,
 } from "@/lib/bookings-types";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import { AgendaList } from "./AgendaList";
 import { BookingSheet } from "./BookingSheet";
 import { CalendarToolbar } from "./CalendarToolbar";
@@ -70,6 +73,13 @@ export type AdminCalendarProps = {
   initialSelectedId?: string;
   /** False when R2_PRIVATE_BUCKET / BOOKING_TOKEN_SECRET are missing. */
   configured: boolean;
+  /**
+   * Both resolved by the page, on the server. The locale is not only for the
+   * switcher here: unlike the gallery, every date on this screen is formatted,
+   * so `locale` is threaded down to the clock and month helpers as well.
+   */
+  locale: Locale;
+  dict: AdminDictionary;
 };
 
 type ApptMap = Record<BookingId, AdminAppointment>;
@@ -173,11 +183,56 @@ function initialCursor(
   return monthKeyOf(new Date().toISOString(), tz);
 }
 
+/**
+ * Renders `calendar.notConfigured.body` with its three {placeholder} tokens
+ * replaced by mono spans — the same split-at-render technique ConfirmedPanel
+ * uses for `booking.done.body`'s anchors, and for the same reason: Spanish and
+ * English each keep their own word order around the env-var names.
+ */
+function notConfiguredBody(template: string) {
+  const NAMES: Record<string, string> = {
+    "{privateBucket}": "R2_PRIVATE_BUCKET",
+    "{bucket}": "R2_BUCKET",
+    "{secret}": "BOOKING_TOKEN_SECRET",
+  };
+  return template
+    .split(/(\{privateBucket\}|\{bucket\}|\{secret\})/)
+    .map((part, i) =>
+      NAMES[part] ? (
+        <span key={i} className="font-mono">
+          {NAMES[part]}
+        </span>
+      ) : (
+        part
+      )
+    );
+}
+
+/**
+ * The two halves of the header tally. Same shape as MonthGrid's and
+ * AgendaList's `appointmentCount`, and resolved separately rather than as one
+ * sentence because the counts move independently: the studio's first month
+ * holds exactly one appointment and it is pending, and a quiet month is one
+ * booking away from the same shape.
+ */
+function appointmentCount(n: number, dict: AdminDictionary): string {
+  const template =
+    n === 1 ? dict.calendar.appointmentsOne : dict.calendar.appointments;
+  return template.replace("{count}", String(n));
+}
+
+function pendingLabel(n: number, dict: AdminDictionary): string {
+  const template = n === 1 ? dict.calendar.pendingOne : dict.calendar.pending;
+  return template.replace("{count}", String(n));
+}
+
 export function AdminCalendar({
   initialMonths,
   studioTimeZone,
   initialSelectedId,
   configured,
+  locale,
+  dict,
 }: AdminCalendarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -227,7 +282,7 @@ export function AdminCalendar({
    */
   const [nowIso, setNowIso] = useState(() => new Date().toISOString());
   const todayKey = dayKeyOf(nowIso, tz);
-  const tzAbbrev = zoneAbbrev(nowIso, tz, "en");
+  const tzAbbrev = zoneAbbrev(nowIso, tz, locale);
 
   /**
    * `todayKey` is the source of the filled square, the TODAY button's target,
@@ -400,6 +455,13 @@ export function AdminCalendar({
   const [missingErr, setMissingErr] = useState<string | null>(null);
   const [missingReload, setMissingReload] = useState(0);
 
+  /**
+   * Read out of `dict` here rather than inside the effect so the dependency is
+   * the string itself: it changes only when the language does, and the `attempted`
+   * guard below makes that re-run a no-op.
+   */
+  const noAppointmentError = dict.calendar.errors.noAppointment;
+
   useEffect(() => {
     if (!configured || !missingId) return;
     // Guarded on the id rather than on a boolean: a 404 leaves `missingId` set
@@ -418,7 +480,7 @@ export function AdminCalendar({
         if (!res.ok) throw new Error(await readError(res));
         const data = (await res.json()) as { appointment?: AdminAppointment };
         const appt = data.appointment;
-        if (!appt) throw new Error("The booking API returned no appointment.");
+        if (!appt) throw new Error(noAppointmentError);
         setById((prev) => ({ ...prev, [appt.id]: appt }));
         setCursor(monthKeyOf(appt.startsAt, tzRef.current));
       } catch (e) {
@@ -427,7 +489,7 @@ export function AdminCalendar({
       }
     })();
     return () => ctrl.abort();
-  }, [missingId, configured, missingReload]);
+  }, [missingId, configured, missingReload, noAppointmentError]);
 
   const retryMissing = useCallback(() => {
     attemptedId.current = null;
@@ -477,11 +539,10 @@ export function AdminCalendar({
 
   const onSubmitForm = useCallback(
     (values: BookingFormValues) => {
-      // BookingForm gates its submit on the same parses, so neither of these
-      // should ever throw here. Caught anyway: an unparseable date or amount
-      // reaching this handler is a bug in the form's guard, and the admin
-      // should see it as a message in the sheet rather than as the blank screen
-      // an error boundary gives them mid-save.
+      // BookingForm gates its submit on the deposit parse but the form carries
+      // `noValidate`, so a cleared date field still reaches this handler and
+      // `toApiSlot` throws. Caught rather than left to an error boundary: the
+      // admin should see a message in the sheet, not a blank screen mid-save.
       let slot: { startsAt: string; endsAt: string };
       let seed: ReturnType<typeof toApiSeed>;
       let deposit: ReturnType<typeof toApiDeposit>;
@@ -490,7 +551,14 @@ export function AdminCalendar({
         seed = toApiSeed(values);
         deposit = toApiDeposit(values);
       } catch (e) {
-        setErr(e instanceof Error ? e.message : "Invalid date, time or amount.");
+        // The dictionary string, never `e.message`. These two throw sites —
+        // `toUtcIso` and `toApiDeposit` — raise English RangeErrors naming the
+        // raw input, which are diagnostics for us and untranslated noise on a
+        // Spanish screen. Unlike a server message arriving through readError(),
+        // this one is ours to word, and `errors.invalidSlot` is already the
+        // humanised version of both. The original still reaches the console.
+        console.error("admin/calendar: form values did not convert", e);
+        setErr(dict.calendar.errors.invalidSlot);
         return;
       }
       const adminNotes = values.adminNotes.trim();
@@ -524,7 +592,7 @@ export function AdminCalendar({
         if (appt && sheetEpoch.current === epoch) setSheet({ mode: "view", id });
       })();
     },
-    [call, sheet, tz],
+    [call, sheet, tz, dict]
   );
 
   const onCancelToggle = useCallback(
@@ -601,9 +669,25 @@ export function AdminCalendar({
         const data = (await res.json()) as { months?: number; records?: number };
         const months = data.months ?? 0;
         const records = data.records ?? 0;
+        // No plural engine: one is the only irregular count either language
+        // has, so the caller picks the twin and the template joins them.
+        const r = dict.calendar.reindex;
         setReindexNote(
-          `Rebuilt ${months} ${months === 1 ? "month" : "months"} · ` +
-            `${records} ${records === 1 ? "booking" : "bookings"}.`,
+          r.done
+            .replace(
+              "{months}",
+              (months === 1 ? r.monthsOne : r.months).replace(
+                "{count}",
+                String(months)
+              )
+            )
+            .replace(
+              "{bookings}",
+              (records === 1 ? r.bookingsOne : r.bookings).replace(
+                "{count}",
+                String(records)
+              )
+            )
         );
         setIndexWarning(false);
         // A repair only pays off if the months are read again, and only an
@@ -617,7 +701,7 @@ export function AdminCalendar({
         setReindexBusy(false);
       }
     })();
-  }, [router]);
+  }, [router, dict]);
 
   /* ── navigation ── */
 
@@ -678,22 +762,32 @@ export function AdminCalendar({
     <>
       <header className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-baseline gap-4">
-          <h1 className="font-serif italic text-2xl md:text-3xl">Calendar</h1>
+          <h1 className="font-serif italic text-2xl md:text-3xl">
+            {dict.nav.calendar}
+          </h1>
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-            {monthAppointments.length} appointments · {pendingCount} awaiting
+            {dict.calendar.counts
+              .replace(
+                "{appointments}",
+                appointmentCount(monthAppointments.length, dict)
+              )
+              .replace("{pending}", pendingLabel(pendingCount, dict))}
             {tzAbbrev ? ` · ${tzAbbrev}` : ""}
           </span>
         </div>
         <div className="flex items-center gap-3">
           {isPending ? (
-            <span className="text-xs font-mono text-muted">refreshing…</span>
+            <span className="text-xs font-mono text-muted">
+              {dict.common.refreshing}
+            </span>
           ) : null}
+          <AdminLocaleSwitcher locale={locale} label={dict.common.language} />
           <form action="/api/admin/logout" method="post">
             <button
               type="submit"
               className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
             >
-              Sign out
+              {dict.common.signOut}
             </button>
           </form>
         </div>
@@ -702,15 +796,10 @@ export function AdminCalendar({
       {!configured ? (
         <div className="border border-red-400 p-4 flex flex-col gap-2">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-red-400">
-            Bookings not configured
+            {dict.calendar.notConfigured.title}
           </p>
           <p className="text-sm text-fg/80 leading-relaxed">
-            Set <span className="font-mono">R2_PRIVATE_BUCKET</span> (a second,
-            non-public R2 bucket — it must not be the same value as{" "}
-            <span className="font-mono">R2_BUCKET</span>) and{" "}
-            <span className="font-mono">BOOKING_TOKEN_SECRET</span> in the
-            environment, then redeploy. Until both are present the calendar
-            cannot read or sign anything.
+            {notConfiguredBody(dict.calendar.notConfigured.body)}
           </p>
         </div>
       ) : (
@@ -724,7 +813,7 @@ export function AdminCalendar({
                   onClick={() => setReload((n) => n + 1)}
                   className="border border-red-400 px-2 py-1 uppercase tracking-[0.2em] text-[10px] hover:bg-red-400 hover:text-bg cursor-pointer"
                 >
-                  Retry
+                  {dict.common.retry}
                 </button>
               ) : null}
             </div>
@@ -732,17 +821,16 @@ export function AdminCalendar({
 
           {indexWarning ? (
             <div className="border border-status-partial text-status-partial p-3 text-xs font-mono flex items-center justify-between gap-3 flex-wrap">
-              <span>
-                A month index write failed. A booking can be missing from this
-                calendar while its private link still works — rebuild the index.
-              </span>
+              <span>{dict.calendar.indexWarning}</span>
               <button
                 type="button"
                 onClick={onReindex}
                 disabled={reindexBusy}
                 className="border border-status-partial px-2 py-1 uppercase tracking-[0.2em] text-[10px] hover:bg-status-partial hover:text-bg disabled:opacity-40 cursor-pointer"
               >
-                {reindexBusy ? "Repairing…" : "Repair index"}
+                {reindexBusy
+                  ? dict.calendar.reindex.busy
+                  : dict.calendar.reindex.label}
               </button>
             </div>
           ) : null}
@@ -752,6 +840,8 @@ export function AdminCalendar({
             view={view}
             tz={tz}
             tzAbbrev={tzAbbrev}
+            locale={locale}
+            dict={dict}
             onView={changeView}
             onPrev={() => goMonth(-1)}
             onNext={() => goMonth(1)}
@@ -768,6 +858,8 @@ export function AdminCalendar({
               byDay={byDay}
               tz={tz}
               todayKey={todayKey}
+              locale={locale}
+              dict={dict}
               onOpenAppt={openAppointment}
               onCreate={openCreate}
               loading={monthLoading}
@@ -779,6 +871,8 @@ export function AdminCalendar({
               tz={tz}
               todayKey={todayKey}
               selectedDayKey={selectedDayKey}
+              locale={locale}
+              dict={dict}
               onSelectDay={onSelectDay}
               onOpenAppt={openAppointment}
               onCreate={openCreate}
@@ -790,6 +884,8 @@ export function AdminCalendar({
             state={sheet}
             appt={openAppt}
             tz={tz}
+            locale={locale}
+            dict={dict}
             busy={busy || isPending}
             error={err}
             all={all}

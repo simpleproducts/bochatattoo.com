@@ -11,12 +11,20 @@
  * server and true on a phone, so rendering it during SSR would hydrate-mismatch
  * — the button arriving one frame late is much the cheaper of the two costs.
  *
- * Admin chrome is English; the mailto subject and body are the one exception,
- * because they are outbound client copy and the ES·EN toggle has already said
- * which language that client reads.
+ * TWO languages meet in this one block and they are not the same choice. The
+ * chrome — COPY, SHARE, ROTATE LINK — is admin copy and follows `dict`, i.e.
+ * the cookie the studio set for itself. `MAIL_COPY` below is outbound CLIENT
+ * copy, and it follows the ES·EN toggle in this block, which is the reader of
+ * the link speaking, not its sender. An Argentine admin mailing an English
+ * client must get a Spanish button and an English email, so these two must
+ * never be collapsed into one.
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { AdminDictionary } from "@/i18n/admin";
 import type { ShareLinkRowProps } from "./contract";
+
+/** From the sheet, which got it from the page's server render. */
+type Props = ShareLinkRowProps & { dict: AdminDictionary };
 
 /**
  * Web Share is a browser capability, not React state: it is false on the
@@ -75,7 +83,7 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-export function ShareLinkRow({ appt, busy, onRotate }: ShareLinkRowProps) {
+export function ShareLinkRow({ appt, busy, onRotate, dict }: Props) {
   const [linkLocale, setLinkLocale] = useState<"es" | "en">("es");
   const [copied, setCopied] = useState(false);
   const canShare = useSyncExternalStore(subscribeNever, hasWebShare, noWebShare);
@@ -125,16 +133,14 @@ export function ShareLinkRow({ appt, busy, onRotate }: ShareLinkRowProps) {
   }
 
   function onRotateClick() {
-    const ok = window.confirm(
-      "Rotate this link?\n\nEvery link already sent for this booking stops working immediately — WhatsApp, email, anything. You will have to send the new one.",
-    );
+    const ok = window.confirm(dict.calendar.link.rotateConfirm);
     if (ok) onRotate();
   }
 
   return (
     <div className="border border-line p-4 flex flex-col gap-3">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-        Private link
+        {dict.calendar.link.title}
       </p>
 
       <input
@@ -142,7 +148,10 @@ export function ShareLinkRow({ appt, busy, onRotate }: ShareLinkRowProps) {
         readOnly
         value={link}
         onFocus={(e) => e.currentTarget.select()}
-        aria-label={`Private booking link (${linkLocale.toUpperCase()})`}
+        aria-label={dict.calendar.link.inputLabel.replace(
+          "{locale}",
+          linkLocale.toUpperCase(),
+        )}
         className="bg-transparent border border-line px-2 py-2 font-mono text-[11px] w-full"
       />
 
@@ -151,18 +160,18 @@ export function ShareLinkRow({ appt, busy, onRotate }: ShareLinkRowProps) {
           with no idea whether the press worked. */}
       <div className="flex gap-2 flex-wrap" aria-live="polite">
         <button type="button" onClick={onCopy} className={ACTION}>
-          {copied ? "Copied ✓" : "Copy"}
+          {copied ? dict.calendar.link.copied : dict.calendar.link.copy}
         </button>
         {canShare && (
           <button type="button" onClick={onShare} className={ACTION}>
-            Share
+            {dict.calendar.link.share}
           </button>
         )}
         <button type="button" onClick={onWhatsApp} className={ACTION}>
-          WhatsApp
+          {dict.calendar.link.whatsapp}
         </button>
         <a href={mailto} className={ACTION}>
-          Email
+          {dict.common.email}
         </a>
       </div>
 
@@ -202,7 +211,7 @@ export function ShareLinkRow({ appt, busy, onRotate }: ShareLinkRowProps) {
         disabled={busy}
         className="mt-2 border border-red-400 text-red-400 px-2 py-1 uppercase tracking-[0.2em] font-mono text-[10px] hover:bg-red-400 hover:text-bg transition-colors disabled:opacity-40 cursor-pointer"
       >
-        Rotate link
+        {dict.calendar.link.rotate}
       </button>
     </div>
   );

@@ -25,24 +25,62 @@ import { STATUS_META } from "@/lib/booking-status";
 import { formatDayLong, formatTimeRange } from "@/lib/booking-time";
 import { bookingLabel } from "@/lib/bookings-types";
 import type { AdminAppointment, BookingId } from "@/lib/bookings-types";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import type { AgendaListProps } from "./contract";
 
 /**
  * Declared here rather than in `contract.ts`: the contract file describes the
- * calendar's data, and this is one optional rendering hint. The list cannot
- * know whether an empty month is empty or still in flight, and "Nothing
- * scheduled." is a lie in the second case.
+ * calendar's data, and `loading` is one optional rendering hint — the list
+ * cannot know whether an empty month is empty or still in flight, and "Nothing
+ * scheduled." is a lie in the second case. `locale` and `dict` sit here for the
+ * same reason: which language the list is read in is not calendar data.
  */
-type ListProps = AgendaListProps & { loading?: boolean };
+type ListProps = AgendaListProps & {
+  locale: Locale;
+  dict: AdminDictionary;
+  loading?: boolean;
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_PIPS = 3;
 const SWIPE_PX = 50;
 
-const weekdayFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "UTC",
-  weekday: "narrow",
-});
+/**
+ * The same mapping booking-time.ts fixes for every other date in the product —
+ * es → es-AR, en → en-GB. Restated rather than imported because that module
+ * keeps it private.
+ */
+const INTL_LOCALE: Record<Locale, string> = { es: "es-AR", en: "en-GB" };
+
+/**
+ * Memoised by locale, the way booking-time.ts caches its own formatters. The
+ * strip wants the NARROW weekday ("M", "L") rather than the dictionary's
+ * three-letter `grid.weekdays`: these cells are a seventh of a phone wide.
+ */
+const weekdayFormatters = new Map<Locale, Intl.DateTimeFormat>();
+
+function weekdayNarrow(ms: number, locale: Locale): string {
+  let fmt = weekdayFormatters.get(locale);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+      timeZone: "UTC",
+      weekday: "narrow",
+    });
+    weekdayFormatters.set(locale, fmt);
+  }
+  return fmt.format(new Date(ms));
+}
+
+/**
+ * "3 appointments" / "1 appointment". There is no plural engine here and there
+ * does not need to be: one is the only irregular count either language has.
+ */
+function appointmentCount(n: number, dict: AdminDictionary): string {
+  const template =
+    n === 1 ? dict.calendar.appointmentsOne : dict.calendar.appointments;
+  return template.replace("{count}", String(n));
+}
 
 function dayKeyMs(dayKey: string): number {
   return Date.parse(`${dayKey}T12:00:00Z`);
@@ -61,13 +99,18 @@ function weekStart(dayKey: string): string {
 function AgendaRow({
   appt,
   tz,
+  locale,
+  dict,
   onOpen,
 }: {
   appt: AdminAppointment;
   tz: string;
+  locale: Locale;
+  dict: AdminDictionary;
   onOpen: (id: BookingId) => void;
 }) {
   const meta = STATUS_META[appt.status];
+  const label = dict.calendar.status[meta.dictKey];
   return (
     <button
       type="button"
@@ -78,13 +121,13 @@ function AgendaRow({
         {meta.glyph}
       </span>
       <span className="font-mono text-xs text-fg/80 shrink-0">
-        {formatTimeRange(appt.startsAt, appt.endsAt, tz, "en")}
+        {formatTimeRange(appt.startsAt, appt.endsAt, tz, locale)}
       </span>
       <span className="text-sm truncate flex-1">{bookingLabel(appt)}</span>
       <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted shrink-0 hidden sm:inline">
-        {meta.adminLabel}
+        {label}
       </span>
-      <span className="sr-only sm:hidden">{meta.adminLabel}</span>
+      <span className="sr-only sm:hidden">{label}</span>
     </button>
   );
 }
@@ -95,6 +138,8 @@ export function AgendaList({
   tz,
   todayKey,
   selectedDayKey,
+  locale,
+  dict,
   onSelectDay,
   onOpenAppt,
   onCreate,
@@ -174,13 +219,18 @@ export function AgendaList({
                 type="button"
                 onClick={() => onSelectDay(dayKey)}
                 aria-pressed={selected}
-                aria-label={`${formatDayLong(`${dayKey}T12:00:00Z`, "UTC", "en")} — ${appts.length} ${appts.length === 1 ? "appointment" : "appointments"}`}
+                aria-label={dict.calendar.agenda.dayLabel
+                  .replace(
+                    "{day}",
+                    formatDayLong(`${dayKey}T12:00:00Z`, "UTC", locale),
+                  )
+                  .replace("{count}", appointmentCount(appts.length, dict))}
                 className={`aspect-square flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors ${
                   selected ? "border border-fg" : "border border-transparent"
                 } ${isToday ? "text-fg" : "text-muted"}`}
               >
                 <span aria-hidden className="font-mono text-[10px] uppercase tracking-[0.2em]">
-                  {weekdayFormatter.format(new Date(dayKeyMs(dayKey)))}
+                  {weekdayNarrow(dayKeyMs(dayKey), locale)}
                 </span>
                 <span
                   aria-hidden
@@ -203,9 +253,11 @@ export function AgendaList({
       </div>
 
       {days.length === 0 && loading ? (
-        <p className="font-serif italic text-2xl text-muted">Loading…</p>
+        <p className="font-serif italic text-2xl text-muted">{dict.common.loading}</p>
       ) : days.length === 0 ? (
-        <p className="font-serif italic text-2xl text-muted">Nothing scheduled.</p>
+        <p className="font-serif italic text-2xl text-muted">
+          {dict.calendar.agenda.empty}
+        </p>
       ) : (
         <div className="divide-y divide-line border-y border-line">
           {days.map((dayKey) => (
@@ -223,11 +275,18 @@ export function AgendaList({
                   dayKey === selectedDayKey ? "text-fg" : "text-muted"
                 }`}
               >
-                {formatDayLong(`${dayKey}T12:00:00Z`, "UTC", "en")}
+                {formatDayLong(`${dayKey}T12:00:00Z`, "UTC", locale)}
               </h3>
               <div className="flex flex-col">
                 {(byDay[dayKey] ?? []).map((appt) => (
-                  <AgendaRow key={appt.id} appt={appt} tz={tz} onOpen={onOpenAppt} />
+                  <AgendaRow
+                    key={appt.id}
+                    appt={appt}
+                    tz={tz}
+                    locale={locale}
+                    dict={dict}
+                    onOpen={onOpenAppt}
+                  />
                 ))}
               </div>
             </div>
@@ -241,7 +300,7 @@ export function AgendaList({
           onClick={() => onCreate(selectedDayKey)}
           className="w-full min-h-[44px] border border-fg px-4 py-3 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors cursor-pointer"
         >
-          + New appointment
+          {dict.calendar.agenda.new}
         </button>
       </div>
     </section>
