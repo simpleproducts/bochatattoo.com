@@ -7,6 +7,12 @@
   --color-line: #1c1c1c;
   --color-accent: #d8c8a8;
 
+  /* Booking status only. red-400 stays reserved for destructive actions,
+     so "pending" must never read as "error". */
+  --color-status-pending: #e0655f;
+  --color-status-partial: #d8a53c;
+  --color-status-done:    #6faa7c;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-instrument-serif);
@@ -229,6 +235,19 @@ body {
 .lb-slide-right { animation: lb-slide-right 280ms cubic-bezier(.2,.7,.2,1) both; }
 .lb-slide-left  { animation: lb-slide-left  280ms cubic-bezier(.2,.7,.2,1) both; }
 
+/* ---------- Booking sheet (mobile) / booking panel (desktop) ---------- */
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-sheet-up { animation: sheet-up 240ms cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-panel-in { animation: panel-in 240ms cubic-bezier(.2,.7,.2,1) both; }
+
 /* ---------- About portrait: ambient breathing + soft vignette ---------- */
 .portrait-frame { position: relative; isolation: isolate; }
 .portrait-frame::after {
@@ -261,6 +280,7 @@ body {
   .tile, .tile-img, .tile-overlay, .tile-label { transition: none; }
   .animate-lb-in { animation: none; }
   .lb-slide-right, .lb-slide-left { animation: none; }
+  .animate-sheet-up, .animate-panel-in { animation: none; }
   .split-char { opacity: 1; transform: none; animation: none; }
   .animate-fade-in { opacity: 1; animation: none; }
   .animate-spin-slow { animation: none; }

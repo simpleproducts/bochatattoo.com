@@ -35,16 +35,14 @@ export async function getAdminEpoch(): Promise<number> {
       `${BASE}/${ADMIN_STATE_KEY}?t=${Math.floor(Date.now() / TTL_MS)}`,
       { cache: "no-store" },
     );
-    if (!res.ok) {
-      cached = { epoch: 0, ts: Date.now() };
-      return 0;
-    }
+    // Never cache the fail-open 0: a single blip would otherwise pin revoked
+    // sessions back to valid for the whole TTL. Retry on the next request.
+    if (!res.ok) return 0;
     const data = (await res.json()) as { epoch?: number };
     const epoch = typeof data.epoch === "number" ? data.epoch : 0;
     cached = { epoch, ts: Date.now() };
     return epoch;
   } catch {
-    cached = { epoch: 0, ts: Date.now() };
     return 0;
   }
 }

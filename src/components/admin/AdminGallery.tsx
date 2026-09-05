@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { RemoteImage } from "@/components/RemoteImage";
 import { AdminUploader } from "./AdminUploader";
 import { AdminCategories } from "./AdminCategories";
+import { AdminNav } from "./AdminNav";
 import { categoryLabel } from "./category-label";
+import { readError } from "./read-error";
 import type { ImagesData, ImageWithSlug } from "@/lib/images-types";
 
 type Props = { initialData: ImagesData };
@@ -12,15 +14,6 @@ type Props = { initialData: ImagesData };
 type Tab = "images" | "categories";
 
 const ALL = "__all__";
-
-async function readError(res: Response): Promise<string> {
-  try {
-    const data = (await res.json()) as { message?: string; error?: string };
-    return data.message || data.error || `HTTP ${res.status}`;
-  } catch {
-    return `HTTP ${res.status}`;
-  }
-}
 
 export function AdminGallery({ initialData }: Props) {
   const router = useRouter();
@@ -83,6 +76,8 @@ export function AdminGallery({ initialData }: Props) {
 
   return (
     <main className="flex-1 px-4 md:px-8 py-6 flex flex-col gap-6">
+      <AdminNav active="gallery" />
+
       <header className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-baseline gap-4">
           <h1 className="font-serif italic text-2xl md:text-3xl">Admin</h1>
