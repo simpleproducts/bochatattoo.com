@@ -1,9 +1,14 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { CategoryEntry } from "@/lib/images-types";
+import type { AdminDictionary } from "@/i18n/admin";
 import { categoryLabel } from "./category-label";
 
-type Props = { categories: CategoryEntry[]; onDone: () => void };
+type Props = {
+  categories: CategoryEntry[];
+  onDone: () => void;
+  dict: AdminDictionary;
+};
 
 type Status = "idle" | "uploading" | "processing" | "done" | "error";
 
@@ -16,10 +21,19 @@ type Item = {
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
+
+/**
+ * The limit as `{max}` in `uploader.formats` and `uploader.tooLarge`. Divided
+ * by 1024² rather than a million because MAX_BYTES is 50 MiB: the megabyte the
+ * copy has always claimed is the binary one, and the honest decimal figure
+ * (52.4288) would be a worse sentence, not a truer one.
+ */
+const MAX_MB = MAX_BYTES / (1024 * 1024);
+
 const ACCEPT =
   "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,image/tiff";
 
-export function AdminUploader({ categories, onDone }: Props) {
+export function AdminUploader({ categories, onDone, dict }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [category, setCategory] = useState<string>(categories[0]?.slug ?? "");
   const [items, setItems] = useState<Item[]>([]);
@@ -39,7 +53,7 @@ export function AdminUploader({ categories, onDone }: Props) {
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     if (!category) {
-      alert("Pick a category first.");
+      alert(dict.uploader.pickCategoryAlert);
       return;
     }
     const next: Item[] = Array.from(files).map((file) => {
@@ -51,7 +65,9 @@ export function AdminUploader({ categories, onDone }: Props) {
           file,
           previewUrl,
           status: "error" as const,
-          message: `too-large (${(file.size / 1_000_000).toFixed(1)} MB > 50 MB)`,
+          message: dict.uploader.tooLarge
+            .replace("{size}", (file.size / 1_000_000).toFixed(1))
+            .replace("{max}", String(MAX_MB)),
         };
       }
       return { file, previewUrl, status: "idle" as const };
@@ -62,7 +78,7 @@ export function AdminUploader({ categories, onDone }: Props) {
     let i = 0;
     for (const item of next) {
       if (item.status !== "error") {
-        const updated = await uploadOne(item.file, category);
+        const updated = await uploadOne(item.file, category, dict);
         next[i] = { ...item, ...updated };
         setItems([...next]);
       }
@@ -78,7 +94,7 @@ export function AdminUploader({ categories, onDone }: Props) {
     <section className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-xs max-w-xs">
         <span className="font-mono uppercase tracking-[0.2em] text-muted">
-          Upload to category
+          {dict.uploader.uploadTo}
         </span>
         <select
           value={category}
@@ -86,7 +102,7 @@ export function AdminUploader({ categories, onDone }: Props) {
           className="bg-transparent border border-line px-2 py-2 cursor-pointer"
         >
           {categories.length === 0 ? (
-            <option value="">(create a category first)</option>
+            <option value="">{dict.uploader.noCategories}</option>
           ) : (
             [...categories]
               .sort((a, b) =>
@@ -135,17 +151,17 @@ export function AdminUploader({ categories, onDone }: Props) {
       >
         <div className="text-3xl leading-none">↑</div>
         <div className="font-serif italic text-xl">
-          {dragOver ? "Drop to upload" : "Drag images here"}
+          {dragOver ? dict.uploader.drop : dict.uploader.drag}
         </div>
         <div className="text-xs font-mono uppercase tracking-[0.2em] text-muted">
-          or click to choose files
+          {dict.uploader.orClick}
         </div>
         <div className="text-[10px] font-mono text-muted/70">
-          jpg · png · webp · avif · heic · tiff — up to 50 MB each · multi-select OK
+          {dict.uploader.formats.replace("{max}", String(MAX_MB))}
         </div>
         {!category ? (
           <div className="text-xs text-red-400 font-mono mt-2">
-            Pick a category above first
+            {dict.uploader.pickCategoryHint}
           </div>
         ) : null}
         <input
@@ -182,7 +198,10 @@ export function AdminUploader({ categories, onDone }: Props) {
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                 <span className="truncate">{it.file.name}</span>
                 <span className="text-muted">
-                  {(it.file.size / 1_000_000).toFixed(1)} MB
+                  {dict.common.megabytes.replace(
+                    "{size}",
+                    (it.file.size / 1_000_000).toFixed(1),
+                  )}
                   {it.slug ? ` · ${it.slug}` : ""}
                 </span>
               </div>
@@ -195,7 +214,7 @@ export function AdminUploader({ categories, onDone }: Props) {
                       : "text-muted"
                 }
               >
-                [{it.status}]
+                [{dict.uploader.status[it.status]}]
               </span>
               {it.message ? (
                 <span className="text-red-400 text-[10px] max-w-[40%] break-words">
@@ -213,6 +232,7 @@ export function AdminUploader({ categories, onDone }: Props) {
 async function uploadOne(
   file: File,
   category: string,
+  dict: AdminDictionary,
 ): Promise<Partial<Item>> {
   try {
     const initRes = await fetch("/api/admin/upload-init", {
@@ -226,7 +246,12 @@ async function uploadOne(
     });
     if (!initRes.ok) {
       const t = await initRes.text();
-      return { status: "error", message: `init: ${t}` };
+      // Only the leg that failed is ours to translate — `{detail}` is whatever
+      // the server said, and it is passed through exactly as it arrived.
+      return {
+        status: "error",
+        message: dict.uploader.errors.init.replace("{detail}", t),
+      };
     }
     const init = (await initRes.json()) as {
       slug: string;
@@ -243,7 +268,10 @@ async function uploadOne(
     if (!putRes.ok) {
       return {
         status: "error",
-        message: `put: ${putRes.status}`,
+        message: dict.uploader.errors.put.replace(
+          "{detail}",
+          String(putRes.status),
+        ),
         slug: init.slug,
       };
     }
@@ -260,7 +288,11 @@ async function uploadOne(
     });
     if (!finalRes.ok) {
       const t = await finalRes.text();
-      return { status: "error", message: `finalize: ${t}`, slug: init.slug };
+      return {
+        status: "error",
+        message: dict.uploader.errors.finalize.replace("{detail}", t),
+        slug: init.slug,
+      };
     }
     return { status: "done", slug: init.slug };
   } catch (e) {

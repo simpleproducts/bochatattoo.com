@@ -18,50 +18,91 @@
  *
  * `byDay` is keyed in the viewer's zone, so a booking whose UTC month differs
  * from its displayed month lands in the right cell without any special case.
+ *
+ * Monday-first is NOT a translation concern: it is the week the studio works,
+ * and it stays Monday-first in English too. The dictionary's `grid.weekdays` is
+ * a seven-tuple in that order for exactly that reason.
  */
 import { useState } from "react";
 import { monthGridDayKeys } from "@/lib/booking-time";
 import type { AdminAppointment } from "@/lib/bookings-types";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import { AppointmentChip } from "./AppointmentChip";
 import type { MonthGridProps } from "./contract";
 
 /**
  * Declared here rather than in `contract.ts`: the contract file describes the
- * calendar's data, and this is one optional rendering hint. The grid cannot
- * know whether an empty month is empty or still in flight, and "no
- * appointments" is a lie in the second case.
+ * calendar's data, and `loading` is one optional rendering hint — the grid
+ * cannot know whether an empty month is empty or still in flight, and "no
+ * appointments" is a lie in the second case. `locale` and `dict` sit here for
+ * the same reason: which language the grid is read in is not calendar data.
  */
-type GridProps = MonthGridProps & { loading?: boolean };
-
-/** Admin copy is English; Monday first because the studio is in Argentina. */
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+type GridProps = MonthGridProps & {
+  locale: Locale;
+  dict: AdminDictionary;
+  loading?: boolean;
+};
 
 const MAX_CHIPS = 3;
 
-const dayMonthFormatter = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "UTC",
-  day: "numeric",
-  month: "long",
-});
+/**
+ * The same mapping booking-time.ts fixes for every other date in the product —
+ * es → es-AR, en → en-GB. Restated rather than imported because that module
+ * keeps it private.
+ */
+const INTL_LOCALE: Record<Locale, string> = { es: "es-AR", en: "en-GB" };
+
+/** Memoised by locale, the way booking-time.ts caches its own formatters. */
+const dayMonthFormatters = new Map<Locale, Intl.DateTimeFormat>();
 
 /** Day keys are calendar labels, not instants — noon UTC keeps them stable. */
-function dayMonthLabel(dayKey: string): string {
-  return dayMonthFormatter.format(new Date(`${dayKey}T12:00:00Z`));
+function dayMonthLabel(dayKey: string, locale: Locale): string {
+  let fmt = dayMonthFormatters.get(locale);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+      timeZone: "UTC",
+      day: "numeric",
+      month: "long",
+    });
+    dayMonthFormatters.set(locale, fmt);
+  }
+  return fmt.format(new Date(`${dayKey}T12:00:00Z`));
 }
 
 function countPending(appts: AdminAppointment[]): number {
   return appts.filter((a) => a.status === "pending").length;
 }
 
-function cellLabel(dayKey: string, appts: AdminAppointment[]): string {
-  const date = dayMonthLabel(dayKey);
-  if (appts.length === 0) return `${date} — no appointments`;
-  const total = `${appts.length} ${appts.length === 1 ? "appointment" : "appointments"}`;
+/**
+ * "3 appointments" / "1 appointment". There is no plural engine here and there
+ * does not need to be: one is the only irregular count either language has.
+ */
+function appointmentCount(n: number, dict: AdminDictionary): string {
+  const template =
+    n === 1 ? dict.calendar.appointmentsOne : dict.calendar.appointments;
+  return template.replace("{count}", String(n));
+}
+
+function cellLabel(
+  dayKey: string,
+  appts: AdminAppointment[],
+  locale: Locale,
+  dict: AdminDictionary,
+): string {
+  const grid = dict.calendar.grid;
+  const date = dayMonthLabel(dayKey, locale);
+  if (appts.length === 0) return grid.cellEmpty.replace("{date}", date);
+  const total = appointmentCount(appts.length, dict);
   const pending = countPending(appts);
-  // "awaiting client" is the pending label, read from the one status table.
+  // The pending phrasing is the grid's own, not the status table's: it reads as
+  // a clause inside a sentence, where "AWAITING CLIENT" is a chip.
   return pending > 0
-    ? `${date} — ${total}, ${pending} awaiting client`
-    : `${date} — ${total}`;
+    ? grid.cellPending
+        .replace("{date}", date)
+        .replace("{count}", total)
+        .replace("{pending}", String(pending))
+    : grid.cell.replace("{date}", date).replace("{count}", total);
 }
 
 export function MonthGrid({
@@ -69,6 +110,8 @@ export function MonthGrid({
   byDay,
   tz,
   todayKey,
+  locale,
+  dict,
   onOpenAppt,
   onCreate,
   loading,
@@ -91,9 +134,12 @@ export function MonthGrid({
   return (
     <section className="flex flex-col gap-4">
       <div className="grid grid-cols-7" aria-hidden>
-        {WEEKDAYS.map((d) => (
+        {dict.calendar.grid.weekdays.map((d, i) => (
+          // Keyed by position, not by the word: the tuple is fixed at seven and
+          // in a fixed order, and two languages need not have seven distinct
+          // abbreviations ("Mar"/"Mié" nearly collide already).
           <div
-            key={d}
+            key={i}
             className="px-1.5 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-muted"
           >
             {d}
@@ -103,7 +149,7 @@ export function MonthGrid({
 
       <div
         role="grid"
-        aria-label="Appointments by day"
+        aria-label={dict.calendar.grid.label}
         className="grid grid-cols-7 border-t border-l border-line"
       >
         {weeks.map((week) => (
@@ -123,7 +169,7 @@ export function MonthGrid({
                 >
                   <button
                     type="button"
-                    aria-label={cellLabel(dayKey, appts)}
+                    aria-label={cellLabel(dayKey, appts, locale, dict)}
                     onClick={() => onCreate(dayKey)}
                     className="absolute inset-0 text-left cursor-pointer hover:bg-fg/5 transition-colors"
                   />
@@ -146,6 +192,8 @@ export function MonthGrid({
                         key={appt.id}
                         appt={appt}
                         tz={tz}
+                        locale={locale}
+                        dict={dict}
                         onOpen={onOpenAppt}
                       />
                     ))}
@@ -155,13 +203,18 @@ export function MonthGrid({
                         aria-expanded={expanded}
                         aria-label={
                           expanded
-                            ? `Show fewer appointments on ${dayMonthLabel(dayKey)}`
-                            : `Show all ${appts.length} appointments on ${dayMonthLabel(dayKey)}`
+                            ? dict.calendar.grid.showFewer.replace(
+                                "{date}",
+                                dayMonthLabel(dayKey, locale),
+                              )
+                            : dict.calendar.grid.showAll
+                                .replace("{count}", String(appts.length))
+                                .replace("{date}", dayMonthLabel(dayKey, locale))
                         }
                         onClick={() => setExpandedDay(expanded ? null : dayKey)}
                         className="self-start font-mono text-[10px] text-muted hover:text-fg pl-1.5 py-0.5 text-left cursor-pointer"
                       >
-                        {expanded ? "Less" : `+${overflow}`}
+                        {expanded ? dict.calendar.grid.less : `+${overflow}`}
                       </button>
                     ) : null}
                   </div>
@@ -173,10 +226,10 @@ export function MonthGrid({
       </div>
 
       {monthAppointments.length === 0 && loading ? (
-        <p className="text-muted text-sm">Loading appointments…</p>
+        <p className="text-muted text-sm">{dict.calendar.grid.loading}</p>
       ) : monthAppointments.length === 0 ? (
         <div className="flex items-baseline gap-3 flex-wrap">
-          <p className="text-muted text-sm">No appointments this month.</p>
+          <p className="text-muted text-sm">{dict.calendar.grid.empty}</p>
           <button
             type="button"
             onClick={() =>
@@ -184,7 +237,7 @@ export function MonthGrid({
             }
             className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
           >
-            Create one
+            {dict.calendar.grid.createOne}
           </button>
         </div>
       ) : null}

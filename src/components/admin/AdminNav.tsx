@@ -14,20 +14,42 @@
  * it, so there is nothing here for the client bundle to do. Images and
  * Categories are two views of one page and switch by query string; Next
  * client-navigates between them, so the tab still feels instant.
+ *
+ * `dict` arrives from the page rather than being read here, for the same
+ * reason: this component never learns the locale, it is told the words. Its
+ * `key` is deliberately the `nav` key too, so a tab can only exist if the
+ * dictionary has a label for it.
+ *
+ * The row wraps. Every label is a single unbreakable word, so a flex item's
+ * `min-width: auto` resolves to the whole word and the items cannot shrink —
+ * without `flex-wrap` the row simply overflows, and nothing above it clips or
+ * scrolls, so the overflow becomes horizontal scroll on the whole admin. In
+ * Spanish it does: CALENDARIO · IMÁGENES · CATEGORÍAS is ~357px of mono type
+ * at this size and tracking, against the 328px `<main>`'s px-4 leaves on a
+ * 360px phone. Wrapping rather than scrolling because a second line keeps all
+ * three tabs visible and tappable; a scroll container would hide the third
+ * behind a gesture there is no affordance for.
  */
 import Link from "next/link";
+import type { AdminDictionary } from "@/i18n/admin";
 
 export type AdminTab = "calendar" | "images" | "categories";
 
 const TABS = [
-  { key: "calendar", href: "/admin/calendar", label: "Calendar" },
-  { key: "images", href: "/admin/gallery", label: "Images" },
-  { key: "categories", href: "/admin/gallery?tab=categories", label: "Categories" },
+  { key: "calendar", href: "/admin/calendar" },
+  { key: "images", href: "/admin/gallery" },
+  { key: "categories", href: "/admin/gallery?tab=categories" },
 ] as const;
 
-export function AdminNav({ active }: { active: AdminTab }) {
+export function AdminNav({
+  active,
+  dict,
+}: {
+  active: AdminTab;
+  dict: AdminDictionary;
+}) {
   return (
-    <nav className="flex items-center gap-2 border-b border-line">
+    <nav className="flex flex-wrap items-center gap-2 border-b border-line">
       {TABS.map((tab) => (
         <Link
           key={tab.key}
@@ -39,7 +61,7 @@ export function AdminNav({ active }: { active: AdminTab }) {
               : "border-transparent text-muted hover:text-fg"
           }`}
         >
-          {tab.label}
+          {dict.nav[tab.key]}
         </Link>
       ))}
     </nav>

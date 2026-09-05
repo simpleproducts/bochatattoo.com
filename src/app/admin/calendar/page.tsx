@@ -16,10 +16,12 @@
  * here is an unexplained blank screen at the moment he needs the schedule.
  */
 import { requireAdmin } from "@/lib/admin-auth";
+import { readAdminLocale } from "@/lib/admin-locale";
 import { monthKeyOf, monthsAround, STUDIO_TIME_ZONE } from "@/lib/booking-time";
 import { listMonths, toAdminAppointment } from "@/lib/bookings-store";
 import type { AdminAppointment } from "@/lib/bookings-types";
 import { bookingsConfigured } from "@/lib/r2-private";
+import { getAdminDictionary } from "@/i18n/admin";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminCalendar } from "@/components/admin/calendar/AdminCalendar";
 
@@ -39,6 +41,14 @@ export default async function AdminCalendarPage({
   searchParams: SearchParams;
 }) {
   await requireAdmin();
+
+  // The admin's language is a cookie, not a URL segment (src/lib/admin-locale.ts
+  // says why), so the server reads it here and hands the whole screen its words
+  // as props — the same way the booking pages hand `dict` to BookingFlow. It is
+  // also what every date below is formatted in: the calendar has more dates than
+  // sentences, which is why `locale` travels alongside `dict`.
+  const locale = await readAdminLocale();
+  const dict = getAdminDictionary(locale);
 
   const params = await searchParams;
   const selectedId = firstParam(params.b);
@@ -63,16 +73,20 @@ export default async function AdminCalendarPage({
   }
 
   return (
-    <>
-      <AdminNav active="calendar" />
-      <main className="flex-1 px-4 md:px-8 py-6 flex flex-col gap-6">
-        <AdminCalendar
-          initialMonths={initialMonths}
-          studioTimeZone={STUDIO_TIME_ZONE}
-          initialSelectedId={selectedId}
-          configured={configured}
-        />
-      </main>
-    </>
+    // The nav lives INSIDE <main>, exactly as it does on the gallery page, so
+    // the tab bar picks up the same px-4/md:px-8 inset as everything under it.
+    // Outside, it ran flush to the viewport edge while the calendar below it
+    // was padded.
+    <main className="flex-1 px-4 md:px-8 py-6 flex flex-col gap-6">
+      <AdminNav active="calendar" dict={dict} />
+      <AdminCalendar
+        initialMonths={initialMonths}
+        studioTimeZone={STUDIO_TIME_ZONE}
+        initialSelectedId={selectedId}
+        configured={configured}
+        locale={locale}
+        dict={dict}
+      />
+    </main>
   );
 }

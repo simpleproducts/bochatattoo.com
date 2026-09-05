@@ -14,6 +14,13 @@
  * in fill, `border-dashed` / solid / `border-dotted` differ in stroke, and the
  * label is real text. Drop any one of them and the other three still carry it.
  *
+ * The label is the one channel that is NOT in this file. It used to be, as an
+ * English `adminLabel`, back when the admin was English-only; the four words
+ * now live at `dict.calendar.status.*` in src/i18n/admin.ts and each render
+ * site reads `dict.calendar.status[meta.dictKey]`. Nothing else moved: a colour
+ * and a glyph are the same in both languages, so the rest of the table below is
+ * still the single mapping it always was.
+ *
  * No `server-only`: client components import this.
  */
 import type { BookingRecord, BookingStatus } from "./bookings-types";
@@ -36,11 +43,12 @@ export type StatusMeta = {
   dot: string; // e.g. "bg-status-pending"
   text: string; // e.g. "text-status-pending"
   border: string; // e.g. "border-l-2 border-dashed border-status-pending"
-  adminLabel: string; // English, admin-only
   /**
-   * Key into `dict.booking.status`. "cancelled" has no client-side string on
-   * purpose — the token resolver rejects a cancelled booking before its page
-   * ever renders, so only the admin surfaces ever ask for that one.
+   * Key into `dict.booking.status` on the client side and into
+   * `dict.calendar.status` in the admin dictionary — the two are deliberately
+   * keyed alike, so one field answers for both. "cancelled" has no client-side
+   * string on purpose: the token resolver rejects a cancelled booking before
+   * its page ever renders, so only the admin surfaces ever ask for that one.
    */
   dictKey: "pending" | "awaitingReceipt" | "confirmed" | "cancelled";
 };
@@ -51,7 +59,6 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     dot: "bg-status-pending",
     text: "text-status-pending",
     border: "border-l-2 border-dashed border-status-pending",
-    adminLabel: "AWAITING CLIENT",
     dictKey: "pending",
   },
   awaiting_receipt: {
@@ -59,7 +66,6 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     dot: "bg-status-partial",
     text: "text-status-partial",
     border: "border-l-2 border-status-partial",
-    adminLabel: "AWAITING RECEIPT",
     dictKey: "awaitingReceipt",
   },
   confirmed: {
@@ -67,7 +73,6 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     dot: "bg-status-done",
     text: "text-status-done",
     border: "border-l-2 border-status-done",
-    adminLabel: "CONFIRMED",
     dictKey: "confirmed",
   },
   // Neutral, not red: a cancelled booking is a resolved state, and red-400 is
@@ -77,7 +82,6 @@ export const STATUS_META: Record<BookingStatus, StatusMeta> = {
     dot: "bg-muted",
     text: "text-muted",
     border: "border-l-2 border-dotted border-line",
-    adminLabel: "CANCELLED",
     dictKey: "cancelled",
   },
 };

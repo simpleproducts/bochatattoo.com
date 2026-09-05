@@ -19,25 +19,41 @@
  * can upload again), so it sits behind a native confirm().
  */
 import { LocalTime } from "@/components/LocalTime";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import type { ReceiptPreviewProps } from "./contract";
 
+/**
+ * `dict` and `locale` arrive from the sheet, which got them from the page's
+ * server render. Both are needed and neither implies the other: the strings
+ * come out of `dict`, while `LocalTime` needs the locale itself to build its
+ * `Intl` formatter.
+ */
+type Props = ReceiptPreviewProps & {
+  dict: AdminDictionary;
+  locale: Locale;
+};
+
 /** Receipts are phone photos and bank PDFs — KB under a megabyte, MB over. */
-function formatBytes(bytes: number): string {
+function formatBytes(bytes: number, dict: AdminDictionary): string {
   return bytes < 1_000_000
-    ? `${Math.max(1, Math.round(bytes / 1000))} KB`
-    : `${(bytes / 1_000_000).toFixed(1)} MB`;
+    ? dict.common.kilobytes.replace(
+        "{size}",
+        String(Math.max(1, Math.round(bytes / 1000))),
+      )
+    : dict.common.megabytes.replace("{size}", (bytes / 1_000_000).toFixed(1));
 }
 
-export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
+export function ReceiptPreview({ appt, busy, onDelete, dict, locale }: Props) {
   const receipt = appt.receipt;
 
   if (!receipt) {
     return (
       <section className="flex flex-col gap-2">
         <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-          Receipt
+          {dict.calendar.receipt.title}
         </h3>
-        <p className="text-sm text-muted">Nothing uploaded yet.</p>
+        <p className="text-sm text-muted">{dict.calendar.receipt.empty}</p>
       </section>
     );
   }
@@ -46,8 +62,13 @@ export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
   const isPdf = receipt.contentType === "application/pdf";
 
   function confirmDelete() {
+    // The status this drops back to is named in the prose, so it is read from
+    // the same table the badge reads rather than spelled out a second time.
     const ok = window.confirm(
-      "Delete this receipt?\n\nThe file is erased from storage and the booking drops back to AWAITING RECEIPT, so the client can upload another one.",
+      dict.calendar.receipt.deleteConfirm.replace(
+        "{status}",
+        dict.calendar.status.awaitingReceipt,
+      ),
     );
     if (ok) onDelete();
   }
@@ -55,7 +76,7 @@ export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
   return (
     <section className="flex flex-col gap-2">
       <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-        Receipt
+        {dict.calendar.receipt.title}
       </h3>
 
       {isPdf ? (
@@ -66,7 +87,7 @@ export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
           className="border border-line p-4 flex items-center gap-3 hover:border-fg transition-colors"
         >
           <span className="font-mono text-xs tracking-[0.2em] text-muted" aria-hidden>
-            PDF
+            {dict.calendar.receipt.pdf}
           </span>
           <span className="text-sm underline underline-offset-4 break-all">
             {receipt.filename}
@@ -82,7 +103,10 @@ export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
           {/* eslint-disable-next-line @next/next/no-img-element -- see the file header: a private cookie-gated stream has no slug and no known dimensions. */}
           <img
             src={href}
-            alt={`Transfer receipt: ${receipt.filename}`}
+            alt={dict.calendar.receipt.imageAlt.replace(
+              "{filename}",
+              receipt.filename,
+            )}
             loading="lazy"
             className="w-full max-h-64 object-contain bg-fg/5"
           />
@@ -90,8 +114,8 @@ export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
       )}
 
       <p className="font-mono text-[10px] text-muted break-all">
-        {receipt.filename} · {formatBytes(receipt.bytes)} ·{" "}
-        <LocalTime start={receipt.uploadedAt} locale="en" showDate />
+        {receipt.filename} · {formatBytes(receipt.bytes, dict)} ·{" "}
+        <LocalTime start={receipt.uploadedAt} locale={locale} showDate />
       </p>
 
       <div>
@@ -101,7 +125,7 @@ export function ReceiptPreview({ appt, busy, onDelete }: ReceiptPreviewProps) {
           disabled={busy}
           className="text-[10px] uppercase tracking-[0.2em] font-mono text-red-400 hover:underline disabled:opacity-40 cursor-pointer"
         >
-          Delete receipt
+          {dict.calendar.receipt.delete}
         </button>
       </div>
     </section>

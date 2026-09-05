@@ -39,8 +39,12 @@ export type SheetState =
   | { mode: "view"; id: BookingId }
   | { mode: "edit"; id: BookingId };
 
-/** Duration chips, in minutes. `null` is the "custom" chip. */
-export const DURATION_CHIPS: (number | null)[] = [30, 60, 90, 120, 180, 240, null];
+/**
+ * Duration chips, in minutes — the real session lengths this studio books.
+ * `null` is the "custom" chip, which reveals an end time and a "next day" box
+ * for anything that does not land on one of these.
+ */
+export const DURATION_CHIPS: (number | null)[] = [60, 120, 240, 360, 480, null];
 
 /**
  * The form's own state, in the admin's wall clock. Deliberately all-strings:

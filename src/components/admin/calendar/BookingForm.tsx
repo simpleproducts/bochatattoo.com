@@ -17,6 +17,8 @@
  */
 import { useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import {
   ADMIN_NOTES_MAX,
   CURRENCIES,
@@ -40,13 +42,28 @@ import {
   type BookingFormValues,
 } from "./contract";
 
+/**
+ * `dict` supplies the words; `locale` is what the two `Intl`-backed helpers in
+ * this file need — the zone abbreviation on the echo line and the time range in
+ * an overlap warning. Neither can be derived from the other, so both come down
+ * from the sheet.
+ */
+type Props = BookingFormProps & {
+  dict: AdminDictionary;
+  locale: Locale;
+};
+
 const INPUT =
   "bg-transparent border border-line px-3 py-2 text-sm focus:outline-none focus:border-fg";
 const LABEL = "font-mono uppercase tracking-[0.2em] text-muted";
 
-/** "30m" · "1h" · "1h30" · "custom" — short enough to fit seven chips on a phone. */
-function chipLabel(minutes: number | null): string {
-  if (minutes === null) return "custom";
+/**
+ * "1h" · "8h" · "1h30" · "otro" — short enough to fit the whole row on a phone.
+ * Only the `null` chip is a word: the rest are numerals plus an "h", which
+ * reads the same in both languages.
+ */
+function chipLabel(minutes: number | null, dict: AdminDictionary): string {
+  if (minutes === null) return dict.calendar.form.chipCustom;
   if (minutes < 60) return `${minutes}m`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -106,7 +123,9 @@ export function BookingForm({
   others,
   onSubmit,
   onCancel,
-}: BookingFormProps) {
+  dict,
+  locale,
+}: Props) {
   const [values, setValues] = useState<BookingFormValues>(initial);
   const [attempted, setAttempted] = useState(false);
   const depositErrorId = useId();
@@ -185,7 +204,7 @@ export function BookingForm({
     onSubmit(values);
   }
 
-  const abbrev = slot ? zoneAbbrev(slot.startsAt, tz, "en") : "";
+  const abbrev = slot ? zoneAbbrev(slot.startsAt, tz, locale) : "";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
@@ -195,7 +214,7 @@ export function BookingForm({
         </p>
       )}
 
-      <Field label="Date">
+      <Field label={dict.calendar.form.date}>
         <input
           type="date"
           required
@@ -205,7 +224,7 @@ export function BookingForm({
         />
       </Field>
 
-      <Field label="Starts">
+      <Field label={dict.calendar.form.starts}>
         <input
           type="time"
           step="900"
@@ -217,8 +236,12 @@ export function BookingForm({
       </Field>
 
       <div className="flex flex-col gap-2 text-xs">
-        <span className={LABEL}>Lasts</span>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Duration">
+        <span className={LABEL}>{dict.calendar.form.lasts}</span>
+        <div
+          className="flex flex-wrap gap-1.5"
+          role="group"
+          aria-label={dict.calendar.form.duration}
+        >
           {DURATION_CHIPS.map((chip) => {
             const active = chip === null ? custom : !custom && minutes === chip;
             return (
@@ -232,7 +255,7 @@ export function BookingForm({
                   active ? "border-fg text-fg" : "border-line text-muted hover:border-fg"
                 }`}
               >
-                {chipLabel(chip)}
+                {chipLabel(chip, dict)}
               </button>
             );
           })}
@@ -241,7 +264,7 @@ export function BookingForm({
         {custom && (
           <div className="flex flex-wrap items-end gap-4 pt-1">
             <label className="flex flex-col gap-1 text-xs">
-              <span className={LABEL}>Ends</span>
+              <span className={LABEL}>{dict.calendar.form.ends}</span>
               <input
                 type="time"
                 step="900"
@@ -257,7 +280,7 @@ export function BookingForm({
                 onChange={(e) => patch({ endsNextDay: e.target.checked })}
                 className="cursor-pointer"
               />
-              <span className={LABEL}>Next day</span>
+              <span className={LABEL}>{dict.calendar.form.nextDay}</span>
             </label>
           </div>
         )}
@@ -271,7 +294,7 @@ export function BookingForm({
 
         {backwards && (
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-400">
-            End must be after start
+            {dict.calendar.form.endBeforeStart}
           </p>
         )}
 
@@ -280,14 +303,15 @@ export function BookingForm({
             key={o.id}
             className="font-mono text-[10px] text-status-partial break-words"
           >
-            ⚠ Overlaps {formatTimeRange(o.startsAt, o.endsAt, tz, "en")} ·{" "}
-            {bookingLabel(o)}
+            {dict.calendar.form.overlap
+              .replace("{range}", formatTimeRange(o.startsAt, o.endsAt, tz, locale))
+              .replace("{name}", bookingLabel(o))}
           </p>
         ))}
       </div>
 
       <label className="flex flex-col gap-1 text-xs">
-        <span className={LABEL}>Instagram</span>
+        <span className={LABEL}>{dict.common.instagram}</span>
         {/* The @ is chrome, not data: the stored handle is always unprefixed,
             which is what normalizeInstagram() on the server also guarantees. */}
         <span className="flex items-center border border-line focus-within:border-fg">
@@ -307,14 +331,14 @@ export function BookingForm({
       </label>
 
       <Field
-        label="Email"
+        label={dict.common.email}
         hint={
           <span
             className={`font-mono text-[10px] uppercase tracking-[0.2em] ${
               attempted && !contactOk ? "text-red-400" : "text-muted"
             }`}
           >
-            At least one required
+            {dict.calendar.form.contactHint}
           </span>
         }
       >
@@ -331,7 +355,7 @@ export function BookingForm({
         />
       </Field>
 
-      <Field label="Name">
+      <Field label={dict.common.name}>
         <input
           type="text"
           maxLength={NAME_MAX}
@@ -341,7 +365,7 @@ export function BookingForm({
         />
       </Field>
 
-      <Field label="Phone">
+      <Field label={dict.common.phone}>
         <input
           type="tel"
           inputMode="tel"
@@ -354,7 +378,7 @@ export function BookingForm({
       <div className="flex flex-col gap-1">
         <div className="flex items-end gap-3">
           <label className="flex flex-col gap-1 text-xs flex-1 min-w-0">
-            <span className={LABEL}>Deposit</span>
+            <span className={LABEL}>{dict.common.deposit}</span>
             <input
               type="text"
               inputMode="decimal"
@@ -366,7 +390,7 @@ export function BookingForm({
             />
           </label>
           <select
-            aria-label="Deposit currency"
+            aria-label={dict.calendar.form.depositCurrency}
             value={values.depositCurrency}
             onChange={(e) => {
               // Look the value up instead of asserting it: a <select> is a
@@ -393,16 +417,16 @@ export function BookingForm({
             id={depositErrorId}
             className="font-mono text-[10px] uppercase tracking-[0.2em] text-red-400"
           >
-            Invalid amount — 50.000 or 50000,50
+            {dict.calendar.form.invalidAmount}
           </p>
         )}
       </div>
 
       <Field
-        label="Notes"
+        label={dict.calendar.form.notes}
         hint={
           <span className="font-mono text-[10px] text-muted">
-            Private — never shown to the client.
+            {dict.calendar.form.notesHint}
           </span>
         }
       >
@@ -415,13 +439,29 @@ export function BookingForm({
         />
       </Field>
 
+      {attempted && !contactOk ? (
+        <p
+          role="alert"
+          className="border border-red-400 text-red-400 p-2 text-[10px] uppercase tracking-[0.2em] font-mono"
+        >
+          {dict.calendar.form.contactRequired}
+        </p>
+      ) : null}
+
       <div className="flex items-center gap-4 pt-2">
         <button
           type="submit"
-          disabled={busy || !contactOk || !depositOk}
+          /*
+           * Only `busy` disables this. Gating it on the field checks too made
+           * the form silent: the button greyed out, submit never fired, and the
+           * "at least one required" hint — which only turns red after an
+           * attempt — could never turn red. A button that explains why it
+           * refused beats one that cannot be pressed.
+           */
+          disabled={busy}
           className="border border-fg px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors disabled:opacity-40 cursor-pointer"
         >
-          {busy ? "Saving…" : submitLabel}
+          {busy ? dict.common.saving : submitLabel}
         </button>
         <button
           type="button"
@@ -429,7 +469,7 @@ export function BookingForm({
           disabled={busy}
           className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg disabled:opacity-40 cursor-pointer"
         >
-          Cancel
+          {dict.common.cancel}
         </button>
       </div>
     </form>

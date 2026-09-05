@@ -9,8 +9,52 @@
  * escape hatch when something really did change.
  */
 import { LocalTime } from "@/components/LocalTime";
+import { INSTAGRAM_DM_URL, STUDIO_MAPS_URL } from "@/lib/site";
 import { downloadIcs } from "./use-ics";
 import type { ConfirmedPanelProps } from "./contract";
+
+const LINK = "underline underline-offset-2 hover:text-fg transition-colors";
+
+/**
+ * Renders `done.body` with its two {placeholder} tokens replaced by real
+ * anchors. Splitting the sentence at render — rather than storing three
+ * fragments per language — is what lets Spanish and English each keep their
+ * own word order around the links.
+ */
+function bodyWithLinks(
+  template: string,
+  labels: { studio: string; contact: string },
+) {
+  return template.split(/(\{studio\}|\{contact\})/).map((part, i) => {
+    if (part === "{studio}") {
+      return (
+        <a
+          key={i}
+          href={STUDIO_MAPS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK}
+        >
+          {labels.studio}
+        </a>
+      );
+    }
+    if (part === "{contact}") {
+      return (
+        <a
+          key={i}
+          href={INSTAGRAM_DM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK}
+        >
+          {labels.contact}
+        </a>
+      );
+    }
+    return part;
+  });
+}
 
 export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
   const d = dict.booking.done;
@@ -37,7 +81,9 @@ export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
         />
       </div>
 
-      <p className="text-sm leading-relaxed text-fg/80">{d.body}</p>
+      <p className="text-sm leading-relaxed text-fg/80">
+        {bodyWithLinks(d.body, { studio: d.studioLink, contact: d.contactLink })}
+      </p>
 
       {email ? (
         <p className="font-mono text-xs text-muted break-all">

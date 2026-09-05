@@ -24,6 +24,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { LocalTime } from "@/components/LocalTime";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import { bookingLabel } from "@/lib/bookings-types";
 import type { BookingEmailKind } from "@/lib/bookings-types";
 import { dayKeyOf, durationLabel, formatDayLong } from "@/lib/booking-time";
@@ -43,6 +45,15 @@ import type { BookingSheetProps } from "./contract";
  * for every sheet opened from a chip or an agenda row.
  */
 type SheetProps = BookingSheetProps & {
+  /**
+   * The admin's language, resolved on the server from the cookie and handed
+   * down by the calendar. `dict` is every word this subtree renders — the
+   * sheet forwards it to the form, the link row and the receipt so none of
+   * them has to look one up — and `locale` is what the `Intl`-backed helpers
+   * (`formatDayLong`, `LocalTime`) need, which no dictionary can supply.
+   */
+  dict: AdminDictionary;
+  locale: Locale;
   loadPending?: boolean;
   /** Why the by-id fetch failed, if it did. */
   loadError?: string | null;
@@ -54,19 +65,22 @@ const MOBILE_PANEL =
 const DESKTOP_PANEL =
   "fixed right-0 top-0 bottom-0 w-[420px] border-l border-line bg-bg/95 backdrop-blur-md z-[200] overflow-y-auto animate-panel-in";
 
-const DISCARD =
-  "Discard your changes to this booking?\n\nNothing has been saved yet.";
-
 const OUTLINE_ACTION =
   "border border-fg px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors disabled:opacity-40 cursor-pointer";
 const QUIET_ACTION =
   "border border-line px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono text-muted hover:border-fg hover:text-fg transition-colors disabled:opacity-40 cursor-pointer";
 
-const EMAIL_ROWS: { kind: BookingEmailKind; label: string }[] = [
-  { kind: "ownerSubmitted", label: "Owner · submitted" },
-  { kind: "clientSubmitted", label: "Client · submitted" },
-  { kind: "ownerConfirmed", label: "Owner · confirmed" },
-  { kind: "clientConfirmed", label: "Client · confirmed" },
+/**
+ * The order the four transactional emails are listed in — chronological, not
+ * the declaration order of `BookingEmailKind`. Each kind is also its own key in
+ * `dict.calendar.emails`, so the label is a lookup rather than a second table
+ * that could fall out of step with this one.
+ */
+const EMAIL_ROWS: BookingEmailKind[] = [
+  "ownerSubmitted",
+  "clientSubmitted",
+  "ownerConfirmed",
+  "clientConfirmed",
 ];
 
 function Row({ label, value }: { label: string; value?: string }) {
@@ -95,6 +109,8 @@ export function BookingSheet({
   onRotateLink,
   onDeleteReceipt,
   onResend,
+  dict,
+  locale,
   loadPending,
   loadError,
   onRetryLoad,
@@ -111,22 +127,28 @@ export function BookingSheet({
       window.matchMedia("(min-width: 768px)").matches,
   );
 
+  const discard = dict.calendar.sheet.discardConfirm;
+
   const requestClose = useCallback(() => {
-    if (dirtyRef.current && !window.confirm(DISCARD)) return;
+    if (dirtyRef.current && !window.confirm(discard)) return;
     onClose();
-  }, [onClose]);
+  }, [onClose, discard]);
 
   // Read through refs inside the window listeners so that a new `onClose`
   // identity does not tear down and re-arm the history trap mid-sheet. The
   // sync is an effect with no dependency list, so it runs after every commit;
-  // it is declared above the listener effects, and both refs are only ever
+  // it is declared above the listener effects, and all three refs are only ever
   // dereferenced later still, from an event. Assigning during render instead
   // would make the value a render output, which a ref is explicitly not.
+  // `discard` joins them for the same reason: the popstate listener needs the
+  // current language, and switching it must not re-arm the history trap.
   const requestCloseRef = useRef(requestClose);
   const onCloseRef = useRef(onClose);
+  const discardRef = useRef(discard);
   useEffect(() => {
     requestCloseRef.current = requestClose;
     onCloseRef.current = onClose;
+    discardRef.current = discard;
   });
 
   /** Identity of what the sheet is showing — the form's remount key. */
@@ -177,7 +199,7 @@ export function BookingSheet({
     // it for the query string.
     window.history.pushState({ bookingSheet: true }, "", window.location.href);
     const onPopState = () => {
-      if (dirtyRef.current && !window.confirm(DISCARD)) {
+      if (dirtyRef.current && !window.confirm(discardRef.current)) {
         // The entry is already gone, so re-arm the trap; otherwise the next
         // Back press would leave the calendar entirely.
         window.history.pushState({ bookingSheet: true }, "", window.location.href);
@@ -205,12 +227,12 @@ export function BookingSheet({
   const composing = state.mode === "create" || state.mode === "edit";
   const title =
     state.mode === "create"
-      ? "New appointment"
+      ? dict.calendar.sheet.newTitle
       : state.mode === "edit"
-        ? "Edit appointment"
+        ? dict.calendar.sheet.editTitle
         : appt
           ? bookingLabel(appt)
-          : "Appointment";
+          : dict.calendar.sheet.fallbackTitle;
 
   function markDirtyFromClick(e: React.MouseEvent) {
     const target = e.target;
@@ -220,9 +242,9 @@ export function BookingSheet({
   }
 
   function confirmDelete() {
-    const ok = window.confirm(
-      "Delete this booking permanently?\n\nThe record and any receipt are erased and the link dies. Use Cancel booking instead if you only want to free the slot — that one is reversible.",
-    );
+    // Names the reversible alternative in prose; `sheet.cancelBooking` labels
+    // the button it points at, in both languages.
+    const ok = window.confirm(dict.calendar.sheet.deleteConfirm);
     if (ok) onDelete();
   }
 
@@ -243,10 +265,12 @@ export function BookingSheet({
         )}
         busy={busy}
         error={error}
-        submitLabel="Create appointment"
+        submitLabel={dict.calendar.form.create}
         others={all}
         onSubmit={onSubmitForm}
         onCancel={requestClose}
+        dict={dict}
+        locale={locale}
       />
     );
   } else if (state.mode === "edit") {
@@ -257,13 +281,15 @@ export function BookingSheet({
         initial={formValuesFrom(appt, tz)}
         busy={busy}
         error={error}
-        submitLabel="Save changes"
+        submitLabel={dict.calendar.form.saveChanges}
         others={all.filter((a) => a.id !== appt.id)}
         onSubmit={onSubmitForm}
         onCancel={requestClose}
+        dict={dict}
+        locale={locale}
       />
     ) : (
-      <p className="text-sm text-muted">This appointment is no longer loaded.</p>
+      <p className="text-sm text-muted">{dict.calendar.sheet.notLoaded}</p>
     );
   }
 
@@ -295,11 +321,15 @@ export function BookingSheet({
             {title}
           </h2>
           <div className="flex items-center gap-3 shrink-0">
-            {busy && <span className="text-xs font-mono text-muted">working…</span>}
+            {busy && (
+              <span className="text-xs font-mono text-muted">
+                {dict.common.working}
+              </span>
+            )}
             <button
               type="button"
               onClick={requestClose}
-              aria-label="Close"
+              aria-label={dict.common.close}
               className="w-9 h-9 flex items-center justify-center text-2xl leading-none text-muted hover:text-fg cursor-pointer"
             >
               ×
@@ -324,11 +354,13 @@ export function BookingSheet({
                tried again. */
             <div className="flex flex-col gap-3 items-start">
               {loadPending ? (
-                <p className="text-sm text-muted">Loading this appointment…</p>
+                <p className="text-sm text-muted">
+                  {dict.calendar.sheet.loadingOne}
+                </p>
               ) : (
                 <>
                   <p className="text-sm text-muted">
-                    This appointment could not be loaded.
+                    {dict.calendar.sheet.loadFailed}
                   </p>
                   {loadError ? (
                     <p className="border border-red-400 text-red-400 p-3 text-xs font-mono break-words">
@@ -337,7 +369,7 @@ export function BookingSheet({
                   ) : null}
                   {onRetryLoad ? (
                     <button type="button" onClick={onRetryLoad} className={QUIET_ACTION}>
-                      Retry
+                      {dict.common.retry}
                     </button>
                   ) : null}
                 </>
@@ -352,13 +384,13 @@ export function BookingSheet({
               )}
 
               <div className="flex flex-col gap-2">
-                <StatusBadge status={appt.status} size="md" />
+                <StatusBadge status={appt.status} size="md" dict={dict} />
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                  Created{" "}
+                  {dict.calendar.sheet.created}{" "}
                   <LocalTime
                     start={appt.createdAt}
                     timeZone={tz}
-                    locale="en"
+                    locale={locale}
                     showDate
                   />
                 </p>
@@ -366,14 +398,14 @@ export function BookingSheet({
 
               <div className="flex flex-col gap-1">
                 <p className="font-serif italic text-2xl">
-                  {formatDayLong(appt.startsAt, tz, "en")}
+                  {formatDayLong(appt.startsAt, tz, locale)}
                 </p>
                 <p className="font-mono text-sm">
                   <LocalTime
                     start={appt.startsAt}
                     end={appt.endsAt}
                     timeZone={tz}
-                    locale="en"
+                    locale={locale}
                     showZone
                   />
                   <span className="text-muted">
@@ -383,7 +415,8 @@ export function BookingSheet({
                 </p>
                 {appt.deposit && (
                   <p className="font-mono text-xs text-muted">
-                    Deposit {appt.deposit.currency} {appt.deposit.amount}
+                    {dict.common.deposit} {appt.deposit.currency}{" "}
+                    {appt.deposit.amount}
                   </p>
                 )}
               </div>
@@ -391,56 +424,65 @@ export function BookingSheet({
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] border-b border-line pb-1">
-                    Studio seed
+                    {dict.calendar.sheet.seed}
                   </h3>
-                  <Row label="Name" value={appt.seed.name} />
+                  <Row label={dict.common.name} value={appt.seed.name} />
                   <Row
-                    label="Instagram"
+                    label={dict.common.instagram}
                     value={appt.seed.instagram ? `@${appt.seed.instagram}` : undefined}
                   />
-                  <Row label="Email" value={appt.seed.email} />
-                  <Row label="Phone" value={appt.seed.phone} />
+                  <Row label={dict.common.email} value={appt.seed.email} />
+                  <Row label={dict.common.phone} value={appt.seed.phone} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] border-b border-line pb-1">
-                    Client
+                    {dict.calendar.sheet.client}
                   </h3>
-                  <Row label="Name" value={appt.client.name} />
+                  <Row label={dict.common.name} value={appt.client.name} />
                   <Row
-                    label="Instagram"
+                    label={dict.common.instagram}
                     value={
                       appt.client.instagram ? `@${appt.client.instagram}` : undefined
                     }
                   />
-                  <Row label="Email" value={appt.client.email} />
-                  <Row label="Phone" value={appt.client.phone} />
-                  <Row label="Message" value={appt.client.note} />
+                  <Row label={dict.common.email} value={appt.client.email} />
+                  <Row label={dict.common.phone} value={appt.client.phone} />
+                  <Row
+                    label={dict.calendar.sheet.message}
+                    value={appt.client.note}
+                  />
                 </div>
               </div>
 
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted break-words">
                 {appt.client.termsAcceptedAt ? (
                   <>
-                    Terms accepted{" "}
+                    {dict.calendar.sheet.termsAccepted}{" "}
                     <LocalTime
                       start={appt.client.termsAcceptedAt}
                       timeZone={tz}
-                      locale="en"
+                      locale={locale}
                       showDate
                     />
                     {appt.client.termsVersion ? ` · ${appt.client.termsVersion}` : ""}
                   </>
                 ) : (
-                  "Terms not accepted yet"
+                  dict.calendar.sheet.termsPending
                 )}
               </p>
 
-              <ReceiptPreview appt={appt} busy={busy} onDelete={onDeleteReceipt} />
+              <ReceiptPreview
+                appt={appt}
+                busy={busy}
+                onDelete={onDeleteReceipt}
+                dict={dict}
+                locale={locale}
+              />
 
               {appt.adminNotes?.trim() && (
                 <section className="flex flex-col gap-2">
                   <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                    Private notes
+                    {dict.calendar.sheet.notes}
                   </h3>
                   <p className="text-sm text-fg/80 whitespace-pre-wrap break-words">
                     {appt.adminNotes}
@@ -448,14 +490,19 @@ export function BookingSheet({
                 </section>
               )}
 
-              <ShareLinkRow appt={appt} busy={busy} onRotate={onRotateLink} />
+              <ShareLinkRow
+                appt={appt}
+                busy={busy}
+                onRotate={onRotateLink}
+                dict={dict}
+              />
 
               <section className="flex flex-col gap-2">
                 <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                  Email
+                  {dict.calendar.emails.heading}
                 </h3>
                 <ul className="flex flex-col divide-y divide-line border-y border-line">
-                  {EMAIL_ROWS.map(({ kind, label }) => {
+                  {EMAIL_ROWS.map((kind) => {
                     const sentAt = appt.emails[kind];
                     return (
                       <li
@@ -463,7 +510,7 @@ export function BookingSheet({
                         className="flex items-center justify-between gap-3 py-2 flex-wrap"
                       >
                         <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-                          {label}
+                          {dict.calendar.emails[kind]}
                         </span>
                         <span className="flex items-center gap-3 shrink-0">
                           <span className="font-mono text-[10px] text-muted">
@@ -473,12 +520,12 @@ export function BookingSheet({
                                 <LocalTime
                                   start={sentAt}
                                   timeZone={tz}
-                                  locale="en"
+                                  locale={locale}
                                   showDate
                                 />
                               </>
                             ) : (
-                              "not sent"
+                              dict.calendar.emails.notSent
                             )}
                           </span>
                           <button
@@ -487,7 +534,7 @@ export function BookingSheet({
                             disabled={busy}
                             className="text-[10px] uppercase tracking-[0.2em] font-mono text-muted hover:text-fg disabled:opacity-40 cursor-pointer"
                           >
-                            Resend
+                            {dict.calendar.emails.resend}
                           </button>
                         </span>
                       </li>
@@ -495,8 +542,13 @@ export function BookingSheet({
                   })}
                 </ul>
                 {appt.emails.lastError && (
+                  /* The kind is named with the same label as the row above it,
+                     so the failure points at a line the admin can see. The
+                     message is whatever the mail provider said and stays
+                     verbatim — translating a server string would invent one. */
                   <p className="font-mono text-[10px] text-red-400 break-words">
-                    {appt.emails.lastError.kind}: {appt.emails.lastError.message}
+                    {dict.calendar.emails[appt.emails.lastError.kind]}:{" "}
+                    {appt.emails.lastError.message}
                   </p>
                 )}
               </section>
@@ -508,7 +560,7 @@ export function BookingSheet({
                   disabled={busy}
                   className={OUTLINE_ACTION}
                 >
-                  Edit
+                  {dict.common.edit}
                 </button>
                 <button
                   type="button"
@@ -516,7 +568,9 @@ export function BookingSheet({
                   disabled={busy}
                   className={QUIET_ACTION}
                 >
-                  {appt.cancelledAt ? "Restore" : "Cancel booking"}
+                  {appt.cancelledAt
+                    ? dict.calendar.sheet.restore
+                    : dict.calendar.sheet.cancelBooking}
                 </button>
                 <button
                   type="button"
@@ -524,7 +578,7 @@ export function BookingSheet({
                   disabled={busy}
                   className="ml-auto border border-red-400 text-red-400 px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono hover:bg-red-400 hover:text-bg transition-colors disabled:opacity-40 cursor-pointer"
                 >
-                  Delete
+                  {dict.common.delete}
                 </button>
               </div>
             </>

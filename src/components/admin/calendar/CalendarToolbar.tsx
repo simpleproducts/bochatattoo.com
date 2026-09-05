@@ -18,6 +18,8 @@
  */
 import { STATUS_META } from "@/lib/booking-status";
 import type { BookingStatus } from "@/lib/bookings-types";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 import type { CalendarToolbarProps, CalendarView } from "./contract";
 
 /**
@@ -25,8 +27,14 @@ import type { CalendarToolbarProps, CalendarView } from "./contract";
  * file describes the calendar's data, and these three describe one optional
  * affordance of one component. Optional so a toolbar rendered without a repair
  * path simply does not draw the control.
+ *
+ * `locale` and `dict` join them for the same reason — the language the toolbar
+ * is read in is not part of the calendar's data either. Both are required:
+ * every word below comes out of `dict`, and the month heading is formatted.
  */
 type ToolbarProps = CalendarToolbarProps & {
+  locale: Locale;
+  dict: AdminDictionary;
   onReindex?: () => void;
   reindexBusy?: boolean;
   /** The rebuild's own report — `{months, records}`, or why it failed. */
@@ -41,17 +49,35 @@ const VIEWS: CalendarView[] = ["month", "agenda"];
 /** Legend order is the lifecycle order, not the object key order. */
 const LEGEND: BookingStatus[] = ["pending", "awaiting_receipt", "confirmed", "cancelled"];
 
-const periodFormatter = new Intl.DateTimeFormat("en", {
-  timeZone: "UTC",
-  month: "long",
-  year: "numeric",
-});
+/**
+ * The same mapping booking-time.ts fixes for every other date in the product —
+ * es → es-AR, en → en-GB. Restated rather than imported because that module
+ * keeps it private, and a month heading that disagreed with the clock beside it
+ * would be worse than the one duplicated line.
+ */
+const INTL_LOCALE: Record<Locale, string> = { es: "es-AR", en: "en-GB" };
 
-function periodLabel(monthKey: string): string {
-  return periodFormatter.format(new Date(`${monthKey}-01T12:00:00Z`));
+/**
+ * Memoised by locale rather than built per render, the way booking-time.ts
+ * caches its own formatters: constructing an `Intl.DateTimeFormat` is the
+ * expensive half, and the admin changes language about once.
+ */
+const periodFormatters = new Map<Locale, Intl.DateTimeFormat>();
+
+function periodLabel(monthKey: string, locale: Locale): string {
+  let fmt = periodFormatters.get(locale);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+      timeZone: "UTC",
+      month: "long",
+      year: "numeric",
+    });
+    periodFormatters.set(locale, fmt);
+  }
+  return fmt.format(new Date(`${monthKey}-01T12:00:00Z`));
 }
 
-function Legend() {
+function Legend({ dict }: { dict: AdminDictionary }) {
   return (
     <ul className="flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
       {LEGEND.map((status) => {
@@ -61,7 +87,7 @@ function Legend() {
             <span aria-hidden className={meta.text}>
               {meta.glyph}
             </span>
-            <span>{meta.adminLabel}</span>
+            <span>{dict.calendar.status[meta.dictKey]}</span>
           </li>
         );
       })}
@@ -74,6 +100,8 @@ export function CalendarToolbar({
   view,
   tz,
   tzAbbrev,
+  locale,
+  dict,
   onView,
   onPrev,
   onNext,
@@ -88,12 +116,12 @@ export function CalendarToolbar({
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4 flex-wrap">
           <h2 className="font-serif italic text-2xl md:text-3xl">
-            {periodLabel(monthKey)}
+            {periodLabel(monthKey, locale)}
           </h2>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              aria-label="Previous month"
+              aria-label={dict.calendar.toolbar.prevMonth}
               onClick={onPrev}
               className={STEP_BUTTON}
             >
@@ -101,20 +129,23 @@ export function CalendarToolbar({
             </button>
             <button
               type="button"
-              aria-label="Next month"
+              aria-label={dict.calendar.toolbar.nextMonth}
               onClick={onNext}
               className={STEP_BUTTON}
             >
               ›
             </button>
             <button type="button" onClick={onToday} className={STEP_BUTTON}>
-              Today
+              {dict.calendar.toolbar.today}
             </button>
           </div>
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
-          <nav className="flex items-center gap-2 border-b border-line" aria-label="Calendar view">
+          <nav
+            className="flex items-center gap-2 border-b border-line"
+            aria-label={dict.calendar.toolbar.viewLabel}
+          >
             {VIEWS.map((v) => (
               <button
                 key={v}
@@ -127,7 +158,7 @@ export function CalendarToolbar({
                     : "border-transparent text-muted hover:text-fg"
                 }`}
               >
-                {v}
+                {dict.calendar.toolbar.views[v]}
               </button>
             ))}
           </nav>
@@ -136,7 +167,7 @@ export function CalendarToolbar({
             onClick={onCreate}
             className="border border-fg px-4 py-2 text-xs uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors cursor-pointer"
           >
-            + New
+            {dict.calendar.toolbar.new}
           </button>
         </div>
       </div>
@@ -145,7 +176,7 @@ export function CalendarToolbar({
         <div className="flex items-center gap-3 flex-wrap">
           <span className="font-mono text-[10px] text-muted">
             {/* zoneAbbrev degrades to "" rather than take the calendar down. */}
-            Times shown in {tz}
+            {dict.calendar.toolbar.timezone.replace("{tz}", tz)}
             {tzAbbrev ? ` (${tzAbbrev})` : ""}
           </span>
           {onReindex ? (
@@ -156,7 +187,9 @@ export function CalendarToolbar({
                 disabled={reindexBusy}
                 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:text-fg disabled:opacity-40 cursor-pointer"
               >
-                {reindexBusy ? "Repairing…" : "Repair index"}
+                {reindexBusy
+                  ? dict.calendar.reindex.busy
+                  : dict.calendar.reindex.label}
               </button>
               <span
                 aria-live="polite"
@@ -169,14 +202,14 @@ export function CalendarToolbar({
         </div>
         <details className="md:hidden">
           <summary className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted cursor-pointer">
-            Legend
+            {dict.calendar.toolbar.legend}
           </summary>
           <div className="pt-2">
-            <Legend />
+            <Legend dict={dict} />
           </div>
         </details>
         <div className="hidden md:block">
-          <Legend />
+          <Legend dict={dict} />
         </div>
       </div>
     </div>

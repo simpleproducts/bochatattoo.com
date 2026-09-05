@@ -5,21 +5,48 @@ import { RemoteImage } from "@/components/RemoteImage";
 import { AdminUploader } from "./AdminUploader";
 import { AdminCategories } from "./AdminCategories";
 import { AdminNav } from "./AdminNav";
+import { AdminLocaleSwitcher } from "./AdminLocaleSwitcher";
 import { categoryLabel } from "./category-label";
 import { readError } from "./read-error";
 import type { ImagesData, ImageWithSlug } from "@/lib/images-types";
+import type { Locale } from "@/i18n/config";
+import type { AdminDictionary } from "@/i18n/admin";
 
 type Props = {
   initialData: ImagesData;
   /** Which view to show. A URL concern now — the tab bar lives in AdminNav. */
   tab: Tab;
+  /**
+   * Both resolved by the page, on the server. The locale is only here for the
+   * switcher — every word on this screen comes out of `dict`, so nothing below
+   * ever has to branch on the language itself.
+   */
+  locale: Locale;
+  dict: AdminDictionary;
 };
 
 type Tab = "images" | "categories";
 
 const ALL = "__all__";
 
-export function AdminGallery({ initialData, tab }: Props) {
+/**
+ * The two halves of the header tally, resolved separately because the counts
+ * move independently — a studio with one category and 143 images is ordinary,
+ * and so is the reverse. Same one-is-the-only-irregular-count assumption the
+ * calendar's counters make.
+ */
+function imageCount(n: number, dict: AdminDictionary): string {
+  const template = n === 1 ? dict.gallery.imagesOne : dict.gallery.images;
+  return template.replace("{count}", String(n));
+}
+
+function categoryCount(n: number, dict: AdminDictionary): string {
+  const template =
+    n === 1 ? dict.gallery.categoriesOne : dict.gallery.categories;
+  return template.replace("{count}", String(n));
+}
+
+export function AdminGallery({ initialData, tab, locale, dict }: Props) {
   const router = useRouter();
   const [filter, setFilter] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL);
@@ -79,23 +106,33 @@ export function AdminGallery({ initialData, tab }: Props) {
 
   return (
     <main className="flex-1 px-4 md:px-8 py-6 flex flex-col gap-6">
-      <AdminNav active={tab} />
+      <AdminNav active={tab} dict={dict} />
 
       <header className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-baseline gap-4">
-          <h1 className="font-serif italic text-2xl md:text-3xl">Admin</h1>
+          <h1 className="font-serif italic text-2xl md:text-3xl">
+            {dict.common.admin}
+          </h1>
           <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-            {allImages.length} images ·{" "}
-            {initialData.categoriesData.categories.length} categories
+            {dict.gallery.counts
+              .replace("{images}", imageCount(allImages.length, dict))
+              .replace(
+                "{categories}",
+                categoryCount(
+                  initialData.categoriesData.categories.length,
+                  dict
+                )
+              )}
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <AdminLocaleSwitcher locale={locale} label={dict.common.language} />
           <form action="/api/admin/logout" method="post">
             <button
               type="submit"
               className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
             >
-              Sign out
+              {dict.common.signOut}
             </button>
           </form>
         </div>
@@ -106,19 +143,20 @@ export function AdminGallery({ initialData, tab }: Props) {
           <AdminUploader
             categories={initialData.categoriesData.categories}
             onDone={refresh}
+            dict={dict}
           />
 
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex flex-col gap-1 text-xs">
               <span className="font-mono uppercase tracking-[0.2em] text-muted">
-                Category
+                {dict.common.category}
               </span>
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="bg-transparent border border-line px-2 py-2 cursor-pointer"
               >
-                <option value={ALL}>All categories</option>
+                <option value={ALL}>{dict.gallery.allCategories}</option>
                 {[...initialData.categoriesData.categories]
                   .sort((a, b) =>
                     categoryLabel(a).localeCompare(categoryLabel(b)),
@@ -130,32 +168,34 @@ export function AdminGallery({ initialData, tab }: Props) {
                   ))}
                 {/* "uncategorized" pseudo-bucket — only show if any image has no category */}
                 {allImages.some((i) => !i.category) ? (
-                  <option value="uncategorized">(uncategorized)</option>
+                  <option value="uncategorized">
+                    {dict.gallery.uncategorized}
+                  </option>
                 ) : null}
               </select>
             </label>
             <label className="flex flex-col gap-1 text-xs flex-1 min-w-[200px]">
               <span className="font-mono uppercase tracking-[0.2em] text-muted">
-                Search
+                {dict.common.search}
               </span>
               <input
                 type="search"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder="slug or alt text"
+                placeholder={dict.gallery.searchPlaceholder}
                 className="bg-transparent border border-line px-3 py-2 text-sm focus:outline-none focus:border-fg"
               />
             </label>
             {busy ? (
               <span className="text-xs font-mono text-muted self-end pb-2">
-                refreshing…
+                {dict.common.refreshing}
               </span>
             ) : null}
           </div>
 
           <section className="flex flex-col gap-10">
             {visibleGrouped.length === 0 ? (
-              <p className="text-muted text-sm">No images match.</p>
+              <p className="text-muted text-sm">{dict.gallery.noMatch}</p>
             ) : (
               visibleGrouped.map(([cat, imgs]) => (
                 <CategorySection
@@ -164,6 +204,7 @@ export function AdminGallery({ initialData, tab }: Props) {
                   images={imgs}
                   categories={initialData.categoriesData.categories}
                   onChange={refresh}
+                  dict={dict}
                 />
               ))
             )}
@@ -173,6 +214,7 @@ export function AdminGallery({ initialData, tab }: Props) {
         <AdminCategories
           categories={initialData.categoriesData.categories}
           onChange={refresh}
+          dict={dict}
         />
       )}
     </main>
@@ -184,14 +226,24 @@ function CategorySection({
   images,
   categories,
   onChange,
+  dict,
 }: {
   category: string;
   images: ImageWithSlug[];
   categories: ImagesData["categoriesData"]["categories"];
   onChange: () => void;
+  dict: AdminDictionary;
 }) {
   const entry = categories.find((c) => c.slug === category);
-  const label = entry ? categoryLabel(entry) : category.replace(/-/g, " ");
+  // Category names are the owner's own data and stay as she typed them. Only
+  // the two fallbacks are ours: the "uncategorized" pseudo-bucket, which is a
+  // word this component invented rather than a slug she can rename, and a slug
+  // whose category row is gone — that one still reads as itself.
+  const label = entry
+    ? categoryLabel(entry)
+    : category === "uncategorized"
+    ? dict.gallery.uncategorized
+    : category.replace(/-/g, " ");
   return (
     <div className="flex flex-col gap-3">
       <header className="flex items-baseline justify-between gap-3">
@@ -206,6 +258,7 @@ function CategorySection({
             image={img}
             categories={categories}
             onChange={onChange}
+            dict={dict}
           />
         ))}
       </div>
@@ -217,10 +270,12 @@ function ImageCard({
   image,
   categories,
   onChange,
+  dict,
 }: {
   image: ImageWithSlug;
   categories: ImagesData["categoriesData"]["categories"];
   onChange: () => void;
+  dict: AdminDictionary;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -245,7 +300,7 @@ function ImageCard({
   }
 
   async function remove() {
-    if (!confirm(`Delete ${image.slug}? This deletes the variants from R2.`)) {
+    if (!confirm(dict.gallery.confirmDelete.replace("{slug}", image.slug))) {
       return;
     }
     setBusy(true);
@@ -280,7 +335,7 @@ function ImageCard({
         />
         {image.hidden ? (
           <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-bg/80 text-fg font-mono uppercase tracking-[0.2em] text-[9px]">
-            Hidden
+            {dict.common.hidden}
           </span>
         ) : null}
       </div>
@@ -293,7 +348,7 @@ function ImageCard({
         <div className="absolute inset-0 z-10 bg-bg/95 backdrop-blur-sm p-4 pt-12 flex flex-col gap-3 text-xs">
           <button
             type="button"
-            aria-label="Close"
+            aria-label={dict.common.close}
             onClick={() => setOpen(false)}
             className="absolute top-1 right-1 w-9 h-9 flex items-center justify-center text-2xl leading-none text-muted hover:text-fg cursor-pointer"
           >
@@ -301,14 +356,14 @@ function ImageCard({
           </button>
           <label className="flex flex-col gap-1">
             <span className="text-muted uppercase tracking-[0.2em] font-mono">
-              Category
+              {dict.common.category}
             </span>
             <select
               defaultValue={image.category ?? ""}
               onChange={(e) => patch({ category: e.target.value || null })}
               className="bg-transparent border border-line px-2 py-1 cursor-pointer"
             >
-              <option value="">(none)</option>
+              <option value="">{dict.gallery.noCategory}</option>
               {[...categories]
                 .sort((a, b) =>
                   categoryLabel(a).localeCompare(categoryLabel(b)),
@@ -327,14 +382,14 @@ function ImageCard({
               onChange={(e) => patch({ hidden: e.target.checked })}
               className="cursor-pointer"
             />
-            <span>Hidden</span>
+            <span>{dict.common.hidden}</span>
           </label>
           <button
             type="button"
             onClick={remove}
             className="mt-2 border border-red-400 text-red-400 px-2 py-1 uppercase tracking-[0.2em] font-mono text-[10px] hover:bg-red-400 hover:text-bg cursor-pointer"
           >
-            Delete
+            {dict.common.delete}
           </button>
           {err ? (
             <span className="text-red-400 break-words">{err}</span>
