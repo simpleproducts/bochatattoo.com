@@ -27,12 +27,7 @@ import {
   bookingLabel,
   hasContact,
 } from "@/lib/bookings-types";
-import {
-  durationLabel,
-  formatTimeRange,
-  overlaps,
-  zoneAbbrev,
-} from "@/lib/booking-time";
+import { durationLabel, formatTimeRange, overlaps } from "@/lib/booking-time";
 import {
   DURATION_CHIPS,
   parseDeposit,
@@ -43,10 +38,14 @@ import {
 } from "./contract";
 
 /**
- * `dict` supplies the words; `locale` is what the two `Intl`-backed helpers in
- * this file need — the zone abbreviation on the echo line and the time range in
- * an overlap warning. Neither can be derived from the other, so both come down
+ * `dict` supplies the words; `locale` is what `formatTimeRange` needs for the
+ * overlap warning. Neither can be derived from the other, so both come down
  * from the sheet.
+ *
+ * The echo line prints no zone. Every time in this form is already in the one
+ * zone the admin is looking at — the calendar renders in the viewer's own zone
+ * throughout — so the abbreviation restated that on every keystroke without
+ * ever distinguishing anything.
  */
 type Props = BookingFormProps & {
   dict: AdminDictionary;
@@ -204,8 +203,6 @@ export function BookingForm({
     onSubmit(values);
   }
 
-  const abbrev = slot ? zoneAbbrev(slot.startsAt, tz, locale) : "";
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
       {error && (
@@ -287,8 +284,7 @@ export function BookingForm({
 
         <p className="font-mono text-[10px] text-muted">
           {values.startTime || "--:--"} → {values.endTime || "--:--"}
-          {values.endsNextDay ? " (+1)" : ""}
-          {abbrev ? ` · ${abbrev}` : ""} ·{" "}
+          {values.endsNextDay ? " (+1)" : ""} ·{" "}
           {slot ? durationLabel(slot.startsAt, slot.endsAt) : "—"}
         </p>
 

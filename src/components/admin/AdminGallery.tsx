@@ -5,6 +5,7 @@ import { RemoteImage } from "@/components/RemoteImage";
 import { AdminUploader } from "./AdminUploader";
 import { AdminCategories } from "./AdminCategories";
 import { AdminNav, type AdminTab } from "./AdminNav";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { AdminLocaleSwitcher } from "./AdminLocaleSwitcher";
 import { categoryLabel } from "./category-label";
 import { readError } from "./read-error";
@@ -150,14 +151,6 @@ export function AdminGallery({ initialData, tab, locale, dict }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <AdminLocaleSwitcher locale={locale} label={dict.common.language} />
-          <form action="/api/admin/logout" method="post">
-            <button
-              type="submit"
-              className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
-            >
-              {dict.common.signOut}
-            </button>
-          </form>
         </div>
       </header>
 
@@ -301,6 +294,7 @@ function ImageCard({
   dict: AdminDictionary;
 }) {
   const [open, setOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -323,9 +317,7 @@ function ImageCard({
   }
 
   async function remove() {
-    if (!confirm(dict.gallery.confirmDelete.replace("{slug}", image.slug))) {
-      return;
-    }
+    setConfirming(false);
     setBusy(true);
     setErr(null);
     try {
@@ -409,7 +401,7 @@ function ImageCard({
           </label>
           <button
             type="button"
-            onClick={remove}
+            onClick={() => setConfirming(true)}
             className="mt-2 border border-red-400 text-red-400 px-2 py-1 uppercase tracking-[0.2em] font-mono text-[10px] hover:bg-red-400 hover:text-bg cursor-pointer"
           >
             {dict.common.delete}
@@ -419,6 +411,16 @@ function ImageCard({
           ) : null}
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={confirming}
+        title={dict.gallery.deleteTitle}
+        body={dict.gallery.confirmDelete.replace("{slug}", image.slug)}
+        confirmLabel={dict.common.delete}
+        cancelLabel={dict.common.cancel}
+        onConfirm={remove}
+        onCancel={() => setConfirming(false)}
+      />
     </div>
   );
 }

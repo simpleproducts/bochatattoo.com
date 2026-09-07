@@ -16,11 +16,13 @@
  *     already allows.
  *
  * Deleting is a real state change (green falls back to yellow and the client
- * can upload again), so it sits behind a native confirm().
+ * can upload again), so it sits behind a confirmation dialog.
  */
+import { useState } from "react";
 import { LocalTime } from "@/components/LocalTime";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import type { ReceiptPreviewProps } from "./contract";
 
 /**
@@ -45,6 +47,7 @@ function formatBytes(bytes: number, dict: AdminDictionary): string {
 }
 
 export function ReceiptPreview({ appt, busy, onDelete, dict, locale }: Props) {
+  const [confirming, setConfirming] = useState(false);
   const receipt = appt.receipt;
 
   if (!receipt) {
@@ -61,17 +64,13 @@ export function ReceiptPreview({ appt, busy, onDelete, dict, locale }: Props) {
   const href = `/api/admin/bookings/${appt.id}/receipt`;
   const isPdf = receipt.contentType === "application/pdf";
 
-  function confirmDelete() {
-    // The status this drops back to is named in the prose, so it is read from
-    // the same table the badge reads rather than spelled out a second time.
-    const ok = window.confirm(
-      dict.calendar.receipt.deleteConfirm.replace(
-        "{status}",
-        dict.calendar.status.awaitingReceipt,
-      ),
-    );
-    if (ok) onDelete();
-  }
+  // The status this drops back to is named in the prose, so it is read from the
+  // same table the badge reads rather than spelled out a second time.
+  const confirmBody = dict.calendar.receipt.deleteConfirm.replace(
+    "{status}",
+    dict.calendar.status.awaitingReceipt,
+  );
+  const confirmDelete = () => setConfirming(true);
 
   return (
     <section className="flex flex-col gap-2">
@@ -128,6 +127,19 @@ export function ReceiptPreview({ appt, busy, onDelete, dict, locale }: Props) {
           {dict.calendar.receipt.delete}
         </button>
       </div>
+
+      <ConfirmDialog
+        open={confirming}
+        title={dict.calendar.receipt.deleteTitle}
+        body={confirmBody}
+        confirmLabel={dict.calendar.receipt.delete}
+        cancelLabel={dict.common.cancel}
+        onConfirm={() => {
+          setConfirming(false);
+          onDelete();
+        }}
+        onCancel={() => setConfirming(false)}
+      />
     </section>
   );
 }
