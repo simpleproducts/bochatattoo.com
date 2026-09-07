@@ -13,6 +13,10 @@
  * The create bar is a fixed bottom strip, not a floating action button: this
  * design language has no circles outside the Lightbox arrows.
  *
+ * Day headings are the READER's frame — which day it is, where "today" is —
+ * while every row's clock is the appointment's own zone. The two only disagree
+ * during a guest spot, and the row says which zone it is speaking then.
+ *
  * The strip's height is MEASURED rather than written down: the day cells are
  * `aspect-square` in a 7-column grid, so the strip is as tall as a seventh of
  * whatever width it is given. That measurement is what the sticky day headings
@@ -22,7 +26,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { STATUS_META } from "@/lib/booking-status";
-import { formatDayLong, formatTimeRange } from "@/lib/booking-time";
+import { formatDayLong, formatTimeRange, zoneAbbrev } from "@/lib/booking-time";
 import { bookingLabel } from "@/lib/bookings-types";
 import type { AdminAppointment, BookingId } from "@/lib/bookings-types";
 import type { Locale } from "@/i18n/config";
@@ -111,6 +115,14 @@ function AgendaRow({
 }) {
   const meta = STATUS_META[appt.status];
   const label = dict.calendar.status[meta.dictKey];
+  /**
+   * The row's clock is the appointment's, and `tz` is only what decides
+   * whether that needs saying. Marked on the rows that travel and nowhere
+   * else: in a month spent at home the marker would repeat the heading above
+   * it on every row.
+   */
+  const travelling = appt.timeZone !== tz;
+  const abbrev = travelling ? zoneAbbrev(appt.startsAt, appt.timeZone, locale) : "";
   return (
     <button
       type="button"
@@ -121,8 +133,13 @@ function AgendaRow({
         {meta.glyph}
       </span>
       <span className="font-mono text-xs text-fg/80 shrink-0">
-        {formatTimeRange(appt.startsAt, appt.endsAt, tz, locale)}
+        {formatTimeRange(appt.startsAt, appt.endsAt, appt.timeZone, locale)}
       </span>
+      {abbrev ? (
+        <span className="font-mono text-[10px] text-muted shrink-0">
+          {dict.calendar.form.timeZoneChip.replace("{abbrev}", abbrev)}
+        </span>
+      ) : null}
       <span className="text-sm truncate flex-1">{bookingLabel(appt)}</span>
       <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted shrink-0 hidden sm:inline">
         {label}

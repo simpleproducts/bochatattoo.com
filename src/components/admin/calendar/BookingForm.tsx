@@ -4,8 +4,14 @@
  *
  * The form speaks the wall clock the admin typed and never an instant: every
  * translation to UTC goes through `toApiSlot` in contract.ts, so a date can
- * never be converted twice or not at all. `tz` is the calendar's effective
- * zone, which is the studio zone before mount and the viewer's after.
+ * never be converted twice or not at all.
+ *
+ * The zone that translation uses is a FIELD OF THIS FORM, not the calendar's.
+ * Bocha books guest spots abroad, and "14:00" typed for a Berlin session means
+ * 14:00 in Berlin whether it is typed from Berlin or from Buenos Aires. So the
+ * zone select below is the appointment's, `viewerTz` and `studioTz` are only
+ * the two shortcuts at the head of its list, and neither ever converts
+ * anything.
  *
  * `initial` is read once, at mount. The sheet gives this component a key that
  * changes with the booking being edited, so a re-render of the parent can
@@ -15,7 +21,7 @@
  * is sometimes deliberate (a touch-up during a long session), and a calendar
  * that refuses the booking Bocha actually made is a calendar he stops using.
  */
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
@@ -27,7 +33,13 @@ import {
   bookingLabel,
   hasContact,
 } from "@/lib/bookings-types";
-import { durationLabel, formatTimeRange, overlaps } from "@/lib/booking-time";
+import {
+  durationLabel,
+  formatTimeRange,
+  overlaps,
+  zoneAbbrev,
+} from "@/lib/booking-time";
+import { timeZoneOptions, type TimeZoneOption } from "@/lib/timezone-options";
 import {
   DURATION_CHIPS,
   parseDeposit,
@@ -42,15 +54,40 @@ import {
  * overlap warning. Neither can be derived from the other, so both come down
  * from the sheet.
  *
- * The echo line prints no zone. Every time in this form is already in the one
- * zone the admin is looking at — the calendar renders in the viewer's own zone
- * throughout — so the abbreviation restated that on every keystroke without
- * ever distinguishing anything.
+ * The echo line prints the zone abbreviation again. It was dropped when every
+ * time in this form was necessarily in the one zone the admin was looking at,
+ * and the abbreviation then restated that on every keystroke without
+ * distinguishing anything. That is no longer true: the numbers on that line
+ * are in the APPOINTMENT'S zone, which during a guest spot is not the reader's,
+ * and "18:00" alone no longer says which 18:00 it is.
  */
 type Props = BookingFormProps & {
   dict: AdminDictionary;
   locale: Locale;
 };
+
+/**
+ * Every IANA zone the runtime knows. A verbatim twin of the toolbar's hook —
+ * that one is private to CalendarToolbar, and a zone select whose list came
+ * from somewhere else would be the one control on this screen offering a
+ * different set of zones from the one beside it.
+ *
+ * Gated on hydration rather than filled in by an effect: Node and the browser
+ * can ship different ICU data, and a <select> whose options differ between the
+ * server render and the first client render is a hydration mismatch.
+ */
+const subscribeNever = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
+function useZoneOptions(extra: (string | undefined)[]): TimeZoneOption[] {
+  const mounted = useSyncExternalStore(subscribeNever, onClient, onServer);
+  const key = extra.filter(Boolean).join("|");
+  return useMemo(() => {
+    if (!mounted) return [];
+    return timeZoneOptions(new Date().getUTCFullYear(), key ? key.split("|") : []);
+  }, [mounted, key]);
+}
 
 const INPUT =
   "bg-transparent border border-line px-3 py-2 text-sm focus:outline-none focus:border-fg";
@@ -114,7 +151,8 @@ function Field({
 }
 
 export function BookingForm({
-  tz,
+  viewerTz,
+  studioTz,
   initial,
   busy,
   error,
@@ -128,6 +166,9 @@ export function BookingForm({
   const [values, setValues] = useState<BookingFormValues>(initial);
   const [attempted, setAttempted] = useState(false);
   const depositErrorId = useId();
+  // The booking's own zone is passed in so editing a guest-spot booking made
+  // in a zone outside the curated list still shows that zone selected.
+  const zoneOptions = useZoneOptions([values.timeZone, viewerTz, studioTz]);
   const [custom, setCustom] = useState(() => {
     const minutes = wallMinutes(initial);
     return minutes === null || !DURATION_CHIPS.includes(minutes);
@@ -145,11 +186,18 @@ export function BookingForm({
    */
   const slot = useMemo(() => {
     try {
-      return toApiSlot(values, tz);
+      return toApiSlot(values);
     } catch {
       return null;
     }
-  }, [values, tz]);
+  }, [values]);
+
+  /**
+   * The abbreviation for the zone the wall clock above is in, read AT that
+   * instant so a session either side of a DST switch is labelled CET or CEST
+   * rather than whichever one today happens to be.
+   */
+  const slotAbbrev = slot ? zoneAbbrev(slot.startsAt, values.timeZone, locale) : "";
 
   const conflicts = useMemo(() => {
     if (!slot) return [];
@@ -282,9 +330,13 @@ export function BookingForm({
           </div>
         )}
 
+        {/* The zone belongs on this line and nowhere else in the block: it is
+            the only place the raw numbers appear, and during a guest spot they
+            are not the reader's numbers. */}
         <p className="font-mono text-[10px] text-muted">
           {values.startTime || "--:--"} → {values.endTime || "--:--"}
-          {values.endsNextDay ? " (+1)" : ""} ·{" "}
+          {values.endsNextDay ? " (+1)" : ""}
+          {slotAbbrev ? ` ${slotAbbrev}` : ""} ·{" "}
           {slot ? durationLabel(slot.startsAt, slot.endsAt) : "—"}
         </p>
 
@@ -294,17 +346,89 @@ export function BookingForm({
           </p>
         )}
 
+        {/*
+          `overlaps` compares instants, so the warning is already right across
+          zones and needs no change. What it PRINTS is rendered in the zone
+          being composed rather than in the other booking's own or the
+          reader's: the point of the line is that these two sessions collide,
+          and two clocks that do not visibly overlap would argue the opposite.
+        */}
         {conflicts.map((o) => (
           <p
             key={o.id}
             className="font-mono text-[10px] text-status-partial break-words"
           >
             {dict.calendar.form.overlap
-              .replace("{range}", formatTimeRange(o.startsAt, o.endsAt, tz, locale))
+              .replace(
+                "{range}",
+                formatTimeRange(o.startsAt, o.endsAt, values.timeZone, locale),
+              )
               .replace("{name}", bookingLabel(o))}
           </p>
         ))}
       </div>
+
+      {/*
+        Below the times, because the hint under it points back up at them: this
+        field says which clock they are on. Same shape as the toolbar's picker
+        — the two zones nobody has to think about, then everything else — so
+        the two selects on this screen are learned once.
+      */}
+      <Field
+        label={dict.calendar.form.timeZone}
+        hint={
+          <span className="font-mono text-[10px] text-muted">
+            {dict.calendar.form.timeZoneHint}
+          </span>
+        }
+      >
+        <select
+          value={values.timeZone}
+          onChange={(e) => patch({ timeZone: e.target.value })}
+          className={`${INPUT} cursor-pointer`}
+        >
+          <option value={studioTz} className="bg-bg text-fg">
+            {dict.calendar.form.timeZoneStudio.replace("{tz}", studioTz)}
+          </option>
+          {/* Skipped when the calendar is already being read in studio hours:
+              two options with the same value are one option and a puzzle. */}
+          {viewerTz !== studioTz ? (
+            <option value={viewerTz} className="bg-bg text-fg">
+              {dict.calendar.form.timeZoneCurrent.replace("{tz}", viewerTz)}
+            </option>
+          ) : null}
+          {zoneOptions.length > 0
+            ? (["americas", "europe"] as const).map((region) => {
+                const inRegion = zoneOptions.filter((z) => z.region === region);
+                if (inRegion.length === 0) return null;
+                return (
+                  <optgroup
+                    key={region}
+                    label={
+                      region === "americas"
+                        ? dict.calendar.toolbar.timezoneAmericas
+                        : dict.calendar.toolbar.timezoneEurope
+                    }
+                  >
+                    {inRegion.map((z) => (
+                      <option key={z.id} value={z.id} className="bg-bg text-fg">
+                        {z.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })
+            : values.timeZone !== studioTz && values.timeZone !== viewerTz ? (
+                /* No list yet (pre-mount) and the booking is in a third zone.
+                   Without this the select would show and report the studio while
+                   the form state said Berlin — editing an existing guest-spot
+                   booking would move it on save. */
+                <option value={values.timeZone} className="bg-bg text-fg">
+                  {values.timeZone}
+                </option>
+              ) : null}
+        </select>
+      </Field>
 
       {/*
         Instagram and Email are ONE requirement, not two fields that happen to

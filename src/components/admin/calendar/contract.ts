@@ -10,6 +10,15 @@
  * instants; putting both halves of that translation in one place is what keeps
  * a date from being converted twice, or not at all, on one of the paths.
  *
+ * THE ZONE THAT TRANSLATION USES IS THE APPOINTMENT'S OWN, and it travels
+ * inside `BookingFormValues` rather than beside it. Bocha works in Buenos
+ * Aires and does guest spots in Berlin and New York, so there is no single
+ * studio clock: a Berlin session is 14:00 Berlin whoever is reading it. When
+ * these converters took the READER's zone, every booking typed during a guest
+ * spot was silently shifted by the offset between the two — which is why the
+ * zone is now a field of the form and neither converter accepts a zone
+ * argument at all. There is no call site left that could pass the wrong one.
+ *
  * Pure and client-safe: no `server-only`, no S3 SDK, no Node built-ins.
  */
 import type {
@@ -38,6 +47,19 @@ export const TZ_STORAGE_KEY = "ba_cal_tz";
 export const TZ_AUTO = "auto";
 
 /**
+ * The zone of the last booking the admin SAVED — not the zone they are reading
+ * in, which is `TZ_STORAGE_KEY` above. Deliberately two keys for two different
+ * questions: a guest spot is a week of Berlin appointments entered in one
+ * sitting, so the composer that defaults to "whatever I set last time" is set
+ * once and then stays out of the way, while the calendar can still be read in
+ * Buenos Aires hours the whole time.
+ *
+ * Absent means "no booking saved from this browser yet", and the composer then
+ * falls back to the calendar's current viewing zone.
+ */
+export const FORM_TZ_STORAGE_KEY = "ba_cal_form_tz";
+
+/**
  * What the sheet is showing. `create` carries the day the admin tapped so the
  * composer opens on the right date; `view`/`edit` carry an id and read the
  * appointment out of the calendar's map, so a refresh updates the open sheet.
@@ -61,11 +83,19 @@ export const DURATION_CHIPS: (number | null)[] = [60, 120, 240, 360, 480, null];
  * deposit field must not become NaN before the admin has finished typing.
  */
 export type BookingFormValues = {
-  /** "YYYY-MM-DD" in the effective timezone. */
+  /** "YYYY-MM-DD" in `timeZone`. */
   date: string;
-  /** "HH:MM" in the effective timezone. */
+  /** "HH:MM" in `timeZone`. */
   startTime: string;
   endTime: string;
+  /**
+   * IANA zone of the PLACE this session happens — the one the three fields
+   * above are read in, and the one `toApiSlot` converts them with. It is form
+   * state rather than a prop because the admin chooses it per booking: a week
+   * of guest-spot appointments is a zone set once and then typed in local
+   * hours, and the reader's own zone never enters the arithmetic.
+   */
+  timeZone: string;
   /** Lets a session cross midnight without a second date input. */
   endsNextDay: boolean;
   name: string;
@@ -89,6 +119,11 @@ export type StatusBadgeProps = {
 
 export type AppointmentChipProps = {
   appt: AdminAppointment;
+  /**
+   * The calendar's VIEWING zone — the reader's frame, never the clock this
+   * chip prints. The chip's own time comes from `appt.timeZone`; this one is
+   * here only so the chip can tell when the two differ and mark the travel.
+   */
   tz: string;
   onOpen: (id: BookingId) => void;
 };
@@ -117,8 +152,18 @@ export type CalendarToolbarProps = {
 
 export type MonthGridProps = {
   monthKey: string;
-  /** dayKey ("YYYY-MM-DD" in `tz`) -> that day's appointments, sorted by start. */
+  /**
+   * dayKey -> that day's appointments, sorted by start. Each appointment is
+   * bucketed by the day it falls on IN ITS OWN ZONE, so a 23:00 Berlin session
+   * sits on the Berlin day — which is the square the artist standing in Berlin
+   * will look at.
+   */
   byDay: Record<string, AdminAppointment[]>;
+  /**
+   * The calendar's VIEWING zone. It decides which square is "today" and
+   * whether an appointment's own zone is worth marking; it never decides how
+   * an appointment's time is rendered.
+   */
   tz: string;
   todayKey: string;
   onOpenAppt: (id: BookingId) => void;
@@ -127,7 +172,9 @@ export type MonthGridProps = {
 
 export type AgendaListProps = {
   monthKey: string;
+  /** Bucketed by each appointment's own zone — see `MonthGridProps.byDay`. */
   byDay: Record<string, AdminAppointment[]>;
+  /** The reader's frame. Same meaning as `MonthGridProps.tz`. */
   tz: string;
   todayKey: string;
   selectedDayKey: string;
@@ -137,7 +184,15 @@ export type AgendaListProps = {
 };
 
 export type BookingFormProps = {
-  tz: string;
+  /**
+   * The calendar's current viewing zone, offered as one of the two named
+   * shortcuts at the head of the zone select ("my current zone"). NOTHING in
+   * this form is converted with it — `values.timeZone` is the only zone the
+   * arithmetic ever sees.
+   */
+  viewerTz: string;
+  /** The studio's own zone, the other named shortcut. Also never converts. */
+  studioTz: string;
   initial: BookingFormValues;
   busy: boolean;
   /** Already-humanised message from `readError`, or null. */
@@ -169,7 +224,21 @@ export type BookingSheetProps = {
   state: SheetState;
   /** null while `state.mode === "create"`, or if the id is not loaded. */
   appt: AdminAppointment | null;
+  /**
+   * The calendar's viewing zone — the reader's frame. It renders the audit
+   * timestamps (created, terms accepted, emails sent), which really are facts
+   * about when someone did something, and the clearly-secondary "in your own
+   * zone" line under the appointment's time. The appointment's own time comes
+   * from `appt.timeZone`.
+   */
   tz: string;
+  /** The studio's zone, forwarded to the form's zone select. */
+  studioTz: string;
+  /**
+   * The zone a FRESH composer opens on: the last zone saved from this browser,
+   * or `tz` when there is none. Resolved by the calendar, which owns storage.
+   */
+  defaultTimeZone: string;
   busy: boolean;
   error: string | null;
   /** Every loaded appointment, for the form's overlap warning. */
@@ -195,19 +264,27 @@ function pad2(n: number): string {
 }
 
 /**
- * A fresh composer for `dayKey`. Defaults to the next round hour from 12:00
- * onwards when the admin taps today, and to a flat 12:00 on any other day —
- * a tattoo session booked for "now-ish" is the common case only for today.
+ * A fresh composer for `dayKey`, in `timeZone`.
+ *
+ * `timeZone` is the zone the new booking should default to — the last one the
+ * admin saved, or the calendar's viewing zone. It is also the clock the
+ * "now-ish" default below is read on, because every wall clock this form holds
+ * is in the appointment's zone: an admin in Buenos Aires opening a Berlin
+ * composer at 18:00 their time wants a Berlin hour offered, not a local one.
+ *
+ * Defaults to the next round hour from 12:00 onwards when the admin taps
+ * today, and to a flat 12:00 on any other day — a tattoo session booked for
+ * "now-ish" is the common case only for today.
  */
 export function emptyFormValues(
   dayKey: string,
-  tz: string,
+  timeZone: string,
   todayKey?: string,
   now: Date = new Date(),
 ): BookingFormValues {
   let startHour = 12;
   if (todayKey && dayKey === todayKey) {
-    const { time } = fromUtcIso(now.toISOString(), tz);
+    const { time } = fromUtcIso(now.toISOString(), timeZone);
     const currentHour = Number(time.slice(0, 2));
     startHour = Math.max(12, Math.min(22, currentHour + 1));
   }
@@ -220,6 +297,7 @@ export function emptyFormValues(
     startTime: `${pad2(startHour)}:00`,
     endTime: `${pad2(endHour % 24)}:00`,
     endsNextDay: endHour >= 24,
+    timeZone,
     name: "",
     email: "",
     instagram: "",
@@ -230,18 +308,25 @@ export function emptyFormValues(
   };
 }
 
-/** Hydrate the edit form from a stored appointment, back into `tz`'s wall clock. */
-export function formValuesFrom(
-  appt: AdminAppointment,
-  tz: string,
-): BookingFormValues {
-  const start = fromUtcIso(appt.startsAt, tz);
-  const end = fromUtcIso(appt.endsAt, tz);
+/**
+ * Hydrate the edit form from a stored appointment, back into the wall clock of
+ * THAT APPOINTMENT'S zone.
+ *
+ * Takes no zone argument on purpose. Reading a Berlin booking back through the
+ * reader's zone and then writing it out again through Berlin's would move the
+ * session by the offset between them — opening a booking and pressing save
+ * without touching a field has to be a no-op, and only a round trip through
+ * one and the same zone is.
+ */
+export function formValuesFrom(appt: AdminAppointment): BookingFormValues {
+  const start = fromUtcIso(appt.startsAt, appt.timeZone);
+  const end = fromUtcIso(appt.endsAt, appt.timeZone);
   return {
     date: start.date,
     startTime: start.time,
     endTime: end.time,
     endsNextDay: end.date !== start.date,
+    timeZone: appt.timeZone,
     name: appt.seed.name ?? "",
     email: appt.seed.email ?? "",
     instagram: appt.seed.instagram ?? "",
@@ -253,7 +338,18 @@ export function formValuesFrom(
 }
 
 /**
- * The wall clock the admin typed, resolved to two UTC instants.
+ * The wall clock the admin typed, resolved to two UTC instants THROUGH THE
+ * APPOINTMENT'S OWN ZONE.
+ *
+ * `v.timeZone` is the zone of the place the session happens, and it is the
+ * only zone in this conversion. It used to be the calendar's viewing zone, and
+ * that was the one line in the whole feature that could not be got wrong
+ * quietly: an admin sitting in Buenos Aires typing "14:00" for a Berlin guest
+ * spot stored 14:00 Buenos Aires, and the client, the calendar and the
+ * confirmation email then all agreed on a session five hours off. Nothing
+ * about the stored record said so. The zone travels inside `BookingFormValues`
+ * precisely so there is no second zone available at this call site to pass by
+ * mistake.
  *
  * `endsNextDay` increments the DATE STRING and resolves the end through the
  * same wall-clock conversion as the start. It used to add 24h of *elapsed*
@@ -274,16 +370,16 @@ export function formValuesFrom(
  * The +1 day is taken at 12:00Z so no offset can push the arithmetic across a
  * date boundary before `toUtcIso` gets its hands on the wall clock.
  */
-export function toApiSlot(
-  v: BookingFormValues,
-  tz: string,
-): { startsAt: string; endsAt: string } {
+export function toApiSlot(v: BookingFormValues): {
+  startsAt: string;
+  endsAt: string;
+} {
   const endDate = v.endsNextDay
     ? new Date(Date.parse(`${v.date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
     : v.date;
   return {
-    startsAt: toUtcIso(v.date, v.startTime, tz),
-    endsAt: toUtcIso(endDate, v.endTime, tz),
+    startsAt: toUtcIso(v.date, v.startTime, v.timeZone),
+    endsAt: toUtcIso(endDate, v.endTime, v.timeZone),
   };
 }
 

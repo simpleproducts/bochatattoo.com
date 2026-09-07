@@ -13,10 +13,18 @@
  * `startsAt` because that is how the store buckets records. Anything else and
  * a booking moved to another month would live in two places at once.
  *
- * Display grouping is by the VIEWER's zone (`byDay`), which is deliberately a
- * different question from which bucket a record is stored in: a 00:30 UTC
- * booking is stored in the next month but drawn in the previous one. Keeping
- * the neighbouring months warm (`monthsAround`) is what makes that free.
+ * Display grouping is by EACH APPOINTMENT'S OWN zone (`byDay`), which is
+ * deliberately a different question from which bucket a record is stored in: a
+ * 00:30 UTC booking is stored in the next month but drawn in the previous one.
+ * Keeping the neighbouring months warm (`monthsAround`) is what makes that
+ * free. A 23:00 Berlin session lands on the Berlin day for the same reason a
+ * Berlin session reads 23:00 everywhere: that is the day the artist standing
+ * in Berlin will look for it on.
+ *
+ * `tz` is now only the READER's frame — which day is today, which day headings
+ * are drawn, and what the secondary local line in the sheet says. The toolbar's
+ * picker sets exactly that and nothing else; it no longer decides how any
+ * appointment's own time is rendered.
  *
  * The effective timezone is studio-until-mounted, exactly like <LocalTime>:
  * SSR and the first client render must agree before the viewer's real zone can
@@ -44,6 +52,7 @@ import {
   shiftMonth,
   zoneAbbrev,
 } from "@/lib/booking-time";
+import { isValidTimeZone } from "@/lib/bookings-types";
 import type {
   AdminAppointment,
   BookingEmailKind,
@@ -56,6 +65,7 @@ import { BookingSheet } from "./BookingSheet";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { MonthGrid } from "./MonthGrid";
 import {
+  FORM_TZ_STORAGE_KEY,
   toApiDeposit,
   toApiSeed,
   toApiSlot,
@@ -176,8 +186,10 @@ function initialCursor(
 ): string {
   if (selectedId) {
     for (const list of Object.values(months)) {
+      // The deep-linked booking's OWN month, because that is the grid it is
+      // drawn in; `tz` below is only the fallback for "no link, no data".
       const hit = list.find((a) => a.id === selectedId);
-      if (hit) return monthKeyOf(hit.startsAt, tz);
+      if (hit) return monthKeyOf(hit.startsAt, hit.timeZone);
     }
   }
   const keys = Object.keys(months).sort();
@@ -228,12 +240,42 @@ function pendingLabel(n: number, dict: AdminDictionary): string {
   return template.replace("{count}", String(n));
 }
 
-/** Reads the persisted zone once. Storage can throw in private mode. */
+/**
+ * Reads the persisted zone once. Storage can throw in private mode.
+ *
+ * The value is re-validated rather than trusted. It was written by an older
+ * visit — possibly an older browser, possibly a tzdb release ago — and every
+ * `Intl` call in booking-time THROWS on an id this runtime does not know. `tz`
+ * feeds `dayKeyOf` during render, so one stale id in storage would take the
+ * whole calendar down on every load and keep doing it, with no way back that
+ * does not involve clearing site data. Falling back to "follow this browser" is
+ * the same answer a first visit gets.
+ */
 function readStoredTz(): string | null {
   if (typeof window === "undefined") return null;
   try {
     const stored = window.localStorage.getItem(TZ_STORAGE_KEY);
-    return stored && stored !== TZ_AUTO ? stored : null;
+    if (!stored || stored === TZ_AUTO || !isValidTimeZone(stored)) return null;
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The zone of the last booking saved from this browser — a different question
+ * from `readStoredTz` above, which is the zone the calendar is being READ in.
+ * A guest spot is a week of appointments entered in one sitting, and this is
+ * what makes that a zone chosen once.
+ */
+function readLastFormTz(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(FORM_TZ_STORAGE_KEY);
+    // Validated for the same reason as above: this one reaches `Intl` through
+    // `emptyFormValues`, so a stale id would blow up the composer instead.
+    if (!stored || !isValidTimeZone(stored)) return null;
+    return stored;
   } catch {
     return null;
   }
@@ -292,9 +334,10 @@ export function AdminCalendar({
    * instead, so the choice is explicit and persisted. `null` means follow the
    * browser; anything else is an IANA id the admin picked.
    *
-   * Read from localStorage in an effect rather than during render: the server
-   * has no access to it, and reading it in the initialiser would make the first
-   * client render disagree with the HTML.
+   * Read in a lazy initialiser and then gated on `mounted`, not in an effect:
+   * this repo lints setState-inside-useEffect as an error, and the gate is what
+   * keeps the hydrating render agreeing with HTML the server produced without
+   * access to storage.
    */
   const viewerTz = resolveTimeZone(mounted);
   const [storedTz, setStoredTz] = useState<string | null>(readStoredTz);
@@ -314,6 +357,26 @@ export function AdminCalendar({
 
   const tz = tzChoice ?? viewerTz;
 
+  /**
+   * What a fresh composer opens on. Lazy initialiser, not an effect: this repo
+   * lints setState-inside-useEffect as an error, and the value is only ever
+   * read when the sheet is open — i.e. after a click, long past hydration. It
+   * is still held back until `mounted` for the same reason `tzChoice` is, so
+   * the hydrating render cannot disagree with the server's HTML.
+   */
+  const [lastFormTz, setLastFormTz] = useState<string | null>(readLastFormTz);
+  const defaultFormTz = (mounted ? lastFormTz : null) ?? tz;
+
+  /** Called on save, so the NEXT booking inherits the zone of the last one. */
+  const rememberFormTz = useCallback((next: string) => {
+    setLastFormTz(next);
+    try {
+      window.localStorage.setItem(FORM_TZ_STORAGE_KEY, next);
+    } catch {
+      // Private mode. The default still holds for the rest of this session.
+    }
+  }, []);
+
   /* ── the day clock ── */
 
   /**
@@ -332,11 +395,6 @@ export function AdminCalendar({
    * open, so it is re-read on a timer and on the two events that fire when the
    * screen comes back — a sleeping tab runs no interval.
    */
-  const tzRef = useRef(tz);
-  useEffect(() => {
-    tzRef.current = tz;
-  }, [tz]);
-
   useEffect(() => {
     const tick = () => {
       const next = new Date().toISOString();
@@ -446,17 +504,24 @@ export function AdminCalendar({
 
   /* ── derived views of the data ── */
 
+  /**
+   * Bucketed by the appointment's OWN zone, so the day a session appears under
+   * is the day it happens where it happens. It no longer depends on `tz` at
+   * all: switching the toolbar's picker re-labels the reader's frame — today,
+   * the headings — without shuffling appointments between squares, which is
+   * exactly what that picker now means.
+   */
   const byDay = useMemo(() => {
     const map: Record<string, AdminAppointment[]> = {};
     for (const appt of Object.values(byId)) {
-      const key = dayKeyOf(appt.startsAt, tz);
+      const key = dayKeyOf(appt.startsAt, appt.timeZone);
       (map[key] ??= []).push(appt);
     }
     for (const list of Object.values(map)) {
       list.sort((a, b) => a.startsAt.localeCompare(b.startsAt));
     }
     return map;
-  }, [byId, tz]);
+  }, [byId]);
 
   const all = useMemo(
     () =>
@@ -464,9 +529,10 @@ export function AdminCalendar({
     [byId],
   );
 
+  /** The header tally has to count exactly what the grid draws — same key. */
   const monthAppointments = useMemo(
-    () => all.filter((a) => dayKeyOf(a.startsAt, tz).startsWith(cursor)),
-    [all, tz, cursor],
+    () => all.filter((a) => dayKeyOf(a.startsAt, a.timeZone).startsWith(cursor)),
+    [all, cursor],
   );
   const pendingCount = monthAppointments.filter((a) => a.status === "pending").length;
 
@@ -523,7 +589,10 @@ export function AdminCalendar({
         const appt = data.appointment;
         if (!appt) throw new Error(noAppointmentError);
         setById((prev) => ({ ...prev, [appt.id]: appt }));
-        setCursor(monthKeyOf(appt.startsAt, tzRef.current));
+        // The month the booking is DRAWN in, which is its own zone's — the
+        // same key `byDay` and the month tally below bucket it under, so the
+        // cursor lands on the grid that actually contains it.
+        setCursor(monthKeyOf(appt.startsAt, appt.timeZone));
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
         setMissingErr((e as Error).message);
@@ -588,7 +657,10 @@ export function AdminCalendar({
       let seed: ReturnType<typeof toApiSeed>;
       let deposit: ReturnType<typeof toApiDeposit>;
       try {
-        slot = toApiSlot(values, tz);
+        // No zone argument: `values.timeZone` is the appointment's own, and
+        // converting the typed wall clock through the reader's instead would
+        // shift every booking made during a guest spot. See contract.ts.
+        slot = toApiSlot(values);
         seed = toApiSeed(values);
         deposit = toApiDeposit(values);
       } catch (e) {
@@ -603,6 +675,10 @@ export function AdminCalendar({
         return;
       }
       const adminNotes = values.adminNotes.trim();
+      // Remembered on the way out rather than on the way back: the next
+      // composer should open on the zone the admin was just working in even if
+      // the save itself failed and they are about to retry it.
+      rememberFormTz(values.timeZone);
       // Read before the await: a sheet the admin dismisses while the save is in
       // flight must stay dismissed, not spring back open when the response
       // lands. The write itself still folds into the map either way.
@@ -613,6 +689,7 @@ export function AdminCalendar({
             "/api/admin/bookings",
             jsonInit("POST", {
               ...slot,
+              timeZone: values.timeZone,
               seed,
               // The create contract takes no `null` — omit instead of clearing.
               ...(deposit ? { deposit } : {}),
@@ -628,12 +705,18 @@ export function AdminCalendar({
         const id = sheet.id;
         const appt = await call(
           `/api/admin/bookings/${id}`,
-          jsonInit("PATCH", { ...slot, seed, deposit, adminNotes }),
+          jsonInit("PATCH", {
+            ...slot,
+            timeZone: values.timeZone,
+            seed,
+            deposit,
+            adminNotes,
+          }),
         );
         if (appt && sheetEpoch.current === epoch) setSheet({ mode: "view", id });
       })();
     },
-    [call, sheet, tz, dict]
+    [call, sheet, dict, rememberFormTz]
   );
 
   const onCancelToggle = useCallback(
@@ -921,6 +1004,8 @@ export function AdminCalendar({
             state={sheet}
             appt={openAppt}
             tz={tz}
+            studioTz={studioTimeZone}
+            defaultTimeZone={defaultFormTz}
             locale={locale}
             dict={dict}
             busy={busy || isPending}

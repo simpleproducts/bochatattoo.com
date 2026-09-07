@@ -6,13 +6,19 @@
  * mail follows `client.locale`, the language of the page they actually used,
  * and falls back to "es" for a record that never got past the admin form.
  *
- * TIMES. Every time printed here is formatted with an explicit
- * `timeZone: STUDIO_TIME_ZONE` and ALWAYS carries the zone abbreviation. This
- * is the one surface where the product's viewer's-local-zone rule cannot hold:
- * email clients run no JavaScript, so there is no mount effect to swap in the
- * reader's own zone, and a bare "18:00" with no zone is exactly the ambiguity
- * that puts a client at the studio door an hour late. Do not "fix" this by
- * dropping the abbreviation, and never render UTC.
+ * TIMES. Every time printed here is formatted in the APPOINTMENT'S OWN zone —
+ * the zone of the place that session happens — and ALWAYS carries the zone
+ * abbreviation. Email is the one surface where the reader's own zone cannot be
+ * read at all: email clients run no JavaScript, so there is no mount effect to
+ * swap anything in. That reasoning has not changed; what changed is WHICH zone,
+ * because there is no longer a single studio clock — Bocha works in Buenos
+ * Aires but also does guest spots in Europe and the USA, and a Berlin session
+ * is 14:00 Berlin no matter where the mail is opened. The abbreviation matters
+ * more for that, not less: it is the only thing that lets a client in Madrid
+ * tell a Madrid appointment from a Buenos Aires one with nothing but this email
+ * in front of them, and a bare "18:00" is the ambiguity that puts someone at
+ * the door an hour late — or a flight away. Do not "fix" this by dropping the
+ * abbreviation, and never render UTC.
  *
  * ESCAPING. Names, notes, Instagram handles and receipt filenames all arrive
  * from a public link, so every value interpolated into the HTML twin goes
@@ -50,10 +56,10 @@ import { PAYMENT_DETAILS, PAYMENT_ENABLED } from "@/config/payment";
 import type { Locale } from "@/i18n/config";
 import { bookingLinks, mintBookingToken } from "./booking-token";
 import {
-  STUDIO_TIME_ZONE,
   durationLabel,
   formatDayLong,
   formatTimeRange,
+  recordTimeZone,
   zoneAbbrev,
 } from "./booking-time";
 import {
@@ -139,35 +145,41 @@ function pick(...values: (string | undefined)[]): string {
  * than a second `Intl` formatter here, and that module stays the only place in
  * the codebase that formats a time.
  */
-function clockAt(utcIso: string, locale: Locale): string {
-  const range = formatTimeRange(utcIso, utcIso, STUDIO_TIME_ZONE, locale);
+function clockAt(utcIso: string, tz: string, locale: Locale): string {
+  const range = formatTimeRange(utcIso, utcIso, tz, locale);
   const [clock] = range.split("–");
   return clock || range;
 }
 
 /** "18:00–20:30 GMT-3". The abbreviation is never optional — see the header. */
 function timeLine(b: BookingRecord, locale: Locale): string {
+  const tz = recordTimeZone(b);
   return [
-    formatTimeRange(b.startsAt, b.endsAt, STUDIO_TIME_ZONE, locale),
-    zoneAbbrev(b.startsAt, STUDIO_TIME_ZONE, locale),
+    formatTimeRange(b.startsAt, b.endsAt, tz, locale),
+    zoneAbbrev(b.startsAt, tz, locale),
   ]
     .filter(Boolean)
     .join(" ");
 }
 
 /** "18:00 GMT-3" — a single clock still never travels without its zone. */
-function clockLine(utcIso: string, locale: Locale): string {
-  return [clockAt(utcIso, locale), zoneAbbrev(utcIso, STUDIO_TIME_ZONE, locale)]
+function clockLine(utcIso: string, tz: string, locale: Locale): string {
+  return [clockAt(utcIso, tz, locale), zoneAbbrev(utcIso, tz, locale)]
     .filter(Boolean)
     .join(" ");
 }
 
-/** "12 de septiembre de 2026 · 14:22 GMT-3" — for a single stored instant. */
-function stamp(utcIso: string, locale: Locale): string {
+/**
+ * "12 de septiembre de 2026 · 14:22 GMT-3" — for a single stored instant. Takes
+ * the appointment's zone like everything else: a mail that printed the session
+ * on one clock and its receipt upload on another would read as two different
+ * days for a guest spot far enough east.
+ */
+function stamp(utcIso: string, tz: string, locale: Locale): string {
   return [
-    formatDayLong(utcIso, STUDIO_TIME_ZONE, locale),
-    `· ${clockAt(utcIso, locale)}`,
-    zoneAbbrev(utcIso, STUDIO_TIME_ZONE, locale),
+    formatDayLong(utcIso, tz, locale),
+    `· ${clockAt(utcIso, tz, locale)}`,
+    zoneAbbrev(utcIso, tz, locale),
   ]
     .filter(Boolean)
     .join(" ");
@@ -435,7 +447,10 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
 /** Date / time / duration / deposit — the block both client emails open with. */
 function whenRows(b: BookingRecord, locale: Locale, c: ClientCopy): Row[] {
   const rows: Row[] = [
-    { label: c.labels.date, value: formatDayLong(b.startsAt, STUDIO_TIME_ZONE, locale) },
+    {
+      label: c.labels.date,
+      value: formatDayLong(b.startsAt, recordTimeZone(b), locale),
+    },
     { label: c.labels.time, value: timeLine(b, locale) },
     { label: c.labels.duration, value: durationLabel(b.startsAt, b.endsAt) },
   ];
@@ -480,8 +495,9 @@ function contactRows(b: BookingRecord): Row[] {
 
 function ownerBaseRows(b: BookingRecord): Row[] {
   const locale = OWNER_LOCALE;
+  const tz = recordTimeZone(b);
   const rows: Row[] = [
-    { label: "Fecha", value: formatDayLong(b.startsAt, STUDIO_TIME_ZONE, locale) },
+    { label: "Fecha", value: formatDayLong(b.startsAt, tz, locale) },
     { label: "Horario", value: timeLine(b, locale) },
     { label: "Duración", value: durationLabel(b.startsAt, b.endsAt) },
     ...contactRows(b),
@@ -496,7 +512,7 @@ function ownerBaseRows(b: BookingRecord): Row[] {
     rows.push({
       label: "Términos",
       value:
-        `${stamp(b.client.termsAcceptedAt, locale)}` +
+        `${stamp(b.client.termsAcceptedAt, tz, locale)}` +
         (b.client.termsVersion ? ` · v${b.client.termsVersion}` : ""),
     });
   }
@@ -514,7 +530,7 @@ function adminUrl(b: BookingRecord): string {
 export function buildOwnerSubmitted(b: BookingRecord): BuiltEmail {
   const locale = OWNER_LOCALE;
   const label = bookingLabel(b);
-  const date = formatDayLong(b.startsAt, STUDIO_TIME_ZONE, locale);
+  const date = formatDayLong(b.startsAt, recordTimeZone(b), locale);
   const rows = ownerBaseRows(b);
   const note = b.client.note?.trim() ?? "";
   const lead =
@@ -550,14 +566,15 @@ export function buildOwnerSubmitted(b: BookingRecord): BuiltEmail {
 
 export function buildOwnerConfirmed(b: BookingRecord): BuiltEmail {
   const locale = OWNER_LOCALE;
+  const tz = recordTimeZone(b);
   const label = bookingLabel(b);
-  const date = formatDayLong(b.startsAt, STUDIO_TIME_ZONE, locale);
+  const date = formatDayLong(b.startsAt, tz, locale);
   const rows = ownerBaseRows(b);
   if (b.receipt) {
     rows.push(
       { label: "Archivo", value: b.receipt.filename },
       { label: "Tamaño", value: fileSize(b.receipt.bytes) },
-      { label: "Subido", value: stamp(b.receipt.uploadedAt, locale) },
+      { label: "Subido", value: stamp(b.receipt.uploadedAt, tz, locale) },
     );
   }
   const lead = "El cliente subió el comprobante. El turno queda confirmado.";
@@ -597,7 +614,7 @@ export function buildOwnerConfirmed(b: BookingRecord): BuiltEmail {
 export function buildClientSubmitted(b: BookingRecord, token: string): BuiltEmail {
   const locale = clientLocale(b);
   const c = CLIENT_COPY[locale];
-  const date = formatDayLong(b.startsAt, STUDIO_TIME_ZONE, locale);
+  const date = formatDayLong(b.startsAt, recordTimeZone(b), locale);
   const name = pick(b.client.name, b.seed.name);
   const greeting = name ? fill(c.greeting, { name }) : "";
   const lead = fill(c.leadSubmitted, { date });
@@ -674,8 +691,9 @@ function outroText(c: ClientCopy): string {
 export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEmail {
   const locale = clientLocale(b);
   const c = CLIENT_COPY[locale];
-  const date = formatDayLong(b.startsAt, STUDIO_TIME_ZONE, locale);
-  const time = clockLine(b.startsAt, locale);
+  const tz = recordTimeZone(b);
+  const date = formatDayLong(b.startsAt, tz, locale);
+  const time = clockLine(b.startsAt, tz, locale);
   const name = pick(b.client.name, b.seed.name);
   const greeting = name ? fill(c.greeting, { name }) : "";
   const lead = fill(c.leadConfirmed, { date, time });

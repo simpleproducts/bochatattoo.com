@@ -16,8 +16,12 @@
  *    has to be readable, and the composer is already one click away on every
  *    square of empty cell space.
  *
- * `byDay` is keyed in the viewer's zone, so a booking whose UTC month differs
- * from its displayed month lands in the right cell without any special case.
+ * `byDay` is keyed by the day each appointment falls on IN ITS OWN ZONE, so a
+ * booking whose UTC month differs from its displayed month lands in the right
+ * cell without any special case — and a 23:00 Berlin session lands on the
+ * Berlin square, which is the one the artist standing in Berlin will look at.
+ * `tz` is the reader's frame and is used for two things only: which square is
+ * today, and whether a chip's own zone is worth marking.
  *
  * Monday-first is NOT a translation concern: it is the week the studio works,
  * and it stays Monday-first in English too. The dictionary's `grid.weekdays` is

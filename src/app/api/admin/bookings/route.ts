@@ -12,6 +12,11 @@
  *     bookings-store header), never the studio zone. A booking made in the
  *     three hours after UTC midnight on the 1st would otherwise land in a
  *     bucket no rebuild ever puts it back into.
+ *   - `timeZone` is the zone of the PLACE the session happens, and it is checked
+ *     against Intl HERE rather than at render time. An invalid zone that reaches
+ *     the bucket throws on every later format of that booking — the calendar,
+ *     the client's page, both emails — and the only cure is editing the record
+ *     back out. Validating at the door keeps it to a 400 on one request.
  *   - both instants are re-serialised through Date before they are stored: the
  *     store sorts and buckets by comparing `startsAt` as a plain string, which
  *     is only chronological while every stored value is canonical UTC.
@@ -38,6 +43,7 @@ import {
   EMAIL_RE,
   hasContact,
   IG_RE,
+  isValidTimeZone,
   MAX_DURATION_MS,
   MONTH_RE,
   NAME_MAX,
@@ -206,6 +212,39 @@ function readSlot(startsRaw: unknown, endsRaw: unknown): SlotResult {
   };
 }
 
+type TimeZoneResult =
+  | { ok: true; timeZone: string | undefined }
+  | { ok: false; response: Response };
+
+/**
+ * The zone of the place the session happens — never the admin's own. Absent and
+ * blank both collapse to undefined, the way the seed's empty strings do: the
+ * store reads that back as STUDIO_TIME_ZONE, which is exactly what "nobody
+ * picked a zone" should mean, and is what every pre-existing record does.
+ *
+ * The rejected value is not echoed in the message. Every other validator here
+ * answers about a field the admin can see; this one would be quoting an
+ * arbitrary-length string from the wire back into a response.
+ */
+function readTimeZone(raw: unknown): TimeZoneResult {
+  if (raw === undefined || raw === null) return { ok: true, timeZone: undefined };
+  if (typeof raw !== "string") {
+    return {
+      ok: false,
+      response: fail("bad-timezone", 400, "`timeZone` must be an IANA zone name."),
+    };
+  }
+  const timeZone = raw.trim();
+  if (!timeZone) return { ok: true, timeZone: undefined };
+  if (!isValidTimeZone(timeZone)) {
+    return {
+      ok: false,
+      response: fail("bad-timezone", 400, "That is not a time zone Intl knows."),
+    };
+  }
+  return { ok: true, timeZone };
+}
+
 type DepositResult =
   | { ok: true; deposit: { amount: number; currency: Currency } | undefined }
   | { ok: false; response: Response };
@@ -349,6 +388,9 @@ export async function POST(req: Request) {
   const slot = readSlot(body.startsAt, body.endsAt);
   if (!slot.ok) return slot.response;
 
+  const timeZone = readTimeZone(body.timeZone);
+  if (!timeZone.ok) return timeZone.response;
+
   const seed = readSeed(body.seed);
   if (!seed.ok) return fail(seed.error, 400, seed.message);
   if (!hasContact(seed.seed)) {
@@ -369,6 +411,7 @@ export async function POST(req: Request) {
     const record = await createBooking({
       startsAt: slot.startsAt,
       endsAt: slot.endsAt,
+      timeZone: timeZone.timeZone,
       seed: seed.seed,
       deposit: deposit.deposit,
       adminNotes: notes.adminNotes,

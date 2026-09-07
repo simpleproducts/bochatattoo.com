@@ -230,7 +230,9 @@ export type AdminDictionary = {
       /** Option pinned to the studio's zone. */
       timezoneStudio: string;
       /** optgroup heading over the full IANA list. */
-      timezoneAll: string;
+      /** optgroup headings over the curated, de-duplicated zone list. */
+      timezoneAmericas: string;
+      timezoneEurope: string;
       legend: string;
     };
     grid: {
@@ -310,6 +312,33 @@ export type AdminDictionary = {
       duration: string;
       ends: string;
       nextDay: string;
+      /**
+       * The appointment's OWN zone — the clock of the place the session
+       * happens in, which is not the clock the calendar is being read in. The
+       * label asks WHERE, because that is the question the operator is really
+       * answering: a week of guest-spot bookings in Berlin is one zone set
+       * once, and the wall-clock times above are that zone's, not the
+       * reader's.
+       */
+      timeZone: string;
+      /** Sits under the field. Says which times the zone governs — the ones above it. */
+      timeZoneHint: string;
+      /**
+       * The two shortcuts at the head of the zone list, for the only two zones
+       * the operator picks without thinking. `{tz}` is the IANA zone each one
+       * resolves to, so the option still names the clock it is choosing.
+       */
+      timeZoneStudio: string;
+      timeZoneCurrent: string;
+      /**
+       * The marker beside an appointment whose zone is not the calendar's
+       * current one. `{abbrev}` is a short zone label (CEST, GMT+2) and never
+       * a city: this renders inside a mono chip in an agenda row that has no
+       * slack, so the whole string has to stay near eight characters.
+       */
+      timeZoneChip: string;
+      /** The server refused the zone — it is not an IANA name it recognises. */
+      timeZoneInvalid: string;
       /** The chip that reveals an end time instead of setting one. */
       chipCustom: string;
       endBeforeStart: string;
@@ -507,7 +536,8 @@ const adminEs: AdminDictionary = {
       timezoneLabel: "Zona horaria",
       timezoneAuto: "Mi zona ({tz})",
       timezoneStudio: "Estudio ({tz})",
-      timezoneAll: "Todas las zonas",
+      timezoneAmericas: "América",
+      timezoneEurope: "Europa",
       timezone: "Horarios en {tz}",
       legend: "Referencias",
     },
@@ -567,6 +597,13 @@ const adminEs: AdminDictionary = {
       duration: "Duración",
       ends: "Termina",
       nextDay: "Día siguiente",
+      timeZone: "Zona horaria del turno",
+      timeZoneHint:
+        "La zona donde es el turno — los horarios de arriba son de ahí.",
+      timeZoneStudio: "Igual que el estudio ({tz})",
+      timeZoneCurrent: "Mi zona actual ({tz})",
+      timeZoneChip: "en {abbrev}",
+      timeZoneInvalid: "Zona horaria inválida — elegí otra.",
       chipCustom: "otro",
       endBeforeStart: "El fin tiene que ser después del inicio",
       overlap: "⚠ Se pisa con {range} · {name}",
@@ -755,7 +792,8 @@ const adminEn: AdminDictionary = {
       timezoneLabel: "Time zone",
       timezoneAuto: "My zone ({tz})",
       timezoneStudio: "Studio ({tz})",
-      timezoneAll: "All zones",
+      timezoneAmericas: "Americas",
+      timezoneEurope: "Europe",
       timezone: "Times shown in {tz}",
       legend: "Legend",
     },
@@ -815,6 +853,13 @@ const adminEn: AdminDictionary = {
       duration: "Duration",
       ends: "Ends",
       nextDay: "Next day",
+      timeZone: "Appointment time zone",
+      timeZoneHint:
+        "The zone the session happens in — the times above are in it.",
+      timeZoneStudio: "Same as the studio ({tz})",
+      timeZoneCurrent: "My current zone ({tz})",
+      timeZoneChip: "in {abbrev}",
+      timeZoneInvalid: "Invalid time zone — pick another one.",
       chipCustom: "custom",
       endBeforeStart: "End must be after start",
       overlap: "⚠ Overlaps {range} · {name}",
