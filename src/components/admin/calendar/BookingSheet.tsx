@@ -92,15 +92,52 @@ const EMAIL_ROWS: BookingEmailKind[] = [
   "clientConfirmed",
 ];
 
-function Row({ label, value }: { label: string; value?: string }) {
+/**
+ * One contact line.
+ *
+ * `value` is what the client confirmed, falling back to what the studio seeded.
+ * `seeded` is only passed when the studio's value DIFFERS from the client's,
+ * and then it prints underneath as a quiet correction note.
+ *
+ * The two used to be separate columns, printed side by side unconditionally.
+ * In the normal case the client just confirms the prefilled values, so the
+ * sheet showed every field twice, identically — which reads as a rendering bug
+ * and buries the one case that matters: the client typing a different address
+ * from the one the studio had.
+ */
+function Row({
+  label,
+  value,
+  seeded,
+  seededLabel,
+}: {
+  label: string;
+  value?: string;
+  seeded?: string;
+  seededLabel?: string;
+}) {
   return (
     <div className="flex flex-col">
       <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
         {label}
       </span>
       <span className="text-sm break-all">{value?.trim() ? value : "—"}</span>
+      {seeded?.trim() ? (
+        <span className="font-mono text-[10px] text-muted break-all">
+          {seededLabel}: {seeded}
+        </span>
+      ) : null}
     </div>
   );
+}
+
+/** The studio's value, but only when it is something the client did not confirm. */
+function differing(seed?: string, client?: string): string | undefined {
+  const s = seed?.trim();
+  const c = client?.trim();
+  if (!s) return undefined;
+  if (!c) return undefined; // nothing to contradict — `value` already shows it
+  return s.toLowerCase() === c.toLowerCase() ? undefined : s;
 }
 
 export function BookingSheet({
@@ -505,37 +542,44 @@ export function BookingSheet({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] border-b border-line pb-1">
-                    {dict.calendar.sheet.seed}
-                  </h3>
-                  <Row label={dict.common.name} value={appt.seed.name} />
-                  <Row
-                    label={dict.common.instagram}
-                    value={appt.seed.instagram ? `@${appt.seed.instagram}` : undefined}
-                  />
-                  <Row label={dict.common.email} value={appt.seed.email} />
-                  <Row label={dict.common.phone} value={appt.seed.phone} />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] border-b border-line pb-1">
-                    {dict.calendar.sheet.client}
-                  </h3>
-                  <Row label={dict.common.name} value={appt.client.name} />
-                  <Row
-                    label={dict.common.instagram}
-                    value={
-                      appt.client.instagram ? `@${appt.client.instagram}` : undefined
-                    }
-                  />
-                  <Row label={dict.common.email} value={appt.client.email} />
-                  <Row label={dict.common.phone} value={appt.client.phone} />
-                  <Row
-                    label={dict.calendar.sheet.message}
-                    value={appt.client.note}
-                  />
-                </div>
+              {/*
+                ONE contact block, not two. The client's value wins and the
+                studio's shows underneath only where the two disagree — see the
+                note on Row.
+              */}
+              <div className="flex flex-col gap-2">
+                <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] border-b border-line pb-1">
+                  {dict.calendar.sheet.client}
+                </h3>
+                <Row
+                  label={dict.common.name}
+                  value={appt.client.name ?? appt.seed.name}
+                  seeded={differing(appt.seed.name, appt.client.name)}
+                  seededLabel={dict.calendar.sheet.seed}
+                />
+                <Row
+                  label={dict.common.instagram}
+                  value={
+                    (appt.client.instagram ?? appt.seed.instagram)
+                      ? `@${appt.client.instagram ?? appt.seed.instagram}`
+                      : undefined
+                  }
+                  seeded={differing(appt.seed.instagram, appt.client.instagram)}
+                  seededLabel={dict.calendar.sheet.seed}
+                />
+                <Row
+                  label={dict.common.email}
+                  value={appt.client.email ?? appt.seed.email}
+                  seeded={differing(appt.seed.email, appt.client.email)}
+                  seededLabel={dict.calendar.sheet.seed}
+                />
+                <Row
+                  label={dict.common.phone}
+                  value={appt.client.phone ?? appt.seed.phone}
+                  seeded={differing(appt.seed.phone, appt.client.phone)}
+                  seededLabel={dict.calendar.sheet.seed}
+                />
+                <Row label={dict.calendar.sheet.message} value={appt.client.note} />
               </div>
 
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted break-words">
