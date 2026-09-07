@@ -223,6 +223,14 @@ export type AdminDictionary = {
       new: string;
       /** "Times shown in {tz}" — the IANA zone, with its abbrev appended after. */
       timezone: string;
+      /** Accessible name for the timezone <select>. */
+      timezoneLabel: string;
+      /** Option that follows the browser's own zone. */
+      timezoneAuto: string;
+      /** Option pinned to the studio's zone. */
+      timezoneStudio: string;
+      /** optgroup heading over the full IANA list. */
+      timezoneAll: string;
       legend: string;
     };
     grid: {
@@ -496,6 +504,10 @@ const adminEs: AdminDictionary = {
       viewLabel: "Vista del calendario",
       views: { month: "mes", agenda: "lista" },
       new: "+ Nuevo",
+      timezoneLabel: "Zona horaria",
+      timezoneAuto: "Mi zona ({tz})",
+      timezoneStudio: "Estudio ({tz})",
+      timezoneAll: "Todas las zonas",
       timezone: "Horarios en {tz}",
       legend: "Referencias",
     },
@@ -740,6 +752,10 @@ const adminEn: AdminDictionary = {
       viewLabel: "Calendar view",
       views: { month: "month", agenda: "agenda" },
       new: "+ New",
+      timezoneLabel: "Time zone",
+      timezoneAuto: "My zone ({tz})",
+      timezoneStudio: "Studio ({tz})",
+      timezoneAll: "All zones",
       timezone: "Times shown in {tz}",
       legend: "Legend",
     },

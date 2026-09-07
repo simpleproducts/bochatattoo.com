@@ -16,10 +16,12 @@
  * day, and the warning strip above the toolbar is what points at it when they
  * should.
  */
+import { useMemo, useSyncExternalStore } from "react";
 import { STATUS_META } from "@/lib/booking-status";
 import type { BookingStatus } from "@/lib/bookings-types";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
+import { TZ_AUTO } from "./contract";
 import type { CalendarToolbarProps, CalendarView } from "./contract";
 
 /**
@@ -58,6 +60,30 @@ const STEP_BUTTON =
   "border border-fg min-h-[40px] min-w-[40px] px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono leading-none flex items-center justify-center hover:bg-fg hover:text-bg transition-colors cursor-pointer";
 
 const VIEWS: CalendarView[] = ["month", "agenda"];
+
+/**
+ * Every IANA zone the runtime knows, read once. `supportedValuesOf` is absent
+ * on older Safari and during SSR, and an empty list simply means the select
+ * offers only the two named options — which are the two that matter.
+ */
+const subscribeNever = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
+function useAllTimeZones(): string[] {
+  // Gated on hydration rather than filled in by an effect: Node and the browser
+  // can ship different ICU data, and a <select> whose options differ between
+  // the server render and the first client render is a hydration mismatch.
+  const mounted = useSyncExternalStore(subscribeNever, onClient, onServer);
+  return useMemo(() => {
+    if (!mounted) return [];
+    try {
+      return Intl.supportedValuesOf?.("timeZone") ?? [];
+    } catch {
+      return [];
+    }
+  }, [mounted]);
+}
 
 /** Legend order is the lifecycle order, not the object key order. */
 const LEGEND: BookingStatus[] = ["pending", "awaiting_receipt", "confirmed", "cancelled"];
@@ -113,6 +139,10 @@ export function CalendarToolbar({
   view,
   tz,
   tzAbbrev,
+  viewerTz,
+  studioTz,
+  tzAuto,
+  onTimeZone,
   locale,
   dict,
   onView,
@@ -121,6 +151,7 @@ export function CalendarToolbar({
   onToday,
   onCreate,
 }: ToolbarProps) {
+  const allZones = useAllTimeZones();
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -193,11 +224,48 @@ export function CalendarToolbar({
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="font-mono text-[10px] text-muted">
-            {/* zoneAbbrev degrades to "" rather than take the calendar down. */}
-            {dict.calendar.toolbar.timezone.replace("{tz}", tz)}
-            {tzAbbrev ? ` (${tzAbbrev})` : ""}
-          </span>
+          {/*
+            The zone is a CHOICE, not a readout. It used to just state the
+            browser's zone, which is the right default but the wrong answer
+            during a guest spot: an admin in Berlin booking studio hours needs
+            to think in Buenos Aires time, and reading "GMT+2" told them the
+            problem existed without offering a way out.
+
+            The full IANA list comes from Intl.supportedValuesOf, so there is no
+            hardcoded table to rot — but it only exists in the browser, so the
+            select renders its two named options until mount and fills in the
+            rest after. Both are stable across hydration.
+          */}
+          <label className="flex items-center gap-2 font-mono text-[10px] text-muted">
+            <span className="uppercase tracking-[0.2em]">
+              {dict.calendar.toolbar.timezoneLabel}
+            </span>
+            <select
+              value={tzAuto ? TZ_AUTO : tz}
+              onChange={(e) =>
+                onTimeZone(e.target.value === TZ_AUTO ? null : e.target.value)
+              }
+              aria-label={dict.calendar.toolbar.timezoneLabel}
+              className="bg-transparent border border-line px-2 py-1 font-mono text-[10px] text-fg max-w-[16rem] cursor-pointer focus:outline-none focus:border-fg"
+            >
+              <option value={TZ_AUTO}>
+                {dict.calendar.toolbar.timezoneAuto.replace("{tz}", viewerTz)}
+              </option>
+              <option value={studioTz}>
+                {dict.calendar.toolbar.timezoneStudio.replace("{tz}", studioTz)}
+              </option>
+              {allZones.length > 0 ? (
+                <optgroup label={dict.calendar.toolbar.timezoneAll}>
+                  {allZones.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+            </select>
+            {tzAbbrev ? <span>({tzAbbrev})</span> : null}
+          </label>
         </div>
         <details className="md:hidden">
           <summary className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted cursor-pointer">
