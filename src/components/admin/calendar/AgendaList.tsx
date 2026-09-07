@@ -34,7 +34,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { STATUS_META } from "@/lib/booking-status";
-import { formatDayLong, formatTimeRange, zoneAbbrev } from "@/lib/booking-time";
+import { formatDayLong, formatTimeRange, zoneAbbrev, formatCapitalized } from "@/lib/booking-time";
 import { bookingLabel } from "@/lib/bookings-types";
 import type { AdminAppointment, BookingId } from "@/lib/bookings-types";
 import { tripForDate } from "@/lib/trips-types";
@@ -82,7 +82,7 @@ function weekdayNarrow(ms: number, locale: Locale): string {
     });
     weekdayFormatters.set(locale, fmt);
   }
-  return fmt.format(new Date(ms));
+  return formatCapitalized(fmt, new Date(ms));
 }
 
 /**

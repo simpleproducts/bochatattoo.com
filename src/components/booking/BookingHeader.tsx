@@ -1,5 +1,5 @@
 /**
- * The booking page's entire chrome: the wordmark and a language pair.
+ * The booking page's entire chrome: the logo and a language pair.
  *
  * Deliberately not `Nav` + `LocaleSwitcher`. Those rebuild the current path
  * from `usePathname`, which would work here but drags the site shell onto a
@@ -9,9 +9,15 @@
  * The language pair uses plain <a>, not <Link>: a private link is not
  * something to prefetch into a neighbouring route's router cache, and the page
  * is `force-dynamic` + `no-store` anyway, so there is nothing a client-side
- * transition could save. The wordmark is an ordinary site link and stays a
- * <Link>.
+ * transition could save. The logo is an ordinary site link and stays a <Link>.
+ *
+ * The mark is the same asset and the same treatment `Nav` uses, so a client
+ * arriving cold from a WhatsApp message sees the thing they will also see on
+ * the site itself. `dict.booking.header.home` stopped being visible text and
+ * became the alt — the name still reaches a screen reader and an image that
+ * fails to load still says who this is.
  */
+import Image from "next/image";
 import Link from "next/link";
 import { LOCALE_LABELS } from "@/i18n/config";
 import type { BookingHeaderProps } from "./contract";
@@ -34,9 +40,19 @@ export function BookingHeader({ token, locale, dict }: BookingHeaderProps) {
     <header className="flex items-center justify-between -mx-3 -my-3.5">
       <Link
         href="/"
-        className={`${TAP} font-mono text-xs uppercase tracking-[0.3em] hover:opacity-60 transition-opacity`}
+        aria-label={dict.booking.header.home}
+        className={`${TAP} hover:opacity-60 transition-opacity`}
       >
-        {dict.booking.header.home}
+        <span className="relative block w-10 h-10">
+          <Image
+            src="/logo/logo-white.png"
+            alt={dict.booking.header.home}
+            fill
+            sizes="40px"
+            priority
+            className="object-contain"
+          />
+        </span>
       </Link>
       <nav
         aria-label={dict.localeSwitcher.label}

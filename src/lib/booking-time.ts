@@ -218,6 +218,40 @@ export function monthGridDayKeys(monthKey: string): string[] {
 
 const dayFormatters = new Map<string, Intl.DateTimeFormat>();
 
+/**
+ * Format a date, capitalising the names the way this UI wants to read them.
+ *
+ * Spanish lowercases weekdays and months; Intl is right to return "lunes 12 de
+ * octubre de 2026". But these strings are headings, chips and day rows rather
+ * than prose in a sentence, and a lowercase heading reads as a typo.
+ *
+ * So the rule is narrower than "capitalise everything":
+ *   - a WEEKDAY is always capitalised — it is what labels a row or a column;
+ *   - a MONTH is capitalised only when it OPENS the string, which is the
+ *     standalone-heading case ("Octubre 2026"). Inside a date it stays as
+ *     Spanish writes it: "12 de octubre", never "12 de Octubre".
+ *
+ * Capitalising by PART rather than by first letter is what makes that
+ * distinction possible at all — and it is why "12 de octubre" does not become
+ * "12 De octubre".
+ *
+ * English is unaffected: Intl already capitalises there, and upper-casing an
+ * already-upper letter is a no-op.
+ */
+export function formatCapitalized(fmt: Intl.DateTimeFormat, date: Date): string {
+  const parts = fmt.formatToParts(date);
+  const firstNamed = parts.findIndex((p) => p.type !== "literal");
+  return parts
+    .map((part, i) => {
+      const capitalise =
+        part.type === "weekday" || (part.type === "month" && i === firstNamed);
+      return capitalise
+        ? part.value.charAt(0).toLocaleUpperCase() + part.value.slice(1)
+        : part.value;
+    })
+    .join("");
+}
+
 export function formatDayLong(utcIso: string, tz: string, locale: "es" | "en"): string {
   const cacheKey = `${locale}|${tz}`;
   let fmt = dayFormatters.get(cacheKey);
@@ -231,7 +265,7 @@ export function formatDayLong(utcIso: string, tz: string, locale: "es" | "en"): 
     });
     dayFormatters.set(cacheKey, fmt);
   }
-  return fmt.format(new Date(msOf(utcIso)));
+  return formatCapitalized(fmt, new Date(msOf(utcIso)));
 }
 
 const clockFormatters = new Map<string, Intl.DateTimeFormat>();
