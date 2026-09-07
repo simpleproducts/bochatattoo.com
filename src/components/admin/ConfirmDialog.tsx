@@ -17,8 +17,18 @@
  *
  * Focus lands on the CANCEL control rather than the confirm one, so a reflexive
  * Enter keeps the appointment instead of destroying it.
+ *
+ * PORTALLED TO <body>, and that is load-bearing rather than tidiness. Every
+ * caller lives inside the booking sheet, whose panel carries `backdrop-blur-md`
+ * — and a `backdrop-filter` ancestor becomes the containing block for
+ * `position: fixed` descendants. Rendered in place, this dialog was therefore
+ * sized to the 420px panel and clipped by its `overflow-y-auto`, so the receipt
+ * controls near the bottom of a long sheet opened a confirmation BELOW THE
+ * FOLD: the admin pressed Delete, nothing appeared to happen, and the booking
+ * was never touched. Do not remove the portal to "simplify" this.
  */
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   open: boolean;
@@ -61,9 +71,11 @@ export function ConfirmDialog({
     return () => window.removeEventListener("keydown", onKey, true);
   }, [open]);
 
-  if (!open) return null;
+  // Not rendered on the server, and never open during hydration either — the
+  // state that opens it only ever changes from a click.
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[300] bg-bg/95 backdrop-blur-md flex items-end md:items-center justify-center px-4 pb-4 md:p-6 animate-lb-in"
       role="dialog"
@@ -96,6 +108,7 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
