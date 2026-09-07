@@ -9,6 +9,13 @@
  * The rail is also the colour-independent mirror of the calendar's red /
  * yellow / green. State is carried by a ✓, an underline and a text colour that
  * differs in luminance, never by hue alone.
+ *
+ * Each step is numbered. Three bare words read as labels for whatever is on
+ * screen; "1 2 3" is what says there are exactly three of these and which one
+ * is being asked for — the difference between a heading and a progress bar for
+ * someone doing this once, on a phone, having never seen the page before. The
+ * number is swapped for the ✓ once a step is done rather than shown beside it,
+ * so the row never carries two marks per item.
  */
 import type { ProgressRailProps } from "./contract";
 
@@ -39,7 +46,12 @@ export function ProgressRail({ step, dict }: ProgressRailProps) {
                   : "text-muted"
             }
           >
-            {complete ? <span aria-hidden>✓ </span> : null}
+            {/*
+              aria-hidden on the marker: the count is visual shorthand, while
+              `aria-current="step"` and the ✓ already tell a screen reader
+              exactly the same thing in its own idiom.
+            */}
+            <span aria-hidden>{complete ? "✓" : i + 1} </span>
             {dict.booking.rail[key]}
           </li>
         );
