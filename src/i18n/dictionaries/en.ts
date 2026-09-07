@@ -160,7 +160,7 @@ const en: Dictionary = {
   },
   booking: {
     metaTitle: "Your appointment · Bocha Tattoo",
-    header: { home: "Bocha" },
+    header: { home: "Bocha Tattoo Studio" },
     card: {
       eyebrow: "Your appointment",
       appointmentTime: "Appointment time",
