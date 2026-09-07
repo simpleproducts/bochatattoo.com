@@ -2,8 +2,9 @@
  * One booking: read it, edit it, delete it.
  *
  * The important handler is PATCH, and the important thing about PATCH is
- * everything it does NOT write. An admin edit touches the slot, the seed, the
- * deposit, the notes and the cancel flag — and nothing else. `client`,
+ * everything it does NOT write. An admin edit touches the slot, the appointment's
+ * time zone, the seed, the deposit, the notes and the cancel flag — and nothing
+ * else. `client`,
  * `receipt`, `counters`, `emails` and `tokenEpoch` are copied across from the
  * record the mutator was handed, so a save from the sheet can never erase
  * `termsAcceptedAt`. That field is the only consent evidence this system has,
@@ -41,6 +42,7 @@ import {
   EMAIL_RE,
   hasContact,
   IG_RE,
+  isValidTimeZone,
   MAX_DURATION_MS,
   NAME_MAX,
   normalizeEmail,
@@ -207,6 +209,39 @@ function readSlot(startsRaw: unknown, endsRaw: unknown): SlotResult {
   };
 }
 
+type TimeZoneResult =
+  | { ok: true; timeZone: string | undefined }
+  | { ok: false; response: Response };
+
+/**
+ * The zone of the place the session happens — never the admin's own, and never
+ * the calendar's viewing zone. Checked against Intl here rather than at render
+ * time: an invalid zone that reaches the bucket throws on every later format of
+ * that booking — the calendar, the client's page, both emails — and the only
+ * cure is editing the record back out.
+ *
+ * Blank reads as null does, an erase back to the studio fallback, so an admin
+ * who clears the field gets the same record a pre-zone booking already is.
+ */
+function readTimeZone(raw: unknown): TimeZoneResult {
+  if (raw === undefined || raw === null) return { ok: true, timeZone: undefined };
+  if (typeof raw !== "string") {
+    return {
+      ok: false,
+      response: fail("bad-timezone", 400, "`timeZone` must be an IANA zone name."),
+    };
+  }
+  const timeZone = raw.trim();
+  if (!timeZone) return { ok: true, timeZone: undefined };
+  if (!isValidTimeZone(timeZone)) {
+    return {
+      ok: false,
+      response: fail("bad-timezone", 400, "That is not a time zone Intl knows."),
+    };
+  }
+  return { ok: true, timeZone };
+}
+
 type DepositResult =
   | { ok: true; deposit: { amount: number; currency: Currency } | undefined }
   | { ok: false; response: Response };
@@ -325,6 +360,19 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     slot = { startsAt: read.startsAt, endsAt: read.endsAt };
   }
 
+  // Same `set` convention as the deposit below, and validated out here for the
+  // same reason as everything else in this handler: the mutator is re-run on
+  // every CAS retry, so it may only assign a value this pass already checked.
+  let timeZone: { set: boolean; value: string | undefined } = {
+    set: false,
+    value: undefined,
+  };
+  if (Object.hasOwn(body, "timeZone")) {
+    const read = readTimeZone(body.timeZone);
+    if (!read.ok) return read.response;
+    timeZone = { set: true, value: read.timeZone };
+  }
+
   let seed: BookingSeed | undefined;
   if (Object.hasOwn(body, "seed")) {
     const read = readSeed(body.seed);
@@ -383,6 +431,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       updatedAt: current.updatedAt,
       startsAt: slot ? slot.startsAt : current.startsAt,
       endsAt: slot ? slot.endsAt : current.endsAt,
+      timeZone: timeZone.set ? timeZone.value : current.timeZone,
       seed: seed ?? current.seed,
       deposit: deposit.set ? deposit.value : current.deposit,
       adminNotes: notes.set ? notes.value : current.adminNotes,

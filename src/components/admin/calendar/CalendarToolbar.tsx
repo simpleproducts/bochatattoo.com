@@ -21,6 +21,7 @@ import { STATUS_META } from "@/lib/booking-status";
 import type { BookingStatus } from "@/lib/bookings-types";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
+import { timeZoneOptions, type TimeZoneOption } from "@/lib/timezone-options";
 import { TZ_AUTO } from "./contract";
 import type { CalendarToolbarProps, CalendarView } from "./contract";
 
@@ -61,28 +62,24 @@ const STEP_BUTTON =
 
 const VIEWS: CalendarView[] = ["month", "agenda"];
 
-/**
- * Every IANA zone the runtime knows, read once. `supportedValuesOf` is absent
- * on older Safari and during SSR, and an empty list simply means the select
- * offers only the two named options — which are the two that matter.
- */
 const subscribeNever = () => () => {};
 const onClient = () => true;
 const onServer = () => false;
 
-function useAllTimeZones(): string[] {
-  // Gated on hydration rather than filled in by an effect: Node and the browser
-  // can ship different ICU data, and a <select> whose options differ between
-  // the server render and the first client render is a hydration mismatch.
+/**
+ * The zones worth offering, grouped so no two tell the same time.
+ *
+ * Gated on hydration rather than filled in by an effect: Node and the browser
+ * can ship different ICU data, and a <select> whose options differ between the
+ * server render and the first client render is a hydration mismatch.
+ */
+function useZoneOptions(extra: (string | undefined)[]): TimeZoneOption[] {
   const mounted = useSyncExternalStore(subscribeNever, onClient, onServer);
+  const key = extra.filter(Boolean).join("|");
   return useMemo(() => {
     if (!mounted) return [];
-    try {
-      return Intl.supportedValuesOf?.("timeZone") ?? [];
-    } catch {
-      return [];
-    }
-  }, [mounted]);
+    return timeZoneOptions(new Date().getUTCFullYear(), key ? key.split("|") : []);
+  }, [mounted, key]);
 }
 
 /** Legend order is the lifecycle order, not the object key order. */
@@ -151,7 +148,7 @@ export function CalendarToolbar({
   onToday,
   onCreate,
 }: ToolbarProps) {
-  const allZones = useAllTimeZones();
+  const zoneOptions = useZoneOptions([tz, viewerTz, studioTz]);
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -231,10 +228,10 @@ export function CalendarToolbar({
             to think in Buenos Aires time, and reading "GMT+2" told them the
             problem existed without offering a way out.
 
-            The full IANA list comes from Intl.supportedValuesOf, so there is no
-            hardcoded table to rot — but it only exists in the browser, so the
-            select renders its two named options until mount and fills in the
-            rest after. Both are stable across hydration.
+            The list is curated and de-duplicated by timezone-options.ts: the
+            Americas and Europe only, with zones that keep the same time folded
+            into one entry. Ten European capitals on one clock are one choice,
+            not ten ways to answer the same question.
           */}
           <label className="flex items-center gap-2 font-mono text-[10px] text-muted">
             <span className="uppercase tracking-[0.2em]">
@@ -254,15 +251,26 @@ export function CalendarToolbar({
               <option value={studioTz}>
                 {dict.calendar.toolbar.timezoneStudio.replace("{tz}", studioTz)}
               </option>
-              {allZones.length > 0 ? (
-                <optgroup label={dict.calendar.toolbar.timezoneAll}>
-                  {allZones.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {zone}
-                    </option>
-                  ))}
-                </optgroup>
-              ) : null}
+              {(["americas", "europe"] as const).map((region) => {
+                const inRegion = zoneOptions.filter((z) => z.region === region);
+                if (inRegion.length === 0) return null;
+                return (
+                  <optgroup
+                    key={region}
+                    label={
+                      region === "americas"
+                        ? dict.calendar.toolbar.timezoneAmericas
+                        : dict.calendar.toolbar.timezoneEurope
+                    }
+                  >
+                    {inRegion.map((z) => (
+                      <option key={z.id} value={z.id}>
+                        {z.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
             {tzAbbrev ? <span>({tzAbbrev})</span> : null}
           </label>

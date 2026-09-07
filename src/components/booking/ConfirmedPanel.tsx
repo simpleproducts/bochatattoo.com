@@ -7,6 +7,12 @@
  * it is confirmed, so offering an edit or a re-upload here would be a button
  * that can only fail; the two contact routes on the invalid panel are the
  * escape hatch when something really did change.
+ *
+ * The time repeated here is the appointment's own, same as on the card above:
+ * this panel is the last thing a client reads before closing the tab, and it
+ * would be a poor place to switch clocks on them. The .ics needs no such
+ * decision — `buildIcs` stamps DTSTART/DTEND as UTC instants, which every
+ * calendar app then draws on whatever clock its owner keeps.
  */
 import { LocalTime } from "@/components/LocalTime";
 import { INSTAGRAM_DM_URL, STUDIO_MAPS_URL } from "@/lib/site";
@@ -74,6 +80,7 @@ export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
         <LocalTime
           start={view.startsAt}
           end={view.endsAt}
+          timeZone={view.timeZone}
           locale={locale}
           showDate
           showZone
@@ -95,6 +102,9 @@ export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
           {dict.booking.receipt.uploaded}
           {" · "}
+          {/* Left on the reader's clock on purpose. This is not the session,
+              it is a thing they did — "you sent this at 14:22" is only useful
+              in the zone they were standing in when they sent it. */}
           <LocalTime
             start={view.receipt.uploadedAt}
             locale={locale}

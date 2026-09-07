@@ -40,6 +40,13 @@
  *    never the studio zone — or a booking scheduled in the three hours after
  *    UTC midnight on the 1st lands in a month nobody rebuilds it into.
  *
+ * 5. A record carries its OWN `timeZone` — the zone of the place that session
+ *    happens, since Bocha tattoos in Buenos Aires but also guest-spots abroad,
+ *    so there is no single studio clock to render everything in. It is optional
+ *    on the record because production is full of bookings written before the
+ *    field existed, and both wire shapes below resolve it through
+ *    `recordTimeZone`, so nothing downstream ever sees `undefined`.
+ *
  * Callers validate ids against BOOKING_ID_RE before calling anything here; the
  * key builders interpolate what they are given.
  */
@@ -66,7 +73,7 @@ import {
   newBookingId,
   parseBookingToken,
 } from "./booking-token";
-import { monthKeyOf, STUDIO_TIME_ZONE } from "./booking-time";
+import { monthKeyOf, recordTimeZone, STUDIO_TIME_ZONE } from "./booking-time";
 import {
   deletePrivate,
   getPrivateJson,
@@ -103,6 +110,9 @@ export class BookingConflictError extends Error {
 export type CreateBookingInput = {
   startsAt: string;
   endsAt: string;
+  /** IANA zone of the place the session happens. The route validates it with
+   *  isValidTimeZone() first; omitted means the record reads back as the studio. */
+  timeZone?: string;
   seed: BookingSeed;
   deposit?: { amount: number; currency: Currency };
   adminNotes?: string;
@@ -123,6 +133,7 @@ export async function createBooking(input: CreateBookingInput): Promise<BookingR
     updatedAt: now,
     startsAt: input.startsAt,
     endsAt: input.endsAt,
+    timeZone: input.timeZone,
     seed: input.seed,
     client: {},
     deposit: input.deposit,
@@ -539,6 +550,11 @@ export async function toAdminAppointment(b: BookingRecord): Promise<AdminAppoint
     updatedAt: b.updatedAt,
     startsAt: b.startsAt,
     endsAt: b.endsAt,
+    // Resolved on READ, so the dozen components that render a time never see an
+    // absent zone. The fallback itself lives in booking-time's `recordTimeZone`
+    // — one function shared with `toPublicView` and the emails, rather than an
+    // `?? STUDIO_TIME_ZONE` written out three times and forgotten in one.
+    timeZone: recordTimeZone(b),
     seed: b.seed,
     client: b.client,
     deposit: b.deposit,
@@ -588,6 +604,9 @@ export function toPublicView(b: BookingRecord): PublicBookingView {
     id: b.id,
     startsAt: b.startsAt,
     endsAt: b.endsAt,
+    // The same `recordTimeZone` as toAdminAppointment: resolved once, on read,
+    // so the booking page always has a zone to render this appointment in.
+    timeZone: recordTimeZone(b),
     status: derived,
     seed: {
       name: b.seed.name,

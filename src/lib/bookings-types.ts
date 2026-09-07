@@ -77,9 +77,22 @@ export type BookingRecord = {
   id: BookingId;
   createdAt: string;   // UTC ISO, immutable
   updatedAt: string;   // UTC ISO
-  /** Always UTC. Rendered with Intl in the viewer's zone. endsAt > startsAt. */
+  /** Always UTC. Rendered with Intl in this booking's own `timeZone`. endsAt > startsAt. */
   startsAt: string;
   endsAt: string;
+  /**
+   * IANA zone of the PLACE the session happens — the studio in Buenos Aires, or
+   * whatever city the guest spot is in — never the zone of whoever is looking at
+   * it. A Berlin session is 14:00 Berlin read from anywhere.
+   *
+   * Optional ONLY because records written before this field existed are already
+   * in the bucket. Nothing downstream deals with that: every read resolves it
+   * through `recordTimeZone()` in booking-time — the single fallback the wire
+   * shapes and the four emails all share — so AdminAppointment,
+   * PublicBookingView and every email template carry a zone that is never
+   * absent.
+   */
+  timeZone?: string;
   seed: BookingSeed;
   client: BookingClient;
   deposit?: { amount: number; currency: Currency };
@@ -104,8 +117,10 @@ export type BookingMonthIndex = {
 };
 
 /** Admin wire shape. Full record minus the receipt key, plus derived status + a live link. */
-export type AdminAppointment = Omit<BookingRecord, "receipt"> & {
+export type AdminAppointment = Omit<BookingRecord, "receipt" | "timeZone"> & {
   status: BookingStatus;
+  /** RESOLVED on read: the record's own zone, or STUDIO_TIME_ZONE. Never absent. */
+  timeZone: string;
   receipt?: Omit<BookingReceipt, "key">;
   /** Re-derived server-side on every read — the link is never "shown once". */
   token: string;
@@ -128,7 +143,17 @@ export type PublicBookingView = {
   termsAccepted: boolean;
   termsVersion?: string;
   receipt: { filename: string; bytes: number; uploadedAt: string } | null;
-  /** IANA zone, so the page can render a stable "studio time" second line. */
+  /**
+   * RESOLVED on read: the zone of the place THIS session happens. The page's
+   * primary clock — the client is told the time of the city they are travelling
+   * to, and their own local time is at most a secondary line.
+   */
+  timeZone: string;
+  /**
+   * The global studio constant. Kept because it is the fallback `timeZone` was
+   * resolved against, and it is no longer the same statement: this one says
+   * "where the studio is", `timeZone` says "where this appointment is".
+   */
   studioTimeZone: string;
 };
 
@@ -175,6 +200,22 @@ export const LINK_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 export const HONEYPOT_FIELD = "bt_ref";
 
 export const CURRENCIES: Currency[] = ["ARS", "USD", "EUR"];
+
+/**
+ * Is this a zone `Intl` actually knows? The API routes call it before storing
+ * anything, because an invalid zone is only ever caught at FORMAT time: stored
+ * once, it throws on every later render of that booking — the calendar, the
+ * client's page, both emails — and the only fix is editing the record back out.
+ * Validating at the door keeps that failure to a 400 on one request.
+ */
+export function isValidTimeZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function normalizeInstagram(raw: string): string {
   return raw

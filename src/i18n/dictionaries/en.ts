@@ -163,7 +163,8 @@ const en: Dictionary = {
     header: { home: "Bocha" },
     card: {
       eyebrow: "Your appointment",
-      studioTime: "Studio time",
+      appointmentTime: "Appointment time",
+      yourTime: "Your local time",
       deposit: "Deposit",
     },
     rail: { details: "Your details", terms: "Terms", receipt: "Receipt" },

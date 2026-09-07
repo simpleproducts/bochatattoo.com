@@ -163,7 +163,8 @@ const es: Dictionary = {
     header: { home: "Bocha" },
     card: {
       eyebrow: "Tu turno",
-      studioTime: "Hora del estudio",
+      appointmentTime: "Hora del turno",
+      yourTime: "Tu hora local",
       deposit: "Seña",
     },
     rail: { details: "Tus datos", terms: "Términos", receipt: "Comprobante" },

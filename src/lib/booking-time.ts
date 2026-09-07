@@ -15,11 +15,19 @@
  * admin calendar) as well as by routes and emails.
  *
  * The `Intl` locale mapping is fixed — es → es-AR, en → en-GB, both 24-hour.
- * Every time in this product is a studio time in Buenos Aires; an am/pm
- * rendering would only ever be a translation of the same clock.
+ * A booking is read off this clock and then travelled to, so the 24-hour form
+ * is the one that cannot be misread by an hour in either language; am/pm would
+ * only ever be a second way of writing the same instant.
+ *
+ * Every formatter here takes its zone as an ARGUMENT. There is no single studio
+ * clock to default to: Bocha tattoos in Buenos Aires but also guest-spots in
+ * Europe and the USA, so a Berlin session is 14:00 Berlin read from anywhere.
+ * `STUDIO_TIME_ZONE` survives as two narrower things — the zone the site falls
+ * back to before a browser has told us where the reader is, and the zone
+ * `recordTimeZone()` resolves a pre-timezone booking to.
  */
 
-/** Studio wall clock. Renders server-side and in emails, where no JS runs. */
+/** Where the studio is. NOT "the zone everything renders in" — see the header. */
 export const STUDIO_TIME_ZONE =
   process.env.NEXT_PUBLIC_STUDIO_TIMEZONE || "America/Argentina/Buenos_Aires";
 
@@ -133,6 +141,26 @@ export function resolveTimeZone(mounted: boolean): string {
   } catch {
     return STUDIO_TIME_ZONE;
   }
+}
+
+/**
+ * The zone a stored booking is rendered in — the ONE place the record's
+ * optional `timeZone` is resolved.
+ *
+ * It is optional on the record only because production is full of bookings
+ * written before the field existed, and this is where that stops mattering:
+ * every read path goes through here — the admin wire shape, the client view and
+ * the four emails — so no component, formatter or template downstream ever
+ * holds an absent zone. Deliberately one function and not an `?? STUDIO_TIME_ZONE`
+ * repeated at each of those sites, because three copies of a fallback is how one
+ * of them ends up missing and one surface starts rendering a Berlin session on
+ * Buenos Aires hours.
+ *
+ * Structurally typed rather than taking a `BookingRecord`: this module is
+ * imported by client components and stays free of the domain types.
+ */
+export function recordTimeZone(record: { timeZone?: string }): string {
+  return record.timeZone ?? STUDIO_TIME_ZONE;
 }
 
 /* ────────────────────────── month / day keys ────────────────────────── */
@@ -283,6 +311,14 @@ export function zoneAbbrev(utcIso: string, tz: string, locale: "es" | "en"): str
  * never walk it an hour at a time. Which side of the gap it lands on depends
  * on the sign of the zone's offset; Argentina has no DST, so the studio zone
  * never sees the case at all.
+ *
+ * The fall-back hour is the one place this is lossy, and unavoidably so: a
+ * zone + a wall clock cannot name WHICH 02:30 a booking made in the repeated
+ * hour meant, because the record stores no offset. The second pass always
+ * settles on the later of the two, so such a booking moves by an hour the
+ * first time it is re-saved and is then stable forever. Storing the offset
+ * alongside the zone is the only real fix, and it buys one hour a year per
+ * guest-spot zone — do not add it without a reason bigger than that.
  */
 export function toUtcIso(dateStr: string, timeStr: string, tz: string): string {
   const wall = Date.parse(`${dateStr}T${timeStr.slice(0, 5)}:00Z`);

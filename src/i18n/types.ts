@@ -108,7 +108,20 @@ export type Dictionary = {
   booking: {
     metaTitle: string;
     header: { home: string };
-    card: { eyebrow: string; studioTime: string; deposit: string };
+    /**
+     * The appointment's own zone is the primary clock on this card: a Berlin
+     * session reads 14:00 Berlin to everyone who opens the link, wherever they
+     * are. `appointmentTime` captions that line. `yourTime` captions the
+     * reader's own clock underneath it, and is rendered only when the two
+     * zones disagree — to a client sitting in the same zone it would just say
+     * the same thing twice.
+     */
+    card: {
+      eyebrow: string;
+      appointmentTime: string;
+      yourTime: string;
+      deposit: string;
+    };
     /** The three steps of the flow, mirrored by the progress rail. */
     rail: { details: string; terms: string; receipt: string };
     form: {

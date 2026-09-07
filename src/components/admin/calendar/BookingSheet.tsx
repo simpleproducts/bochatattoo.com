@@ -20,6 +20,14 @@
  * Which of the two panel geometries is used has to be decided in JS: both
  * animations are hand-written classes in globals.css rather than generated
  * utilities, so `md:animate-panel-in` would not exist as a rule.
+ *
+ * Two clocks, and they are not interchangeable. The APPOINTMENT'S zone renders
+ * the session — day, range, abbreviation, and the zone spelled out — because
+ * that is the time the client was given. `tz`, the calendar's viewing zone,
+ * renders the audit timestamps (created, terms accepted, emails sent), which
+ * really are facts about when someone did something, and the secondary "in
+ * your own zone" line under the session, which only appears when it would say
+ * something the primary line does not.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -99,6 +107,8 @@ export function BookingSheet({
   state,
   appt,
   tz,
+  studioTz,
+  defaultTimeZone,
   busy,
   error,
   all,
@@ -286,10 +296,17 @@ export function BookingSheet({
     composer = (
       <BookingForm
         key={formKey}
-        tz={tz}
+        viewerTz={tz}
+        studioTz={studioTz}
+        /*
+         * The composer opens in the zone the admin last saved — a week of
+         * Berlin guest-spot bookings is one zone set once — while the day it
+         * opens on and "is that today" stay the reader's frame, because those
+         * are the squares that were just tapped.
+         */
         initial={emptyFormValues(
           state.dayKey,
-          tz,
+          defaultTimeZone,
           dayKeyOf(new Date().toISOString(), tz),
         )}
         busy={busy}
@@ -306,8 +323,11 @@ export function BookingSheet({
     composer = appt ? (
       <BookingForm
         key={formKey}
-        tz={tz}
-        initial={formValuesFrom(appt, tz)}
+        viewerTz={tz}
+        studioTz={studioTz}
+        /* Hydrated from the appointment's own zone, so opening a Berlin
+           booking and saving it untouched is a no-op. */
+        initial={formValuesFrom(appt)}
         busy={busy}
         error={error}
         submitLabel={dict.calendar.form.saveChanges}
@@ -425,15 +445,24 @@ export function BookingSheet({
                 </p>
               </div>
 
+              {/*
+                The appointment's own zone is the primary clock, and it is
+                named rather than merely abbreviated: "GMT+2" is not something
+                anyone confirms a session against, "Europe/Berlin" is. The
+                reader's own time follows only when the two differ, in the
+                muted 10px line the sheet uses for its asides — and it carries
+                its date, because a 01:00 Berlin session is the evening BEFORE
+                in Buenos Aires and a bare clock would put it on the wrong day.
+              */}
               <div className="flex flex-col gap-1">
                 <p className="font-serif italic text-2xl">
-                  {formatDayLong(appt.startsAt, tz, locale)}
+                  {formatDayLong(appt.startsAt, appt.timeZone, locale)}
                 </p>
                 <p className="font-mono text-sm">
                   <LocalTime
                     start={appt.startsAt}
                     end={appt.endsAt}
-                    timeZone={tz}
+                    timeZone={appt.timeZone}
                     locale={locale}
                     showZone
                   />
@@ -442,6 +471,22 @@ export function BookingSheet({
                     · {durationLabel(appt.startsAt, appt.endsAt)}
                   </span>
                 </p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted break-words">
+                  {dict.calendar.form.timeZone} · {appt.timeZone}
+                </p>
+                {appt.timeZone !== tz ? (
+                  <p className="font-mono text-[10px] text-muted break-words">
+                    {dict.calendar.form.timeZoneCurrent.replace("{tz}", tz)} ·{" "}
+                    <LocalTime
+                      start={appt.startsAt}
+                      end={appt.endsAt}
+                      timeZone={tz}
+                      locale={locale}
+                      showDate
+                      showZone
+                    />
+                  </p>
+                ) : null}
                 {appt.deposit && (
                   <p className="font-mono text-xs text-muted">
                     {dict.common.deposit} {appt.deposit.currency}{" "}
