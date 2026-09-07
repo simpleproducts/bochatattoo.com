@@ -310,7 +310,27 @@ export function BookingForm({
         ))}
       </div>
 
-      <label className="flex flex-col gap-1 text-xs">
+      {/*
+        Instagram and Email are ONE requirement, not two fields that happen to
+        sit together: exactly one of them has to be filled. Rendered as a
+        captioned group with a shared border so the rule is stated once, above
+        both inputs, instead of as a hint hanging under the second one — where
+        it read as a note about the email address.
+      */}
+      <fieldset
+        className={`flex flex-col gap-3 border p-3 ${
+          attempted && !contactOk ? "border-red-400" : "border-line"
+        }`}
+      >
+        <legend
+          className={`px-1 font-mono text-[10px] uppercase tracking-[0.2em] ${
+            attempted && !contactOk ? "text-red-400" : "text-muted"
+          }`}
+        >
+          {dict.calendar.form.contactGroup}
+        </legend>
+
+        <label className="flex flex-col gap-1 text-xs">
         <span className={LABEL}>{dict.common.instagram}</span>
         {/* The @ is chrome, not data: the stored handle is always unprefixed,
             which is what normalizeInstagram() on the server also guarantees. */}
@@ -330,18 +350,7 @@ export function BookingForm({
         </span>
       </label>
 
-      <Field
-        label={dict.common.email}
-        hint={
-          <span
-            className={`font-mono text-[10px] uppercase tracking-[0.2em] ${
-              attempted && !contactOk ? "text-red-400" : "text-muted"
-            }`}
-          >
-            {dict.calendar.form.contactHint}
-          </span>
-        }
-      >
+      <Field label={dict.common.email}>
         <input
           type="email"
           inputMode="email"
@@ -354,6 +363,7 @@ export function BookingForm({
           className={INPUT}
         />
       </Field>
+      </fieldset>
 
       <Field label={dict.common.name}>
         <input

@@ -302,6 +302,8 @@ export type AdminDictionary = {
       overlap: string;
       /** Micro-hint under the email field; turns red only after a failed submit. */
       contactHint: string;
+      /** Caption over the Instagram+Email pair. Must read as "one of these two". */
+      contactGroup: string;
       /** The same rule as a full sentence, once submit has been refused. */
       contactRequired: string;
       depositCurrency: string;
@@ -543,6 +545,7 @@ const adminEs: AdminDictionary = {
       endBeforeStart: "El fin tiene que ser después del inicio",
       overlap: "⚠ Se pisa con {range} · {name}",
       contactHint: "Al menos uno",
+      contactGroup: "Contacto — completá al menos uno de los dos",
       contactRequired:
         "Agregá un Instagram o un email — hace falta al menos uno.",
       depositCurrency: "Moneda de la seña",
@@ -779,6 +782,7 @@ const adminEn: AdminDictionary = {
       endBeforeStart: "End must be after start",
       overlap: "⚠ Overlaps {range} · {name}",
       contactHint: "At least one required",
+      contactGroup: "Contact — fill in at least one of the two",
       contactRequired:
         "Add an Instagram handle or an email — at least one is required.",
       depositCurrency: "Deposit currency",

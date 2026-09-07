@@ -1,3 +1,4 @@
+"use client";
 /**
  * The admin area's tab bar: Calendar | Images | Categories.
  *
@@ -41,29 +42,52 @@ const TABS = [
   { key: "categories", href: "/admin/gallery?tab=categories" },
 ] as const;
 
+/**
+ * `onSelectTab` is how the gallery avoids a server round trip between its own
+ * two views: Images and Categories are two renderings of one payload the page
+ * already holds, so when the gallery supplies this handler they become buttons
+ * and switch instantly. Calendar is always a real navigation — it needs data
+ * this page does not have. The calendar page passes no handler, so there all
+ * three stay links.
+ */
 export function AdminNav({
   active,
   dict,
+  onSelectTab,
 }: {
   active: AdminTab;
   dict: AdminDictionary;
+  onSelectTab?: (tab: Exclude<AdminTab, "calendar">) => void;
 }) {
   return (
     <nav className="flex flex-wrap items-center gap-2 border-b border-line">
-      {TABS.map((tab) => (
-        <Link
-          key={tab.key}
-          href={tab.href}
-          aria-current={tab.key === active ? "page" : undefined}
-          className={`px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono border-b-2 transition-colors cursor-pointer ${
-            tab.key === active
-              ? "border-fg text-fg"
-              : "border-transparent text-muted hover:text-fg"
-          }`}
-        >
-          {dict.nav[tab.key]}
-        </Link>
-      ))}
+      {TABS.map((tab) => {
+        const className = `px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono border-b-2 transition-colors cursor-pointer ${
+          tab.key === active
+            ? "border-fg text-fg"
+            : "border-transparent text-muted hover:text-fg"
+        }`;
+        const current = tab.key === active ? "page" : undefined;
+
+        if (onSelectTab && tab.key !== "calendar") {
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              aria-current={current}
+              onClick={() => onSelectTab(tab.key)}
+              className={className}
+            >
+              {dict.nav[tab.key]}
+            </button>
+          );
+        }
+        return (
+          <Link key={tab.key} href={tab.href} aria-current={current} className={className}>
+            {dict.nav[tab.key]}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { RemoteImage } from "@/components/RemoteImage";
 import { AdminUploader } from "./AdminUploader";
 import { AdminCategories } from "./AdminCategories";
-import { AdminNav } from "./AdminNav";
+import { AdminNav, type AdminTab } from "./AdminNav";
 import { AdminLocaleSwitcher } from "./AdminLocaleSwitcher";
 import { categoryLabel } from "./category-label";
 import { readError } from "./read-error";
@@ -47,6 +47,29 @@ function categoryCount(n: number, dict: AdminDictionary): string {
 }
 
 export function AdminGallery({ initialData, tab, locale, dict }: Props) {
+  /*
+   * The tab is a URL so the shared nav can link to it and so both views are
+   * bookmarkable — but Images and Categories render from ONE payload this
+   * component already has, so navigating between them would refetch the whole
+   * manifest from R2 to show data already in memory. Local state drives the
+   * render and history.replaceState keeps the URL honest without a round trip.
+   * Seeded from the prop, and re-synced when a real navigation changes it.
+   */
+  const [view, setView] = useState<Tab>(tab);
+  // React's documented "adjust state when a prop changes" pattern, run during
+  // render rather than in an effect: an effect would paint the old tab once
+  // before correcting it, and the lint rule that forbids it is right.
+  const [servedTab, setServedTab] = useState<Tab>(tab);
+  if (servedTab !== tab) {
+    setServedTab(tab);
+    setView(tab);
+  }
+
+  const selectTab = (next: Exclude<AdminTab, "calendar">) => {
+    setView(next);
+    const url = next === "categories" ? "/admin/gallery?tab=categories" : "/admin/gallery";
+    window.history.replaceState(null, "", url);
+  };
   const router = useRouter();
   const [filter, setFilter] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL);
@@ -106,7 +129,7 @@ export function AdminGallery({ initialData, tab, locale, dict }: Props) {
 
   return (
     <main className="flex-1 px-4 md:px-8 py-6 flex flex-col gap-6">
-      <AdminNav active={tab} dict={dict} />
+      <AdminNav active={view} dict={dict} onSelectTab={selectTab} />
 
       <header className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-baseline gap-4">
@@ -138,7 +161,7 @@ export function AdminGallery({ initialData, tab, locale, dict }: Props) {
         </div>
       </header>
 
-      {tab === "images" ? (
+      {view === "images" ? (
         <>
           <AdminUploader
             categories={initialData.categoriesData.categories}

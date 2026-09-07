@@ -35,14 +35,27 @@ import type { CalendarToolbarProps, CalendarView } from "./contract";
 type ToolbarProps = CalendarToolbarProps & {
   locale: Locale;
   dict: AdminDictionary;
+  /**
+   * Deliberately NOT rendered here any more. Rebuilding the month index is a
+   * repair for a failure the admin is told about when it happens — the warning
+   * strip in AdminCalendar carries its own button — so a permanent control in
+   * the toolbar was a button whose meaning nobody could work out and whose
+   * correct use was "never". Kept in the props so the strip and the toolbar
+   * still share one handler if it is ever wanted back.
+   */
   onReindex?: () => void;
   reindexBusy?: boolean;
   /** The rebuild's own report — `{months, records}`, or why it failed. */
   reindexNote?: string | null;
 };
 
+/**
+ * The month steppers. Sized to a real 40px touch target rather than the 10px
+ * chip they were: these are the controls the calendar is driven with, and on a
+ * phone they were the smallest tappable things on the screen.
+ */
 const STEP_BUTTON =
-  "border border-fg px-2 py-1 text-[10px] uppercase tracking-[0.2em] font-mono hover:bg-fg hover:text-bg transition-colors cursor-pointer";
+  "border border-fg min-h-[40px] min-w-[40px] px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono leading-none flex items-center justify-center hover:bg-fg hover:text-bg transition-colors cursor-pointer";
 
 const VIEWS: CalendarView[] = ["month", "agenda"];
 
@@ -107,15 +120,21 @@ export function CalendarToolbar({
   onNext,
   onToday,
   onCreate,
-  onReindex,
-  reindexBusy,
-  reindexNote,
 }: ToolbarProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4 flex-wrap">
-          <h2 className="font-serif italic text-2xl md:text-3xl">
+          {/*
+            Reserved width, not shrink-to-fit. "mayo 2026" and "septiembre 2026"
+            differ by about six characters, and without a floor under the label
+            the ‹ › buttons slid left and right every time the month changed —
+            the one control you press repeatedly was never in the same place
+            twice. 8.5em is measured against the longest label in both
+            languages ("septiembre 2026" / "September 2026") and scales with the
+            heading's own font-size across the md breakpoint.
+          */}
+          <h2 className="font-serif italic text-2xl md:text-3xl min-w-[8.5em] whitespace-nowrap">
             {periodLabel(monthKey, locale)}
           </h2>
           <div className="flex items-center gap-1">
@@ -179,26 +198,6 @@ export function CalendarToolbar({
             {dict.calendar.toolbar.timezone.replace("{tz}", tz)}
             {tzAbbrev ? ` (${tzAbbrev})` : ""}
           </span>
-          {onReindex ? (
-            <>
-              <button
-                type="button"
-                onClick={onReindex}
-                disabled={reindexBusy}
-                className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:text-fg disabled:opacity-40 cursor-pointer"
-              >
-                {reindexBusy
-                  ? dict.calendar.reindex.busy
-                  : dict.calendar.reindex.label}
-              </button>
-              <span
-                aria-live="polite"
-                className="font-mono text-[10px] text-muted"
-              >
-                {reindexNote}
-              </span>
-            </>
-          ) : null}
         </div>
         <details className="md:hidden">
           <summary className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted cursor-pointer">
