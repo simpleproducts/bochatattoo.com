@@ -39,6 +39,13 @@ type ToolbarProps = CalendarToolbarProps & {
   locale: Locale;
   dict: AdminDictionary;
   /**
+   * Opens the trips panel. Declared here rather than in `contract.ts` for the
+   * same reason the repair trio below is: a trip is calendar DATA and travels
+   * through the contract as such, but the control that opens the manager is an
+   * affordance of this one component.
+   */
+  onManageTrips: () => void;
+  /**
    * Deliberately NOT rendered here any more. Rebuilding the month index is a
    * repair for a failure the admin is told about when it happens — the warning
    * strip in AdminCalendar carries its own button — so a permanent control in
@@ -147,6 +154,7 @@ export function CalendarToolbar({
   onNext,
   onToday,
   onCreate,
+  onManageTrips,
 }: ToolbarProps) {
   const zoneOptions = useZoneOptions([tz, viewerTz, studioTz]);
   return (
@@ -274,6 +282,24 @@ export function CalendarToolbar({
             </select>
             {tzAbbrev ? <span>({tzAbbrev})</span> : null}
           </label>
+
+          {/*
+            Beside the zone picker and at its weight, not up with the month
+            steppers. Where Bocha IS is the same kind of fact as which clock
+            the calendar is being read in — both are the frame the schedule is
+            read against — and neither is something anyone touches on a normal
+            day. The ✈ is the glyph the day band uses, so the control and what
+            it produces are recognisable as the same thing; it is decoration
+            here, and the word beside it is the accessible name.
+          */}
+          <button
+            type="button"
+            onClick={onManageTrips}
+            className="flex items-center gap-1.5 border border-line px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted hover:border-fg hover:text-fg transition-colors cursor-pointer"
+          >
+            <span aria-hidden>✈</span>
+            {dict.trips.manage}
+          </button>
         </div>
         <details className="md:hidden">
           <summary className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted cursor-pointer">

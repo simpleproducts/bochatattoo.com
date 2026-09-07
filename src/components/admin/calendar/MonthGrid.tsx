@@ -1,7 +1,7 @@
 /**
  * The desktop month view: 42 cells, Monday first (Argentina).
  *
- * Two structural decisions worth knowing about:
+ * Four structural decisions worth knowing about:
  *
  * 1. The cell is a <div role="gridcell"> holding an absolutely-positioned
  *    <button> that fills it, not a <button> wrapping its contents. The chips
@@ -15,6 +15,14 @@
  *    opening the composer. A busy day is exactly the day whose fourth booking
  *    has to be readable, and the composer is already one click away on every
  *    square of empty cell space.
+ * 4. A trip repeats its tag on every day it covers instead of drawing one bar
+ *    across the run: a real spanning bar needs absolute positioning over a
+ *    grid that wraps every seventh cell, so it breaks at every week boundary.
+ *    The tag shares the date's line rather than taking one of its own —
+ *    120px are already spoken for by three chips and a "+N", and a trip is
+ *    context, not a fourth event competing for that room. Accent, never a
+ *    status colour: red/yellow/green mean a booking state here, and "I am in
+ *    Berlin" is not one.
  *
  * `byDay` is keyed by the day each appointment falls on IN ITS OWN ZONE, so a
  * booking whose UTC month differs from its displayed month lands in the right
@@ -30,6 +38,7 @@
 import { useState } from "react";
 import { monthGridDayKeys } from "@/lib/booking-time";
 import type { AdminAppointment } from "@/lib/bookings-types";
+import { tripForDate, type Trip } from "@/lib/trips-types";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
 import { AppointmentChip } from "./AppointmentChip";
@@ -114,6 +123,7 @@ export function MonthGrid({
   byDay,
   tz,
   todayKey,
+  trips,
   locale,
   dict,
   onOpenAppt,
@@ -128,6 +138,26 @@ export function MonthGrid({
   const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   const dayKeys = monthGridDayKeys(monthKey);
+  /**
+   * Each cell's trip, resolved in one pass because "is this the first day of
+   * the run" is a question about the PREVIOUS cell that a per-cell lookup
+   * cannot answer. The answer is only ever used for the screen reader: eleven
+   * squares of a Berlin trip say "Berlín" eleven times to the eye, which is
+   * what makes the run legible at a glance, and would be eleven repetitions of
+   * the same word to a reader going cell by cell.
+   *
+   * The run starts at the first covered cell OF THIS GRID, not at the trip's
+   * own `startDate` — a trip that began last month is new information on the
+   * first square the reader can actually see.
+   */
+  const tripByDay = new Map<string, { trip: Trip; runStart: boolean }>();
+  let previousTripId: string | null = null;
+  for (const dayKey of dayKeys) {
+    const trip = tripForDate(trips, dayKey);
+    if (trip) tripByDay.set(dayKey, { trip, runStart: trip.id !== previousTripId });
+    previousTripId = trip?.id ?? null;
+  }
+
   const weeks: string[][] = [];
   for (let i = 0; i < dayKeys.length; i += 7) weeks.push(dayKeys.slice(i, i + 7));
 
@@ -165,6 +195,7 @@ export function MonthGrid({
               const expanded = expandedDay === dayKey;
               const overflow = appts.length - MAX_CHIPS;
               const shown = expanded ? appts : appts.slice(0, MAX_CHIPS);
+              const dayTrip = tripByDay.get(dayKey);
               return (
                 <div
                   role="gridcell"
@@ -177,9 +208,9 @@ export function MonthGrid({
                     onClick={() => onCreate(dayKey)}
                     className="absolute inset-0 text-left cursor-pointer hover:bg-fg/5 transition-colors"
                   />
-                  <div className="relative pointer-events-none">
+                  <div className="relative pointer-events-none flex items-baseline justify-between gap-1">
                     <span
-                      className={`font-mono text-xs ${
+                      className={`font-mono text-xs shrink-0 ${
                         isToday
                           ? "bg-fg text-bg px-1.5 py-0.5"
                           : inMonth
@@ -189,6 +220,19 @@ export function MonthGrid({
                     >
                       {dayKey.slice(8)}
                     </span>
+                    {dayTrip ? (
+                      // The whole line is `pointer-events-none`, so the tag
+                      // never eats a click meant for the composer underneath —
+                      // a trip is read here and edited from the toolbar panel.
+                      <span
+                        aria-hidden={dayTrip.runStart ? undefined : true}
+                        className={`font-mono text-[10px] truncate min-w-0 ${
+                          inMonth ? "text-accent/70" : "text-accent/40"
+                        }`}
+                      >
+                        {dict.trips.band.replace("{label}", dayTrip.trip.label)}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="relative flex flex-col gap-0.5">
                     {shown.map((appt) => (

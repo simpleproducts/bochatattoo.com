@@ -17,6 +17,14 @@
  * while every row's clock is the appointment's own zone. The two only disagree
  * during a guest spot, and the row says which zone it is speaking then.
  *
+ * A trip is named in that heading, quietly and in the accent — never a status
+ * colour, which here means a booking state. The heading is the only place it
+ * fits: this list only draws days that have appointments, so the tag lands on
+ * a handful of days rather than on a whole run, and saying "Berlín" once above
+ * the rows is exactly the frame those rows are being read in. It is announced
+ * on every covered heading for that reason, and not hidden the way the month
+ * grid hides its repeats.
+ *
  * The strip's height is MEASURED rather than written down: the day cells are
  * `aspect-square` in a 7-column grid, so the strip is as tall as a seventh of
  * whatever width it is given. That measurement is what the sticky day headings
@@ -29,6 +37,7 @@ import { STATUS_META } from "@/lib/booking-status";
 import { formatDayLong, formatTimeRange, zoneAbbrev } from "@/lib/booking-time";
 import { bookingLabel } from "@/lib/bookings-types";
 import type { AdminAppointment, BookingId } from "@/lib/bookings-types";
+import { tripForDate } from "@/lib/trips-types";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
 import type { AgendaListProps } from "./contract";
@@ -155,6 +164,7 @@ export function AgendaList({
   tz,
   todayKey,
   selectedDayKey,
+  trips,
   locale,
   dict,
   onSelectDay,
@@ -277,37 +287,49 @@ export function AgendaList({
         </p>
       ) : (
         <div className="divide-y divide-line border-y border-line">
-          {days.map((dayKey) => (
-            <div
-              key={dayKey}
-              style={{ scrollMarginTop: stripHeight }}
-              ref={(el) => {
-                if (el) groupRefs.current.set(dayKey, el);
-                else groupRefs.current.delete(dayKey);
-              }}
-            >
-              <h3
-                style={{ top: stripHeight }}
-                className={`sticky z-20 bg-bg/90 backdrop-blur-md py-2 font-mono text-xs uppercase tracking-[0.2em] ${
-                  dayKey === selectedDayKey ? "text-fg" : "text-muted"
-                }`}
+          {days.map((dayKey) => {
+            const trip = tripForDate(trips, dayKey);
+            return (
+              <div
+                key={dayKey}
+                style={{ scrollMarginTop: stripHeight }}
+                ref={(el) => {
+                  if (el) groupRefs.current.set(dayKey, el);
+                  else groupRefs.current.delete(dayKey);
+                }}
               >
-                {formatDayLong(`${dayKey}T12:00:00Z`, "UTC", locale)}
-              </h3>
-              <div className="flex flex-col">
-                {(byDay[dayKey] ?? []).map((appt) => (
-                  <AgendaRow
-                    key={appt.id}
-                    appt={appt}
-                    tz={tz}
-                    locale={locale}
-                    dict={dict}
-                    onOpen={onOpenAppt}
-                  />
-                ))}
+                <h3
+                  style={{ top: stripHeight }}
+                  className={`sticky z-20 bg-bg/90 backdrop-blur-md py-2 font-mono text-xs uppercase tracking-[0.2em] flex items-baseline gap-2 ${
+                    dayKey === selectedDayKey ? "text-fg" : "text-muted"
+                  }`}
+                >
+                  <span className="shrink-0">
+                    {formatDayLong(`${dayKey}T12:00:00Z`, "UTC", locale)}
+                  </span>
+                  {trip ? (
+                    // Lower case and one size down inside an uppercase heading:
+                    // the day is the heading, the trip is the room it happens in.
+                    <span className="font-mono text-[10px] normal-case tracking-[0.1em] text-accent/70 truncate min-w-0">
+                      {dict.trips.band.replace("{label}", trip.label)}
+                    </span>
+                  ) : null}
+                </h3>
+                <div className="flex flex-col">
+                  {(byDay[dayKey] ?? []).map((appt) => (
+                    <AgendaRow
+                      key={appt.id}
+                      appt={appt}
+                      tz={tz}
+                      locale={locale}
+                      dict={dict}
+                      onOpen={onOpenAppt}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

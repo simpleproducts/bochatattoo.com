@@ -30,6 +30,7 @@ import type {
   Currency,
 } from "@/lib/bookings-types";
 import { fromUtcIso, toUtcIso } from "@/lib/booking-time";
+import { tripForDate, type Trip } from "@/lib/trips-types";
 
 /** Month on desktop, agenda on mobile. Two views, deliberately — see the plan. */
 export type CalendarView = "month" | "agenda";
@@ -166,6 +167,12 @@ export type MonthGridProps = {
    */
   tz: string;
   todayKey: string;
+  /**
+   * Every loaded trip. The grid draws a band across the days one covers, so
+   * the month itself says where Bocha is that week. Read-only here: a band is
+   * a fact about the artist, never about the appointments under it.
+   */
+  trips: Trip[];
   onOpenAppt: (id: BookingId) => void;
   onCreate: (dayKey: string) => void;
 };
@@ -177,6 +184,8 @@ export type AgendaListProps = {
   /** The reader's frame. Same meaning as `MonthGridProps.tz`. */
   tz: string;
   todayKey: string;
+  /** Same trips as the grid's, for the same band. See `MonthGridProps.trips`. */
+  trips: Trip[];
   selectedDayKey: string;
   onSelectDay: (dayKey: string) => void;
   onOpenAppt: (id: BookingId) => void;
@@ -204,6 +213,15 @@ export type BookingFormProps = {
    * form never blocks on it.
    */
   others: AdminAppointment[];
+  /**
+   * Every loaded trip — the source of the zone-mismatch warning, and the form's
+   * only use for them. A booking whose date sits inside a trip but whose zone
+   * is not the trip's gets the same treatment as an overlap: said out loud,
+   * never corrected, never blocking. It is sometimes exactly right (a remote
+   * consult, or a session booked for the week after the trip ends), so the
+   * form asks rather than refuses.
+   */
+  trips: Trip[];
   onSubmit: (values: BookingFormValues) => void;
   onCancel: () => void;
 };
@@ -243,6 +261,12 @@ export type BookingSheetProps = {
   error: string | null;
   /** Every loaded appointment, for the form's overlap warning. */
   all: AdminAppointment[];
+  /**
+   * Every loaded trip, forwarded to the form: they pick a fresh composer's
+   * zone (see `emptyFormValues`) and drive its mismatch warning. They never
+   * touch an appointment already stored.
+   */
+  trips: Trip[];
   onClose: () => void;
   /** Create when `state.mode === "create"`, otherwise PATCH the open id. */
   onSubmitForm: (values: BookingFormValues) => void;
@@ -264,13 +288,27 @@ function pad2(n: number): string {
 }
 
 /**
- * A fresh composer for `dayKey`, in `timeZone`.
+ * A fresh composer for `dayKey`, in the zone that day is actually in.
  *
- * `timeZone` is the zone the new booking should default to — the last one the
- * admin saved, or the calendar's viewing zone. It is also the clock the
- * "now-ish" default below is read on, because every wall clock this form holds
- * is in the appointment's zone: an admin in Buenos Aires opening a Berlin
- * composer at 18:00 their time wants a Berlin hour offered, not a local one.
+ * A TRIP COVERING `dayKey` WINS OVER `fallbackTz`, and that is the whole point
+ * of trips on this path. The zone a new booking wants is a fact about where
+ * Bocha will be on that date, which is exactly the fact a trip records;
+ * `fallbackTz` — the last zone saved from this browser, or failing that the
+ * calendar's viewing zone — only knows about the session doing the typing. A
+ * per-date answer beats a per-session one, so a day inside "Berlín 10-20 marzo"
+ * opens in Berlin even when the appointment entered just before it was a Buenos
+ * Aires touch-up, and the admin stops re-picking the zone all week.
+ *
+ * Proposing is all it does, and only for a booking that does not exist yet.
+ * `formValuesFrom` deliberately takes no trips: an appointment's stored zone is
+ * the source of truth, so moving a trip's dates can never move a booking
+ * already made. Getting the default wrong here costs one select; re-deriving a
+ * stored zone from a trip would cost the record.
+ *
+ * The zone that wins is also the clock the "now-ish" default below is read on,
+ * because every wall clock this form holds is in the appointment's zone: an
+ * admin in Buenos Aires opening a Berlin composer at 18:00 their time wants a
+ * Berlin hour offered, not a local one.
  *
  * Defaults to the next round hour from 12:00 onwards when the admin taps
  * today, and to a flat 12:00 on any other day — a tattoo session booked for
@@ -278,10 +316,12 @@ function pad2(n: number): string {
  */
 export function emptyFormValues(
   dayKey: string,
-  timeZone: string,
+  fallbackTz: string,
+  trips: Trip[],
   todayKey?: string,
   now: Date = new Date(),
 ): BookingFormValues {
+  const timeZone = tripForDate(trips, dayKey)?.timeZone ?? fallbackTz;
   let startHour = 12;
   if (todayKey && dayKey === todayKey) {
     const { time } = fromUtcIso(now.toISOString(), timeZone);
