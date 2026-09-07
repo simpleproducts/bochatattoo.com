@@ -818,6 +818,23 @@ export function AdminCalendar({
     void call(`/api/admin/bookings/${openId}/link`, { method: "POST" });
   }, [call, openId]);
 
+  /**
+   * The studio attaching a receipt a client sent by WhatsApp. Multipart rather
+   * than `jsonInit`: `call` forwards the init untouched, and a FormData body
+   * must carry the boundary `fetch` generates for it, so no content-type is set
+   * here on purpose. The answer is the same `{ appointment }` every other write
+   * returns, so it folds into the map through the one path.
+   */
+  const onUploadReceipt = useCallback(
+    (file: File) => {
+      if (!openId) return;
+      const body = new FormData();
+      body.append("file", file);
+      void call(`/api/admin/bookings/${openId}/receipt`, { method: "POST", body });
+    },
+    [call, openId],
+  );
+
   const onDeleteReceipt = useCallback(() => {
     if (!openId) return;
     void call(`/api/admin/bookings/${openId}/receipt`, { method: "DELETE" });
@@ -1144,6 +1161,7 @@ export function AdminCalendar({
             onCancelToggle={onCancelToggle}
             onDelete={onDelete}
             onRotateLink={onRotateLink}
+            onUploadReceipt={onUploadReceipt}
             onDeleteReceipt={onDeleteReceipt}
             onResend={onResend}
           />

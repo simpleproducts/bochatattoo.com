@@ -66,6 +66,7 @@ import {
   type PublicBookingView,
   type ReceiptExt,
 } from "./bookings-types";
+import type { PublicPaymentSettings } from "./settings-types";
 import { deriveStatus } from "./booking-status";
 import {
   bookingLinks,
@@ -574,6 +575,11 @@ export async function toAdminAppointment(b: BookingRecord): Promise<AdminAppoint
           uploadedAt: b.receipt.uploadedAt,
         }
       : undefined,
+    // Passed through whole, unlike the receipt above. There is no private key
+    // to strip here, and the provider payment id is the point: it is what the
+    // admin searches for in their MercadoPago account when a client disputes a
+    // deposit or asks for it back.
+    payment: b.payment,
     token,
     links: bookingLinks(token),
   };
@@ -587,9 +593,20 @@ export async function toAdminAppointment(b: BookingRecord): Promise<AdminAppoint
  * the record. A spread with omissions is a denylist, and the next field added
  * to BookingRecord — an internal note, a flag, a second counter — would leak
  * through it silently. This way a new field is invisible here until someone
- * types it out.
+ * types it out. `payment` is the live example: it is collapsed to a boolean
+ * below rather than sent, because the page renders "paid" and has no use for a
+ * provider payment id or for an amount it did not choose.
+ *
+ * The payment settings arrive as an ARGUMENT rather than being read here. This
+ * function is synchronous and pure — it is called inside route handlers that
+ * have already committed a mutation — and loading a settings document from R2
+ * in the middle of that would make it neither. Every caller (both booking pages
+ * and the booking API routes) loads them once per request and hands them down.
  */
-export function toPublicView(b: BookingRecord): PublicBookingView {
+export function toPublicView(
+  b: BookingRecord,
+  paymentSettings: PublicPaymentSettings,
+): PublicBookingView {
   const derived = deriveStatus(b);
   // verifyBookingAccess refuses a cancelled booking before anything can reach
   // this function, so this is unreachable. It throws rather than collapsing to
@@ -631,6 +648,10 @@ export function toPublicView(b: BookingRecord): PublicBookingView {
           uploadedAt: b.receipt.uploadedAt,
         }
       : null,
+    // The boolean, never the object. `payment` exists only on an approved
+    // payment, so its presence IS the answer.
+    paid: Boolean(b.payment),
+    paymentSettings,
     studioTimeZone: STUDIO_TIME_ZONE,
   };
 }

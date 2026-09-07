@@ -235,6 +235,14 @@ export type ShareLinkRowProps = {
 export type ReceiptPreviewProps = {
   appt: AdminAppointment;
   busy: boolean;
+  /**
+   * Attach the studio's own copy of the proof — the WhatsApp case, which is at
+   * least as common as a client uploading it themselves. A `File` and nothing
+   * else: the multipart body, the size ceiling and the request all belong to
+   * the calendar, which owns `busy` and the error strip that a refusal lands
+   * in, so the preview hands over the one thing only it has.
+   */
+  onUpload: (file: File) => void;
   onDelete: () => void;
 };
 
@@ -274,6 +282,8 @@ export type BookingSheetProps = {
   onCancelToggle: (cancelled: boolean) => void;
   onDelete: () => void;
   onRotateLink: () => void;
+  /** Forwarded whole to `ReceiptPreviewProps.onUpload` — see it for the why. */
+  onUploadReceipt: (file: File) => void;
   onDeleteReceipt: () => void;
   onResend: (kind: BookingEmailKind) => void;
 };

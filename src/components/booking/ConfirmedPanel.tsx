@@ -8,6 +8,12 @@
  * that can only fail; the two contact routes on the invalid panel are the
  * escape hatch when something really did change.
  *
+ * TWO ROADS INTO GREEN, one panel. A receipt and an approved MercadoPago
+ * payment are equally confirmed — deriveStatus says so — so the eyebrow, the
+ * title, the time and the .ics are identical either way. Only two lines differ,
+ * and they differ because one of them would otherwise be a lie: a client who
+ * paid through MercadoPago has no comprobante to be told we received.
+ *
  * The time repeated here is the appointment's own, same as on the card above:
  * this panel is the last thing a client reads before closing the tab, and it
  * would be a poor place to switch clocks on them. The .ics needs no such
@@ -65,6 +71,14 @@ function bodyWithLinks(
 export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
   const d = dict.booking.done;
   const email = view.client.email || view.seed.email;
+  /**
+   * An approved payment takes precedence over a receipt, in the rare case a
+   * booking carries both — a client who transferred AND paid, or a studio that
+   * attached a comprobante to a booking MercadoPago had already settled. The
+   * payment is the stronger fact and the one the client acted on last, and the
+   * paid copy is true either way: there is nothing left to send.
+   */
+  const paid = view.paid;
 
   return (
     <section className="border border-status-done p-6 flex flex-col gap-4">
@@ -89,7 +103,10 @@ export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
       </div>
 
       <p className="text-sm leading-relaxed text-fg/80">
-        {bodyWithLinks(d.body, { studio: d.studioLink, contact: d.contactLink })}
+        {bodyWithLinks(paid ? d.paid.body : d.body, {
+          studio: d.studioLink,
+          contact: d.contactLink,
+        })}
       </p>
 
       {email ? (
@@ -98,7 +115,20 @@ export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
         </p>
       ) : null}
 
-      {view.receipt ? (
+      {paid ? (
+        /* No comprobante line, because there is no comprobante and there never
+           will be one — the payment itself is the proof, and asking a client
+           who already paid to look for a receipt is the confusion this whole
+           variant exists to avoid.
+
+           No timestamp either, unlike the receipt line below. PublicBookingView
+           carries `paid` as a bare boolean and nothing more: the page has no
+           use for a provider payment id, and the moment the webhook committed
+           is the studio's fact, not the client's. */
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+          {d.paid.received}
+        </p>
+      ) : view.receipt ? (
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
           {dict.booking.receipt.uploaded}
           {" · "}

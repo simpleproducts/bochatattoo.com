@@ -2,11 +2,20 @@
  * The single definition of a booking's red / yellow / green, plus the one
  * table that maps it to pixels and words.
  *
- * Status is DERIVED, never stored: it is three booleans over facts the record
- * already holds, so it cannot desync from them the way a cached field would.
- * Nothing anywhere else in the codebase may assign a status literal — every
- * surface (calendar chip, sheet header, agenda row, progress rail, emails)
- * calls `deriveStatus` and reads `STATUS_META`.
+ * Status is DERIVED, never stored: it is a handful of booleans over facts the
+ * record already holds, so it cannot desync from them the way a cached field
+ * would. Nothing anywhere else in the codebase may assign a status literal —
+ * every surface (calendar chip, sheet header, agenda row, progress rail,
+ * emails) calls `deriveStatus` and reads `STATUS_META`.
+ *
+ * GREEN HAS TWO ROADS INTO IT and they are equal. A receipt on file is one: the
+ * client transferred to the bank account and uploaded proof, or the studio
+ * attached the proof a client sent them by WhatsApp. An approved payment is the
+ * other: the client paid through MercadoPago and its webhook wrote
+ * `record.payment`, which is why a MercadoPago booking is confirmed without
+ * ever uploading anything. Neither is more confirmed than the other, so there
+ * is one "confirmed" here and not two — the deposit is in, and how it got there
+ * is a detail for the sheet to show, not a status of its own.
  *
  * Colour is never the only channel. Each status carries four redundant ones —
  * hue (`dot`/`text`), glyph, border style, and a label — because a colour-blind
@@ -27,7 +36,7 @@ import type { BookingRecord, BookingStatus } from "./bookings-types";
 
 /** THE definition of red/yellow/green. Nothing anywhere assigns a status literal. */
 export function deriveStatus(
-  b: Pick<BookingRecord, "cancelledAt" | "client" | "receipt">,
+  b: Pick<BookingRecord, "cancelledAt" | "client" | "receipt" | "payment">,
 ): BookingStatus {
   if (b.cancelledAt) return "cancelled";
   const contact = Boolean(b.client.email?.trim() || b.client.instagram?.trim());
@@ -35,7 +44,9 @@ export function deriveStatus(
     b.client.submittedAt && b.client.termsAcceptedAt && b.client.name?.trim() && contact,
   );
   if (!detailsDone) return "pending";
-  return b.receipt ? "confirmed" : "awaiting_receipt";
+  // Either road is enough. `payment` only ever exists on an approved payment
+  // (see BookingPayment), so there is nothing here to check about it.
+  return b.receipt || b.payment ? "confirmed" : "awaiting_receipt";
 }
 
 export type StatusMeta = {

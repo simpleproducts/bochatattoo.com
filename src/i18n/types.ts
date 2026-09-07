@@ -122,8 +122,14 @@ export type Dictionary = {
       yourTime: string;
       deposit: string;
     };
-    /** The three steps of the flow, mirrored by the progress rail. */
-    rail: { details: string; terms: string; receipt: string };
+    /**
+     * The three steps of the flow, mirrored by the progress rail. The third
+     * one has two names: `receipt` while a bank transfer is the way this
+     * booking is being paid, `payment` while the client still has a choice to
+     * make or has chosen MercadoPago — that path never produces a receipt, so
+     * labelling the step after one would promise a screen it will not reach.
+     */
+    rail: { details: string; terms: string; receipt: string; payment: string };
     form: {
       eyebrow: string;
       intro: string;
@@ -156,6 +162,11 @@ export type Dictionary = {
       confirm: string;
     };
     payment: {
+      /**
+       * `eyebrow` and `intro` head the bank-transfer details specifically, and
+       * still do — everything above `chooseTitle` is the transfer path, which
+       * this feature did not change.
+       */
       eyebrow: string;
       intro: string;
       alias: string;
@@ -165,6 +176,35 @@ export type Dictionary = {
       amount: string;
       copy: string;
       copied: string;
+      /**
+       * The method picker, rendered only when the studio offers BOTH. With one
+       * method enabled there is no choice to present and the page renders that
+       * one directly, so this heading never appears over a single option.
+       */
+      chooseTitle: string;
+      /**
+       * One label and one line per method. The hint's whole job is to say what
+       * happens AFTER the tap — MercadoPago settles it on the spot, a transfer
+       * still owes us the proof — because that difference, not the brand, is
+       * what the client is actually choosing between.
+       */
+      methods: {
+        mercadopago: { label: string; hint: string };
+        transfer: { label: string; hint: string };
+      };
+      /**
+       * Checkout Pro runs on MercadoPago's own hosted page. `redirect` warns
+       * the client they are about to leave, since a tab that changes domain
+       * mid-flow otherwise reads as having lost the booking. `pending` covers
+       * the gap after they come back: the return URL is a link the client
+       * controls, so it is never what marks the booking paid — the webhook is,
+       * and it can land a moment later.
+       */
+      mercadopago: {
+        cta: string;
+        redirect: string;
+        pending: string;
+      };
     };
     receipt: {
       eyebrow: string;
@@ -195,6 +235,21 @@ export type Dictionary = {
       addToCalendar: string;
       /** Event summary written into the .ics file. */
       calendarTitle: string;
+      /**
+       * The variant for a booking MercadoPago paid. It says nothing about a
+       * comprobante because there is none and there never will be — the
+       * payment itself is the proof. `body` carries the same {studio} and
+       * {contact} placeholders as `body` above, so both go through the same
+       * renderer; `received` is the mono line that replaces the receipt chip,
+       * with the timestamp appended by the caller exactly as that one is.
+       *
+       * The eyebrow and the title are NOT duplicated here: a confirmed
+       * appointment reads the same however it got confirmed.
+       */
+      paid: {
+        body: string;
+        received: string;
+      };
     };
     /** One panel, four variants — the page picks by why the link was refused. */
     invalid: {
@@ -222,6 +277,10 @@ export type Dictionary = {
       tooManyAttempts: string;
       conflict: string;
       missingContact: string;
+      /** The preference could not be created — nothing was charged. */
+      paymentFailed: string;
+      /** MercadoPago itself said no. Also nothing charged; another method may work. */
+      paymentRejected: string;
     };
   };
 };

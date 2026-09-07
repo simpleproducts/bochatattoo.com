@@ -18,16 +18,89 @@ import type {
   BookingAccessReason,
   PublicBookingView,
 } from "@/lib/bookings-types";
+import type {
+  PaymentMethod,
+  PublicPaymentSettings,
+} from "@/lib/settings-types";
 
 /**
  * Where the reader is in the flow. `terms` is a modal over `details` rather
  * than a screen of its own, but it is a distinct step to the progress rail.
+ *
+ * The third step is still called `receipt` even though it now opens with a
+ * payment choice, and that is deliberate: the rail types its own three keys off
+ * this union, so a fourth value here would be a fourth item on a rail that has
+ * exactly three. What the step CONTAINS is decided by the settings, not by a
+ * step name.
  */
 export type BookingStep = "details" | "terms" | "receipt" | "done";
 
 /** sessionStorage key for the in-progress form, so a reload does not lose it. */
 export function draftKey(bookingId: string): string {
   return `ba_book_${bookingId}`;
+}
+
+/**
+ * sessionStorage key for "this tab sent its reader off to MercadoPago".
+ *
+ * Derived from draftKey so both keys share one per-booking prefix and one
+ * cleanup story. It survives the round trip because sessionStorage is per tab
+ * and per origin: leaving for mercadopago.com and coming back to ours restores
+ * it, which is exactly the window this flag has to cover.
+ *
+ * IT IS PROOF OF NOTHING. A value in a browser store the reader can edit
+ * decides one thing only — whether the payment step opens with "we are waiting
+ * for MercadoPago" instead of the plain chooser. `view.paid`, written by the
+ * webhook and by nothing else, is what says a deposit arrived.
+ */
+export function paymentAttemptKey(bookingId: string): string {
+  return `${draftKey(bookingId)}_mp`;
+}
+
+/**
+ * The query parameters Checkout Pro hangs off its back_url.
+ *
+ * Read for the same one purpose as the flag above and with the same standing:
+ * they are in a URL the client controls, so they can say "this reader has just
+ * come back from a payment attempt" — worth a different sentence on screen —
+ * and they can never say "this booking is paid". Only the webhook says that.
+ *
+ * The list is generous on purpose. MercadoPago has changed which of these it
+ * appends before, and a missed parameter costs the reader the honest waiting
+ * copy, while an extra one costs nothing at all.
+ */
+const MP_RETURN_PARAMS = [
+  "collection_id",
+  "collection_status",
+  "payment_id",
+  "preference_id",
+  "merchant_order_id",
+  "status",
+] as const;
+
+/** Did this request land on the page carrying MercadoPago's return parameters? */
+export function hasPaymentReturnParams(
+  params: Record<string, string | string[] | undefined>,
+): boolean {
+  return MP_RETURN_PARAMS.some((name) => params[name] !== undefined);
+}
+
+/**
+ * The methods the studio is offering right now, MercadoPago first because it
+ * finishes the booking in one tap and a transfer does not.
+ *
+ * Order is part of the contract rather than a rendering detail: the chooser
+ * paints the array in order, and its LENGTH is what decides whether there is a
+ * choice to present at all. One method is not a choice — the flow renders it
+ * directly, with no chooser over it — and zero is what an unwritten settings
+ * document, or a settings read that failed, leaves behind. That last case is a
+ * state to explain, never one to hide behind an empty step.
+ */
+export function offeredMethods(s: PublicPaymentSettings): PaymentMethod[] {
+  const found: PaymentMethod[] = [];
+  if (s.mercadopago.enabled) found.push("mercadopago");
+  if (s.transfer.enabled) found.push("transfer");
+  return found;
 }
 
 /** The details form's own state. All strings — these are raw input values. */
@@ -51,6 +124,12 @@ export type BookingFlowProps = {
   token: string;
   locale: Locale;
   dict: Dictionary;
+  /**
+   * The page saw MercadoPago's return parameters on this request. A hint about
+   * which copy to open the payment step with, never a claim about the money —
+   * see MP_RETURN_PARAMS above.
+   */
+  returnedFromPayment: boolean;
 };
 
 export type BookingHeaderProps = {
@@ -94,8 +173,46 @@ export type TermsModalProps = {
   onAccept: () => void;
 };
 
+/**
+ * The bank-transfer block. It reads its alias, CBU, holder and bank off
+ * `view.paymentSettings.transfer` — the studio's settings document, narrowed
+ * for the wire — so there is nothing else to pass it.
+ */
 export type PaymentDetailsProps = {
   view: PublicBookingView;
+  dict: Dictionary;
+};
+
+/** Rendered only when `offeredMethods` returned more than one. */
+export type PaymentMethodChooserProps = {
+  dict: Dictionary;
+  /** In the order they are to be painted — see offeredMethods. */
+  methods: PaymentMethod[];
+  onChoose: (method: PaymentMethod) => void;
+};
+
+export type MercadoPagoPanelProps = {
+  dict: Dictionary;
+  /**
+   * True from the tap until the browser has actually left for MercadoPago. The
+   * button is disabled for that whole stretch because a second tap creates a
+   * second preference for the same deposit.
+   */
+  busy: boolean;
+  error: string | null;
+  onPay: () => void;
+};
+
+export type MercadoPagoPendingProps = {
+  dict: Dictionary;
+  /** A re-check is in flight. */
+  busy: boolean;
+  error: string | null;
+  onRecheck: () => void;
+};
+
+/** No method is on offer. One sentence, so the step is never blank. */
+export type PaymentUnavailableProps = {
   dict: Dictionary;
 };
 
@@ -140,6 +257,13 @@ const ERROR_KEYS: Record<string, keyof Dictionary["booking"]["errors"]> = {
   "unsupported-type": "unsupportedType",
   "too-many-attempts": "tooManyAttempts",
   "rate-limited": "rateLimited",
+  // The preference could not be created, and MercadoPago declining a payment
+  // it did create. Both mean nothing was charged, which is why neither maps to
+  // `generic`: "try again in a moment" and "try another method" are different
+  // instructions, and a client staring at a checkout that went nowhere needs
+  // the right one.
+  "payment-failed": "paymentFailed",
+  "payment-rejected": "paymentRejected",
   conflict: "conflict",
 };
 
