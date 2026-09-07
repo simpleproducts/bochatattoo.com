@@ -397,6 +397,80 @@ export type AdminDictionary = {
     };
   };
 
+  /**
+   * Guest spots. A trip is a named date range saying "these days I am in
+   * Berlin", and it does exactly two jobs: it PROPOSES (a new appointment on
+   * one of those days opens already set to that zone) and it QUESTIONS (a
+   * booking on one of those days whose zone is not the trip's gets a warning).
+   * It never rewrites a booking, so nothing here may read as a rule the
+   * operator broke — the zone on the appointment is still the truth, and the
+   * operator is often right.
+   */
+  trips: {
+    /** The toolbar control that opens the panel, beside `toolbar.new`. */
+    manage: string;
+    /** The panel's own heading. */
+    title: string;
+    /**
+     * Shown while no trip exists. Nobody has used this feature before, so the
+     * line teaches what a trip is FOR instead of reporting an empty list.
+     */
+    empty: string;
+    /** The panel form's heading, one per mode — same pair as `sheet`. */
+    newTrip: string;
+    editTrip: string;
+    /**
+     * Field labels. The name field reuses `common.name`: it is the same word
+     * on the same kind of input, and a second "Nombre" here would only be a
+     * second chance to translate it differently. Its placeholder is a city,
+     * not a word, so it is identical in both languages — like
+     * `categories.slugPlaceholder`.
+     */
+    namePlaceholder: string;
+    /** Short: the panel packs four fields into one narrow row. */
+    timeZone: string;
+    from: string;
+    to: string;
+    /**
+     * Accessible names for the per-row controls, which repeat down the list
+     * and are too small to carry a word. `{label}` is the trip.
+     */
+    editOne: string;
+    deleteOne: string;
+    /**
+     * ConfirmDialog before deleting. The body's whole job is to say that no
+     * booking moves: deleting a trip retires a default and a warning, nothing
+     * else. Adding or moving a trip is just as harmless, which is why only the
+     * destructive control asks at all.
+     */
+    deleteTitle: string;
+    deleteConfirm: string;
+    /**
+     * The band drawn across every day a trip covers. It renders INSIDE a month
+     * cell, above the appointment chips, so it gets the label and one glyph
+     * and nothing more. `{label}` is the trip's own.
+     */
+    band: string;
+    /**
+     * The booking form's mismatch warning: the date falls inside a trip but
+     * the chosen zone is not the trip's. Same treatment as `form.overlap` —
+     * visible, explicit, never blocking — and phrased as a question, because a
+     * remote consult or a session booked for after the trip ends is a perfectly
+     * good answer. `{trip}` is the label, `{tz}` the zone the booking is in.
+     */
+    zoneMismatch: string;
+    /**
+     * What the trips routes refuse, keyed by the `error` code each one returns
+     * so the panel can print words instead of the wire message.
+     */
+    errors: {
+      invalidRange: string;
+      /** `{max}` is TRIP_LABEL_MAX. */
+      labelTooLong: string;
+      invalidTimeZone: string;
+    };
+  };
+
   login: {
     title: string;
     password: string;
@@ -654,6 +728,36 @@ const adminEs: AdminDictionary = {
     },
   },
 
+  trips: {
+    manage: "Viajes",
+    title: "Viajes",
+    empty:
+      "Todavía no hay viajes. Un viaje marca los días que estás en otra " +
+      "ciudad: los turnos de esas fechas arrancan en esa zona y te avisa si " +
+      "alguno quedó en otra.",
+    newTrip: "Viaje nuevo",
+    editTrip: "Editar viaje",
+    namePlaceholder: "Berlín",
+    timeZone: "Zona",
+    from: "Desde",
+    to: "Hasta",
+    editOne: "Editar {label}",
+    deleteOne: "Eliminar {label}",
+    deleteTitle: "¿Eliminar el viaje?",
+    deleteConfirm:
+      "¿Eliminar \"{label}\"?\n\nNingún turno cambia: los que ya están hechos " +
+      "se quedan con su zona. Solo se pierden la zona por defecto y el aviso " +
+      "de los próximos.",
+    band: "✈ {label}",
+    zoneMismatch:
+      "⚠ Estás en {trip} ese día, pero el turno quedó en {tz}. ¿Va así?",
+    errors: {
+      invalidRange: "Fechas inválidas — el fin no puede ser antes del inicio.",
+      labelTooLong: "El nombre no puede pasar de {max} caracteres.",
+      invalidTimeZone: "Zona horaria del viaje inválida — elegí otra.",
+    },
+  },
+
   login: {
     title: "Iniciar sesión",
     password: "Contraseña",
@@ -907,6 +1011,36 @@ const adminEn: AdminDictionary = {
       clientConfirmed: "Client · confirmed",
       notSent: "not sent",
       resend: "Resend",
+    },
+  },
+
+  trips: {
+    manage: "Trips",
+    title: "Trips",
+    empty:
+      "No trips yet. A trip marks the days you are in another city: bookings " +
+      "on those dates start in that zone, and it warns you when one ended up " +
+      "in a different one.",
+    newTrip: "New trip",
+    editTrip: "Edit trip",
+    namePlaceholder: "Berlín",
+    timeZone: "Zone",
+    from: "From",
+    to: "To",
+    editOne: "Edit {label}",
+    deleteOne: "Delete {label}",
+    deleteTitle: "Delete this trip?",
+    deleteConfirm:
+      "Delete \"{label}\"?\n\nNo booking changes: the ones already made keep " +
+      "the zone they have. You only lose the default zone and the warning for " +
+      "the next ones.",
+    band: "✈ {label}",
+    zoneMismatch:
+      "⚠ You are in {trip} that day, but this booking is in {tz}. Is that right?",
+    errors: {
+      invalidRange: "Invalid dates — the end cannot be before the start.",
+      labelTooLong: "The name cannot be longer than {max} characters.",
+      invalidTimeZone: "Invalid trip time zone — pick another one.",
     },
   },
 

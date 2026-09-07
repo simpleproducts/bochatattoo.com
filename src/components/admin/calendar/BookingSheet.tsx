@@ -112,6 +112,7 @@ export function BookingSheet({
   busy,
   error,
   all,
+  trips,
   onClose,
   onSubmitForm,
   onRequestEdit,
@@ -299,20 +300,26 @@ export function BookingSheet({
         viewerTz={tz}
         studioTz={studioTz}
         /*
-         * The composer opens in the zone the admin last saved — a week of
-         * Berlin guest-spot bookings is one zone set once — while the day it
+         * The composer opens in the zone the DAY is in, not the zone the
+         * session is in: a trip covering `state.dayKey` wins, and
+         * `defaultTimeZone` — the zone the admin last saved — is only the
+         * fallback for a day no trip claims. A week of Berlin guest-spot
+         * bookings then needs no zone set at all, and the one typed on the
+         * Monday after the trip ends still opens in Buenos Aires. The day it
          * opens on and "is that today" stay the reader's frame, because those
          * are the squares that were just tapped.
          */
         initial={emptyFormValues(
           state.dayKey,
           defaultTimeZone,
+          trips,
           dayKeyOf(new Date().toISOString(), tz),
         )}
         busy={busy}
         error={error}
         submitLabel={dict.calendar.form.create}
         others={all}
+        trips={trips}
         onSubmit={onSubmitForm}
         onCancel={requestClose}
         dict={dict}
@@ -332,6 +339,9 @@ export function BookingSheet({
         error={error}
         submitLabel={dict.calendar.form.saveChanges}
         others={all.filter((a) => a.id !== appt.id)}
+        /* The warning's source, and nothing else here: `formValuesFrom` above
+           takes no trips, so the zone that opens is the one on the record. */
+        trips={trips}
         onSubmit={onSubmitForm}
         onCancel={requestClose}
         dict={dict}

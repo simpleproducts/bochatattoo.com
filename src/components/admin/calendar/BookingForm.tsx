@@ -20,6 +20,15 @@
  * Overlaps are a WARNING and never a block. Two people in the studio at once
  * is sometimes deliberate (a touch-up during a long session), and a calendar
  * that refuses the booking Bocha actually made is a calendar he stops using.
+ *
+ * A trip disagreeing with the chosen zone is a warning on exactly those terms,
+ * in the same place and the same weight. A date inside "Berlín 10-20 marzo"
+ * booked in Buenos Aires hours is usually a slip, but it is a remote consult
+ * often enough — and the form has no way to tell the two apart, so it asks.
+ * What it never does is fix it: `values.timeZone` is only ever set by the admin
+ * touching the select, because silently rewriting the stored zone of a booking
+ * being edited for some unrelated reason is how a session moves and nobody
+ * finds out until the client arrives.
  */
 import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
@@ -40,6 +49,7 @@ import {
   zoneAbbrev,
 } from "@/lib/booking-time";
 import { timeZoneOptions, type TimeZoneOption } from "@/lib/timezone-options";
+import { tripForDate } from "@/lib/trips-types";
 import {
   DURATION_CHIPS,
   parseDeposit,
@@ -158,6 +168,7 @@ export function BookingForm({
   error,
   submitLabel,
   others,
+  trips,
   onSubmit,
   onCancel,
   dict,
@@ -207,6 +218,22 @@ export function BookingForm({
         overlaps(slot.startsAt, slot.endsAt, o.startsAt, o.endsAt),
     );
   }, [slot, others]);
+
+  /**
+   * The trip governing the typed date, but only when it disagrees with the
+   * typed zone — `null` is "nothing to say", which covers both the days that
+   * are not a trip and the days where the two already agree.
+   *
+   * Derived from `values` on every render rather than remembered in state, so
+   * correcting either half clears it on the same keystroke that fixes it: move
+   * the date out of the trip, or pick the trip's zone in the select, and the
+   * line is gone. A half-typed or empty date matches no trip and so warns
+   * about nothing, the same way the echo line above goes quiet.
+   */
+  const tripMismatch = useMemo(() => {
+    const trip = tripForDate(trips, values.date);
+    return trip && trip.timeZone !== values.timeZone ? trip : null;
+  }, [trips, values.date, values.timeZone]);
 
   const contactOk = hasContact(toApiSeed(values));
   /**
@@ -366,6 +393,22 @@ export function BookingForm({
               .replace("{name}", bookingLabel(o))}
           </p>
         ))}
+
+        {/*
+          Same element, same colour, same line of the block as the overlap
+          warning above, because it is the same kind of statement: a question
+          about this slot, not a verdict on it. It does not touch `busy` or the
+          submit guard — a session booked for the week after the trip ends, or
+          a call taken from Berlin with a client in Buenos Aires, is a perfectly
+          good answer, and only the admin knows which one this is.
+        */}
+        {tripMismatch && (
+          <p className="font-mono text-[10px] text-status-partial break-words">
+            {dict.trips.zoneMismatch
+              .replace("{trip}", tripMismatch.label)
+              .replace("{tz}", values.timeZone)}
+          </p>
+        )}
       </div>
 
       {/*

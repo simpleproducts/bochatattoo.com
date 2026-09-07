@@ -58,12 +58,14 @@ import type {
   BookingEmailKind,
   BookingId,
 } from "@/lib/bookings-types";
+import type { Trip } from "@/lib/trips-types";
 import type { Locale } from "@/i18n/config";
 import type { AdminDictionary } from "@/i18n/admin";
 import { AgendaList } from "./AgendaList";
 import { BookingSheet } from "./BookingSheet";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { MonthGrid } from "./MonthGrid";
+import { TripsPanel, type TripDraft } from "./TripsPanel";
 import {
   FORM_TZ_STORAGE_KEY,
   toApiDeposit,
@@ -80,6 +82,13 @@ import {
 export type AdminCalendarProps = {
   /** "YYYY-MM" -> that month's appointments, sorted by start. Server-rendered. */
   initialMonths: Record<string, AdminAppointment[]>;
+  /**
+   * Every trip, sorted by startDate. Server-rendered too, and unlike the months
+   * it is the WHOLE list every time: there are a handful a year and they all
+   * live in one document, so there is no window to page and nothing here ever
+   * has to fetch a trip the server did not send.
+   */
+  initialTrips: Trip[];
   studioTimeZone: string;
   /** `?b=<id>` from the deep link in Bocha's notification email. */
   initialSelectedId?: string;
@@ -95,6 +104,24 @@ export type AdminCalendarProps = {
 };
 
 type ApptMap = Record<BookingId, AdminAppointment>;
+
+/**
+ * What a write route answers with, read through one type because there is one
+ * write path. Every field is optional: these are half a dozen routes' bodies,
+ * and each fills in only the part of this that its own operation is about — a
+ * DELETE fills in none of it and is still a success.
+ */
+type WriteResult = {
+  appointment?: AdminAppointment;
+  trip?: Trip;
+  /**
+   * Set by a write route whose month-index update was swallowed. Every index
+   * write outside the reindex route is best-effort, so this flag is the only
+   * signal the admin gets that a booking may have just gone missing from the
+   * calendar. A route that does not report it simply never raises the warning.
+   */
+  indexWarning?: boolean;
+};
 
 const DESKTOP_MQ = "(min-width: 768px)";
 
@@ -164,6 +191,22 @@ function mergeMonths(
     for (const appt of list) next[appt.id] = appt;
   }
   return next;
+}
+
+/**
+ * Fold one saved trip back into the list, replacing any earlier version of
+ * itself, and re-sort the way `listTrips()` sorts. The sort is the point: the
+ * refresh that follows a write lands a moment later with the server's own
+ * order, and a row that appeared at the bottom and then jumped would read as a
+ * second save.
+ */
+function mergeTrip(prev: Trip[], trip: Trip): Trip[] {
+  const next = prev.filter((t) => t.id !== trip.id);
+  next.push(trip);
+  // Zero-padded ISO dates sort chronologically as plain strings; these all are.
+  return next.sort((a, b) =>
+    a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : 0,
+  );
 }
 
 function flatten(months: Record<string, AdminAppointment[]>): ApptMap {
@@ -283,6 +326,7 @@ function readLastFormTz(): string | null {
 
 export function AdminCalendar({
   initialMonths,
+  initialTrips,
   studioTimeZone,
   initialSelectedId,
   configured,
@@ -296,6 +340,7 @@ export function AdminCalendar({
   const [loadedMonths, setLoadedMonths] = useState<Set<string>>(
     () => new Set(Object.keys(initialMonths)),
   );
+  const [trips, setTrips] = useState<Trip[]>(initialTrips);
   const [cursor, setCursor] = useState<string>(() =>
     initialCursor(initialMonths, initialSelectedId, studioTimeZone),
   );
@@ -304,6 +349,7 @@ export function AdminCalendar({
   /** `null` means "whatever today is"; a string is a day the admin picked. */
   const [pickedDayKey, setPickedDayKey] = useState<string | null>(null);
   const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
+  const [tripsOpen, setTripsOpen] = useState(false);
   /**
    * Bumped on every dismissal, so an in-flight save can tell whether the sheet
    * it would re-open is still the one the admin was looking at.
@@ -472,6 +518,19 @@ export function AdminCalendar({
     setLoadedMonths((prev) => new Set([...prev, ...served]));
   }
 
+  // The same pattern for trips, and a REPLACEMENT rather than a merge: the
+  // server sends every trip there is, so what it just said is the whole truth
+  // and the local list — which may hold a trip folded in a moment ago, or one
+  // deleted elsewhere — has nothing left to contribute. Tracked with its own
+  // "served" marker because the optimistic fold below makes `trips` diverge
+  // from `initialTrips` on purpose; comparing those two directly would undo it
+  // on the very next render.
+  const [servedTrips, setServedTrips] = useState(initialTrips);
+  if (servedTrips !== initialTrips) {
+    setServedTrips(initialTrips);
+    setTrips(initialTrips);
+  }
+
   /* ── months the server did not send ── */
 
   useEffect(() => {
@@ -611,32 +670,29 @@ export function AdminCalendar({
 
   /**
    * The single write path. Errors surface as `readError`'s message; a success
-   * folds the returned appointment straight into the map so the open sheet
-   * updates before the refresh lands, then re-runs the server component.
+   * folds whatever the route returned straight into the local state so the
+   * open sheet or panel updates before the refresh lands, then re-runs the
+   * server component.
+   *
+   * It answers with the parsed body, or `null` for a failure — which is the
+   * only signal a caller gets that the write did not happen, and the one a
+   * DELETE (whose body names nothing) has to go on.
    */
   const call = useCallback(
-    async (path: string, init?: RequestInit): Promise<AdminAppointment | null> => {
+    async (path: string, init?: RequestInit): Promise<WriteResult | null> => {
       setBusy(true);
       setErr(null);
       try {
         const res = await fetch(path, { cache: "no-store", ...init });
         if (!res.ok) throw new Error(await readError(res));
-        const data = (await res.json()) as {
-          appointment?: AdminAppointment;
-          /**
-           * Set by a write route whose month-index update was swallowed. Every
-           * index write outside the reindex route is best-effort, so this flag
-           * is the only signal the admin gets that a booking may have just
-           * gone missing from the calendar. Optional: a route that does not
-           * report it simply never raises the warning.
-           */
-          indexWarning?: boolean;
-        };
+        const data = (await res.json()) as WriteResult;
         if (data.indexWarning) setIndexWarning(true);
-        const appt = data.appointment ?? null;
+        const appt = data.appointment;
         if (appt) setById((prev) => ({ ...prev, [appt.id]: appt }));
+        const trip = data.trip;
+        if (trip) setTrips((prev) => mergeTrip(prev, trip));
         startTransition(() => router.refresh());
-        return appt;
+        return data;
       } catch (e) {
         setErr((e as Error).message);
         return null;
@@ -685,7 +741,7 @@ export function AdminCalendar({
       const epoch = sheetEpoch.current;
       void (async () => {
         if (sheet.mode === "create") {
-          const appt = await call(
+          const written = await call(
             "/api/admin/bookings",
             jsonInit("POST", {
               ...slot,
@@ -696,6 +752,7 @@ export function AdminCalendar({
               adminNotes,
             }),
           );
+          const appt = written?.appointment;
           if (appt && sheetEpoch.current === epoch) {
             setSheet({ mode: "view", id: appt.id });
           }
@@ -703,7 +760,7 @@ export function AdminCalendar({
         }
         if (sheet.mode !== "edit") return;
         const id = sheet.id;
-        const appt = await call(
+        const written = await call(
           `/api/admin/bookings/${id}`,
           jsonInit("PATCH", {
             ...slot,
@@ -713,7 +770,9 @@ export function AdminCalendar({
             adminNotes,
           }),
         );
-        if (appt && sheetEpoch.current === epoch) setSheet({ mode: "view", id });
+        if (written?.appointment && sheetEpoch.current === epoch) {
+          setSheet({ mode: "view", id });
+        }
       })();
     },
     [call, sheet, dict, rememberFormTz]
@@ -771,6 +830,58 @@ export function AdminCalendar({
     },
     [call, openId],
   );
+
+  /* ── trips ── */
+
+  /**
+   * Three writes through the one `call` path, so a refused trip lands in the
+   * same error strip — and the same panel — as a refused booking. None of them
+   * touches an appointment: a trip proposes a zone to a booking that does not
+   * exist yet and questions one that disagrees, and that is the whole of its
+   * authority. Moving a trip's dates here can never re-time a session already
+   * made, which is exactly why the panel needs no warning about it.
+   */
+  const onCreateTrip = useCallback(
+    (draft: TripDraft) => {
+      void call("/api/admin/trips", jsonInit("POST", draft));
+    },
+    [call],
+  );
+
+  const onUpdateTrip = useCallback(
+    (id: string, draft: TripDraft) => {
+      void call(`/api/admin/trips/${id}`, jsonInit("PATCH", draft));
+    },
+    [call],
+  );
+
+  /**
+   * The DELETE body names nothing, so the row is dropped on the strength of
+   * `call` having succeeded at all. Dropped here rather than optimistically
+   * before the request for the reason the booking delete does the same: a
+   * failed write must leave the trip on screen, because the error strip
+   * explaining why is no use beside a list that already acted as though it had
+   * worked.
+   */
+  const onDeleteTrip = useCallback(
+    (id: string) => {
+      void (async () => {
+        const done = await call(`/api/admin/trips/${id}`, { method: "DELETE" });
+        if (done) setTrips((prev) => prev.filter((t) => t.id !== id));
+      })();
+    },
+    [call],
+  );
+
+  const openTrips = useCallback(() => {
+    setErr(null);
+    setTripsOpen(true);
+  }, []);
+
+  const closeTrips = useCallback(() => {
+    setErr(null);
+    setTripsOpen(false);
+  }, []);
 
   /* ── the month-index repair ── */
 
@@ -870,7 +981,14 @@ export function AdminCalendar({
       ? selectedDayKey
       : `${cursor}-01`;
 
-  const strip = loadErr ?? (sheet.mode === "closed" ? err : null);
+  /**
+   * A write error belongs where the admin is looking. The sheet and the trips
+   * panel each print `err` themselves, so the strip behind them would be the
+   * same sentence twice — and, worse, one of them behind an overlay that
+   * covers it.
+   */
+  const strip =
+    loadErr ?? (sheet.mode === "closed" && !tripsOpen ? err : null);
 
   /**
    * A month with no rows is either empty or not fetched yet, and the two must
@@ -967,6 +1085,7 @@ export function AdminCalendar({
             onNext={() => goMonth(1)}
             onToday={goToday}
             onCreate={() => openCreate(defaultCreateDay)}
+            onManageTrips={openTrips}
             onReindex={onReindex}
             reindexBusy={reindexBusy}
             reindexNote={reindexNote}
@@ -978,6 +1097,7 @@ export function AdminCalendar({
               byDay={byDay}
               tz={tz}
               todayKey={todayKey}
+              trips={trips}
               locale={locale}
               dict={dict}
               onOpenAppt={openAppointment}
@@ -990,6 +1110,7 @@ export function AdminCalendar({
               byDay={byDay}
               tz={tz}
               todayKey={todayKey}
+              trips={trips}
               selectedDayKey={selectedDayKey}
               locale={locale}
               dict={dict}
@@ -1011,6 +1132,7 @@ export function AdminCalendar({
             busy={busy || isPending}
             error={err}
             all={all}
+            trips={trips}
             loadPending={missingId !== null && missingErr === null}
             loadError={missingErr}
             onRetryLoad={retryMissing}
@@ -1024,6 +1146,26 @@ export function AdminCalendar({
             onRotateLink={onRotateLink}
             onDeleteReceipt={onDeleteReceipt}
             onResend={onResend}
+          />
+
+          {/*
+            `viewerTz` here is the calendar's CURRENT viewing zone, not the
+            browser's raw one — the same value the sheet forwards to the
+            booking form's zone select, so the two selects on this screen offer
+            the same two shortcuts and "my current zone" means one thing.
+          */}
+          <TripsPanel
+            open={tripsOpen}
+            trips={trips}
+            busy={busy || isPending}
+            error={err}
+            studioTz={studioTimeZone}
+            viewerTz={tz}
+            dict={dict}
+            onClose={closeTrips}
+            onCreate={onCreateTrip}
+            onUpdate={onUpdateTrip}
+            onDelete={onDeleteTrip}
           />
         </>
       )}
