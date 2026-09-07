@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { CategoryEntry } from "@/lib/images-types";
 import type { AdminDictionary } from "@/i18n/admin";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 type Props = {
   categories: CategoryEntry[];
@@ -156,6 +157,7 @@ function CategoryRow({
   dict: AdminDictionary;
 }) {
   const [draft, setDraft] = useState(category);
+  const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const dirty =
@@ -190,8 +192,7 @@ function CategoryRow({
   }
 
   async function remove() {
-    if (!confirm(dict.categories.confirmDelete.replace("{slug}", category.slug)))
-      return;
+    setConfirming(false);
     setBusy(true);
     setErr(null);
     try {
@@ -258,12 +259,21 @@ function CategoryRow({
         <button
           type="button"
           disabled={busy}
-          onClick={remove}
+          onClick={() => setConfirming(true)}
           className="border border-red-400 text-red-400 px-2 py-1 text-[10px] uppercase tracking-[0.2em] font-mono hover:bg-red-400 hover:text-bg disabled:opacity-30"
         >
           {dict.common.delete}
         </button>
         {err ? <span className="text-red-400 text-xs">{err}</span> : null}
+        <ConfirmDialog
+          open={confirming}
+          title={dict.categories.deleteTitle}
+          body={dict.categories.confirmDelete.replace("{slug}", category.slug)}
+          confirmLabel={dict.common.delete}
+          cancelLabel={dict.common.cancel}
+          onConfirm={remove}
+          onCancel={() => setConfirming(false)}
+        />
       </td>
     </tr>
   );

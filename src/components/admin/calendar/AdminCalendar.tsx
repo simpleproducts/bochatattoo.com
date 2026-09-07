@@ -782,14 +782,6 @@ export function AdminCalendar({
             </span>
           ) : null}
           <AdminLocaleSwitcher locale={locale} label={dict.common.language} />
-          <form action="/api/admin/logout" method="post">
-            <button
-              type="submit"
-              className="text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
-            >
-              {dict.common.signOut}
-            </button>
-          </form>
         </div>
       </header>
 

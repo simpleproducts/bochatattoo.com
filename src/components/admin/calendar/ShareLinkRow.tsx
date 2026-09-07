@@ -21,6 +21,7 @@
  */
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { AdminDictionary } from "@/i18n/admin";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import type { ShareLinkRowProps } from "./contract";
 
 /** From the sheet, which got it from the page's server render. */
@@ -85,6 +86,7 @@ async function writeClipboard(text: string): Promise<boolean> {
 
 export function ShareLinkRow({ appt, busy, onRotate, dict }: Props) {
   const [linkLocale, setLinkLocale] = useState<"es" | "en">("es");
+  const [confirming, setConfirming] = useState(false);
   const [copied, setCopied] = useState(false);
   const canShare = useSyncExternalStore(subscribeNever, hasWebShare, noWebShare);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -133,8 +135,7 @@ export function ShareLinkRow({ appt, busy, onRotate, dict }: Props) {
   }
 
   function onRotateClick() {
-    const ok = window.confirm(dict.calendar.link.rotateConfirm);
-    if (ok) onRotate();
+    setConfirming(true);
   }
 
   return (
@@ -213,6 +214,20 @@ export function ShareLinkRow({ appt, busy, onRotate, dict }: Props) {
       >
         {dict.calendar.link.rotate}
       </button>
+      {confirming ? (
+        <ConfirmDialog
+          open
+          title={dict.calendar.link.rotateTitle}
+          body={dict.calendar.link.rotateConfirm}
+          confirmLabel={dict.calendar.link.rotate}
+          cancelLabel={dict.common.cancel}
+          onConfirm={() => {
+            setConfirming(false);
+            onRotate();
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
     </div>
   );
 }

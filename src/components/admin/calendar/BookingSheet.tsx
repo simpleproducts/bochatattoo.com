@@ -29,6 +29,7 @@ import type { AdminDictionary } from "@/i18n/admin";
 import { bookingLabel } from "@/lib/bookings-types";
 import type { BookingEmailKind } from "@/lib/bookings-types";
 import { dayKeyOf, durationLabel, formatDayLong } from "@/lib/booking-time";
+import { ConfirmDialog } from "@/components/admin/ConfirmDialog";
 import { BookingForm } from "./BookingForm";
 import { ReceiptPreview } from "./ReceiptPreview";
 import { ShareLinkRow } from "./ShareLinkRow";
@@ -129,10 +130,23 @@ export function BookingSheet({
 
   const discard = dict.calendar.sheet.discardConfirm;
 
+  /**
+   * Which question the dialog is asking, or null. `discard` and `discardPop`
+   * differ only in how they got here — the Back button has already consumed a
+   * history entry by the time it asks, and the popstate handler re-arms the
+   * trap before opening this, so answering either way leaves the stack sane.
+   */
+  const [pending, setPending] = useState<null | "discard" | "discardPop" | "delete">(
+    null,
+  );
+
   const requestClose = useCallback(() => {
-    if (dirtyRef.current && !window.confirm(discard)) return;
+    if (dirtyRef.current) {
+      setPending("discard");
+      return;
+    }
     onClose();
-  }, [onClose, discard]);
+  }, [onClose]);
 
   // Read through refs inside the window listeners so that a new `onClose`
   // identity does not tear down and re-arm the history trap mid-sheet. The
@@ -199,10 +213,11 @@ export function BookingSheet({
     // it for the query string.
     window.history.pushState({ bookingSheet: true }, "", window.location.href);
     const onPopState = () => {
-      if (dirtyRef.current && !window.confirm(discardRef.current)) {
-        // The entry is already gone, so re-arm the trap; otherwise the next
-        // Back press would leave the calendar entirely.
+      if (dirtyRef.current) {
+        // The entry is already gone, so re-arm the trap before asking;
+        // otherwise the next Back press would leave the calendar entirely.
         window.history.pushState({ bookingSheet: true }, "", window.location.href);
+        setPending("discardPop");
         return;
       }
       onCloseRef.current();
@@ -241,12 +256,26 @@ export function BookingSheet({
     }
   }
 
-  function confirmDelete() {
-    // Names the reversible alternative in prose; `sheet.cancelBooking` labels
-    // the button it points at, in both languages.
-    const ok = window.confirm(dict.calendar.sheet.deleteConfirm);
-    if (ok) onDelete();
-  }
+  // Names the reversible alternative in prose; `sheet.cancelBooking` labels the
+  // button it points at, in both languages.
+  const confirmDelete = () => setPending("delete");
+
+  const dialog =
+    pending === "delete"
+      ? {
+          title: dict.calendar.sheet.deleteTitle,
+          body: dict.calendar.sheet.deleteConfirm,
+          confirmLabel: dict.common.delete,
+          onConfirm: onDelete,
+        }
+      : pending
+        ? {
+            title: dict.calendar.sheet.discardTitle,
+            body: discard,
+            confirmLabel: dict.common.discard,
+            onConfirm: onClose,
+          }
+        : null;
 
   /**
    * Built before the tree so `appt` narrows properly in the edit branch — a
@@ -585,6 +614,21 @@ export function BookingSheet({
           )}
         </div>
       </div>
+
+      {dialog ? (
+        <ConfirmDialog
+          open
+          title={dialog.title}
+          body={dialog.body}
+          confirmLabel={dialog.confirmLabel}
+          cancelLabel={dict.common.cancel}
+          onConfirm={() => {
+            setPending(null);
+            dialog.onConfirm();
+          }}
+          onCancel={() => setPending(null)}
+        />
+      ) : null}
     </div>
   );
 }

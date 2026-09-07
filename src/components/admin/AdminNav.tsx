@@ -61,6 +61,12 @@ export function AdminNav({
 }) {
   return (
     <nav className="flex flex-wrap items-center gap-2 border-b border-line">
+      {/*
+        Sign out lives here, on the bar that is the same on every admin screen,
+        rather than in each page's own header. `ml-auto` pins it to the far end
+        of the row; when the tabs wrap on a narrow phone it simply wraps with
+        them instead of overlapping anything.
+      */}
       {TABS.map((tab) => {
         const className = `px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono border-b-2 transition-colors cursor-pointer ${
           tab.key === active
@@ -88,6 +94,15 @@ export function AdminNav({
           </Link>
         );
       })}
+
+      <form action="/api/admin/logout" method="post" className="ml-auto">
+        <button
+          type="submit"
+          className="px-3 py-2 text-xs uppercase tracking-[0.2em] font-mono text-muted hover:text-fg cursor-pointer"
+        >
+          {dict.common.signOut}
+        </button>
+      </form>
     </nav>
   );
 }

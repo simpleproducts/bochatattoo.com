@@ -63,6 +63,8 @@ export type AdminDictionary = {
     working: string;
     refreshing: string;
     signOut: string;
+    /** Destructive answer on the discard dialog. */
+    discard: string;
     search: string;
     category: string;
     /** Feminine in Spanish — it only ever describes an imagen or a categoría. */
@@ -101,6 +103,7 @@ export type AdminDictionary = {
     searchPlaceholder: string;
     noMatch: string;
     /** confirm() before a destructive delete. `{slug}` is the image. */
+    deleteTitle: string;
     confirmDelete: string;
   };
 
@@ -153,6 +156,7 @@ export type AdminDictionary = {
       order: string;
     };
     /** confirm() before deleting. `{slug}` is the category. */
+    deleteTitle: string;
     confirmDelete: string;
   };
 
@@ -265,11 +269,14 @@ export type AdminDictionary = {
       /** Heading when the sheet is open on an id it could not resolve. */
       fallbackTitle: string;
       /** confirm() on closing a form with unsaved edits. Two lines, \n\n apart. */
+      /** Heading of the discard dialog; discardConfirm is its body. */
+      discardTitle: string;
       discardConfirm: string;
       /**
        * confirm() before the irreversible delete. It names the reversible
        * alternative in prose — keep that phrase in step with `cancelBooking`.
        */
+      deleteTitle: string;
       deleteConfirm: string;
       notLoaded: string;
       loadingOne: string;
@@ -326,6 +333,7 @@ export type AdminDictionary = {
       whatsapp: string;
       rotate: string;
       /** confirm(): rotating kills every link already sent. */
+      rotateTitle: string;
       rotateConfirm: string;
     };
     receipt: {
@@ -337,6 +345,7 @@ export type AdminDictionary = {
       imageAlt: string;
       delete: string;
       /** confirm(). `{status}` is `status.awaitingReceipt` — the state it falls back to. */
+      deleteTitle: string;
       deleteConfirm: string;
     };
     /** The four transactional emails, keyed by BookingEmailKind. */
@@ -381,6 +390,7 @@ const adminEs: AdminDictionary = {
     working: "trabajando…",
     refreshing: "actualizando…",
     signOut: "Salir",
+    discard: "Descartar",
     search: "Buscar",
     category: "Categoría",
     hidden: "Oculta",
@@ -405,6 +415,7 @@ const adminEs: AdminDictionary = {
     noCategory: "(ninguna)",
     searchPlaceholder: "slug o texto alt",
     noMatch: "No hay imágenes que coincidan.",
+    deleteTitle: "¿Eliminar la imagen?",
     confirmDelete: "¿Eliminar {slug}? Se borran las variantes de R2.",
   },
 
@@ -444,6 +455,7 @@ const adminEs: AdminDictionary = {
       en: "EN",
       order: "Orden",
     },
+    deleteTitle: "¿Eliminar la categoría?",
     confirmDelete: '¿Eliminar la categoría "{slug}"?',
   },
 
@@ -515,8 +527,10 @@ const adminEs: AdminDictionary = {
       newTitle: "Turno nuevo",
       editTitle: "Editar turno",
       fallbackTitle: "Turno",
+      discardTitle: "¿Descartar los cambios?",
       discardConfirm:
         "¿Descartar los cambios de este turno?\n\nTodavía no se guardó nada.",
+      deleteTitle: "¿Eliminar el turno?",
       deleteConfirm:
         "¿Eliminar este turno para siempre?\n\nSe borran el registro y el " +
         "comprobante, y el link deja de andar. Si solo querés liberar el " +
@@ -563,6 +577,7 @@ const adminEs: AdminDictionary = {
       share: "Compartir",
       whatsapp: "WhatsApp",
       rotate: "Rotar link",
+      rotateTitle: "¿Generar un link nuevo?",
       rotateConfirm:
         "¿Rotar este link?\n\nTodos los links que ya mandaste para este turno " +
         "dejan de funcionar al instante — WhatsApp, mail, lo que sea. Vas a " +
@@ -574,6 +589,7 @@ const adminEs: AdminDictionary = {
       pdf: "PDF",
       imageAlt: "Comprobante de transferencia: {filename}",
       delete: "Eliminar comprobante",
+      deleteTitle: "¿Eliminar el comprobante?",
       deleteConfirm:
         "¿Eliminar este comprobante?\n\nEl archivo se borra del storage y el " +
         "turno vuelve a {status}, así el cliente puede subir otro.",
@@ -618,6 +634,7 @@ const adminEn: AdminDictionary = {
     working: "working…",
     refreshing: "refreshing…",
     signOut: "Sign out",
+    discard: "Discard",
     search: "Search",
     category: "Category",
     hidden: "Hidden",
@@ -642,6 +659,7 @@ const adminEn: AdminDictionary = {
     noCategory: "(none)",
     searchPlaceholder: "slug or alt text",
     noMatch: "No images match.",
+    deleteTitle: "Delete this image?",
     confirmDelete: "Delete {slug}? This deletes the variants from R2.",
   },
 
@@ -681,6 +699,7 @@ const adminEn: AdminDictionary = {
       en: "EN",
       order: "Order",
     },
+    deleteTitle: "Delete this category?",
     confirmDelete: 'Delete category "{slug}"?',
   },
 
@@ -752,8 +771,10 @@ const adminEn: AdminDictionary = {
       newTitle: "New appointment",
       editTitle: "Edit appointment",
       fallbackTitle: "Appointment",
+      discardTitle: "Discard changes?",
       discardConfirm:
         "Discard your changes to this booking?\n\nNothing has been saved yet.",
+      deleteTitle: "Delete this appointment?",
       deleteConfirm:
         "Delete this booking permanently?\n\nThe record and any receipt are " +
         "erased and the link dies. Use Cancel booking instead if you only want " +
@@ -800,6 +821,7 @@ const adminEn: AdminDictionary = {
       share: "Share",
       whatsapp: "WhatsApp",
       rotate: "Rotate link",
+      rotateTitle: "Issue a new link?",
       rotateConfirm:
         "Rotate this link?\n\nEvery link already sent for this booking stops " +
         "working immediately — WhatsApp, email, anything. You will have to send " +
@@ -811,6 +833,7 @@ const adminEn: AdminDictionary = {
       pdf: "PDF",
       imageAlt: "Transfer receipt: {filename}",
       delete: "Delete receipt",
+      deleteTitle: "Delete this receipt?",
       deleteConfirm:
         "Delete this receipt?\n\nThe file is erased from storage and the " +
         "booking drops back to {status}, so the client can upload another one.",

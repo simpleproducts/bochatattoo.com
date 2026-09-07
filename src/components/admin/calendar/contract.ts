@@ -169,6 +169,9 @@ export type BookingSheetProps = {
 
 /* ─────────────────────────── form <-> API ─────────────────────────── */
 
+/** A fresh appointment's length, in hours. Matches the 4h duration chip. */
+const DEFAULT_DURATION_HOURS = 4;
+
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -190,11 +193,15 @@ export function emptyFormValues(
     const currentHour = Number(time.slice(0, 2));
     startHour = Math.max(12, Math.min(22, currentHour + 1));
   }
+  // Four hours is the studio's normal session, so it is what a fresh composer
+  // opens on. Wrapping rather than clamping: a 22:00 start has to become
+  // 02:00 the next day, and a clamp would silently offer a one-hour slot.
+  const endHour = startHour + DEFAULT_DURATION_HOURS;
   return {
     date: dayKey,
     startTime: `${pad2(startHour)}:00`,
-    endTime: `${pad2(Math.min(23, startHour + 2))}:00`,
-    endsNextDay: false,
+    endTime: `${pad2(endHour % 24)}:00`,
+    endsNextDay: endHour >= 24,
     name: "",
     email: "",
     instagram: "",
