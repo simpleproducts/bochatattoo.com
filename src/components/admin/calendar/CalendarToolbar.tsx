@@ -17,6 +17,7 @@
  * should.
  */
 import { useMemo, useSyncExternalStore } from "react";
+import { formatCapitalized } from "@/lib/booking-time";
 import { STATUS_META } from "@/lib/booking-status";
 import type { BookingStatus } from "@/lib/bookings-types";
 import type { Locale } from "@/i18n/config";
@@ -117,7 +118,7 @@ function periodLabel(monthKey: string, locale: Locale): string {
     });
     periodFormatters.set(locale, fmt);
   }
-  return fmt.format(new Date(`${monthKey}-01T12:00:00Z`));
+  return formatCapitalized(fmt, new Date(`${monthKey}-01T12:00:00Z`));
 }
 
 function Legend({ dict }: { dict: AdminDictionary }) {

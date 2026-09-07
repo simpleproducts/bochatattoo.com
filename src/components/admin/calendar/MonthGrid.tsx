@@ -36,7 +36,7 @@
  * a seven-tuple in that order for exactly that reason.
  */
 import { useState } from "react";
-import { monthGridDayKeys } from "@/lib/booking-time";
+import { monthGridDayKeys, formatCapitalized } from "@/lib/booking-time";
 import type { AdminAppointment } from "@/lib/bookings-types";
 import { tripForDate, type Trip } from "@/lib/trips-types";
 import type { Locale } from "@/i18n/config";
@@ -80,7 +80,7 @@ function dayMonthLabel(dayKey: string, locale: Locale): string {
     });
     dayMonthFormatters.set(locale, fmt);
   }
-  return fmt.format(new Date(`${dayKey}T12:00:00Z`));
+  return formatCapitalized(fmt, new Date(`${dayKey}T12:00:00Z`));
 }
 
 function countPending(appts: AdminAppointment[]): number {
