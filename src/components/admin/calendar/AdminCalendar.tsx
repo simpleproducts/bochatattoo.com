@@ -59,6 +59,8 @@ import {
   toApiDeposit,
   toApiSeed,
   toApiSlot,
+  TZ_AUTO,
+  TZ_STORAGE_KEY,
   VIEW_STORAGE_KEY,
   type BookingFormValues,
   type CalendarView,
@@ -226,6 +228,17 @@ function pendingLabel(n: number, dict: AdminDictionary): string {
   return template.replace("{count}", String(n));
 }
 
+/** Reads the persisted zone once. Storage can throw in private mode. */
+function readStoredTz(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(TZ_STORAGE_KEY);
+    return stored && stored !== TZ_AUTO ? stored : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AdminCalendar({
   initialMonths,
   studioTimeZone,
@@ -271,7 +284,35 @@ export function AdminCalendar({
   );
   const view = viewOverride ?? preferredView;
 
-  const tz = resolveTimeZone(mounted);
+  /**
+   * The zone every time on this screen is rendered in.
+   *
+   * Defaults to following the browser, which is what a guest spot abroad wants
+   * — but "abroad" is exactly when an admin needs to think in studio hours
+   * instead, so the choice is explicit and persisted. `null` means follow the
+   * browser; anything else is an IANA id the admin picked.
+   *
+   * Read from localStorage in an effect rather than during render: the server
+   * has no access to it, and reading it in the initialiser would make the first
+   * client render disagree with the HTML.
+   */
+  const viewerTz = resolveTimeZone(mounted);
+  const [storedTz, setStoredTz] = useState<string | null>(readStoredTz);
+  // Held back until `mounted`, for the same reason resolveTimeZone is: the
+  // server cannot know this value, so using it in the hydrating render would
+  // make the first client paint disagree with the HTML.
+  const tzChoice = mounted ? storedTz : null;
+
+  const setTimeZone = useCallback((next: string | null) => {
+    setStoredTz(next);
+    try {
+      window.localStorage.setItem(TZ_STORAGE_KEY, next ?? TZ_AUTO);
+    } catch {
+      // Same as above: the choice still applies for this session.
+    }
+  }, []);
+
+  const tz = tzChoice ?? viewerTz;
 
   /* ── the day clock ── */
 
@@ -832,6 +873,10 @@ export function AdminCalendar({
             view={view}
             tz={tz}
             tzAbbrev={tzAbbrev}
+            viewerTz={viewerTz}
+            studioTz={studioTimeZone}
+            tzAuto={tzChoice === null}
+            onTimeZone={setTimeZone}
             locale={locale}
             dict={dict}
             onView={changeView}

@@ -29,6 +29,15 @@ export type CalendarView = "month" | "agenda";
 export const VIEW_STORAGE_KEY = "ba_cal_view";
 
 /**
+ * Persisted timezone choice. Absent, or the literal "auto", means "follow this
+ * browser" — which is the default and what a guest spot abroad wants. Any other
+ * value is an IANA id the admin picked explicitly, and it survives reloads so a
+ * studio-time preference does not have to be re-set every visit.
+ */
+export const TZ_STORAGE_KEY = "ba_cal_tz";
+export const TZ_AUTO = "auto";
+
+/**
  * What the sheet is showing. `create` carries the day the admin tapped so the
  * composer opens on the right date; `view`/`edit` carry an id and read the
  * appointment out of the calendar's map, so a refresh updates the open sheet.
@@ -88,8 +97,17 @@ export type CalendarToolbarProps = {
   /** "YYYY-MM" — the month the calendar is currently parked on. */
   monthKey: string;
   view: CalendarView;
+  /** The zone every time on screen is rendered in. */
   tz: string;
   tzAbbrev: string;
+  /** This browser's own zone, offered as the "follow me" option. */
+  viewerTz: string;
+  /** The studio's zone, offered so an admin abroad can think in studio hours. */
+  studioTz: string;
+  /** True while following the browser rather than an explicit pick. */
+  tzAuto: boolean;
+  /** `null` restores "follow this browser". */
+  onTimeZone: (tz: string | null) => void;
   onView: (v: CalendarView) => void;
   onPrev: () => void;
   onNext: () => void;
