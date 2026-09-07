@@ -28,6 +28,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { BookingFlow } from "@/components/booking/BookingFlow";
 import { BookingInvalid } from "@/components/booking/BookingInvalid";
+import { hasPaymentReturnParams } from "@/components/booking/contract";
 import { getDictionary } from "@/i18n";
 import { toPublicView, verifyBookingAccess } from "@/lib/bookings-store";
 import type {
@@ -35,6 +36,7 @@ import type {
   PublicBookingView,
 } from "@/lib/bookings-types";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { loadPublicPaymentSettings } from "@/lib/settings-store";
 
 const locale = "en" as const;
 const dict = getDictionary(locale);
@@ -57,12 +59,18 @@ type Resolved =
  * Kept out of the component, and JSX-free, for one blunt reason: React does not
  * render a returned element inside the call that built it, so a `try` wrapped
  * around JSX catches nothing. The I/O lives here; the rendering lives there.
+ *
+ * The settings are read only AFTER the token has proven itself. Sequential
+ * rather than parallel on purpose: a burst of forged links must not cost a
+ * second R2 GET each, and the reader who holds a real one waits for exactly one
+ * extra read.
  */
 async function resolve(token: string): Promise<Resolved> {
   try {
     const access = await verifyBookingAccess(token);
     if (!access.ok) return { ok: false, reason: access.reason };
-    return { ok: true, view: toPublicView(access.record) };
+    const settings = await loadPublicPaymentSettings();
+    return { ok: true, view: toPublicView(access.record, settings) };
   } catch (err) {
     // An unset bucket, a missing signing key, a sulking R2. None of it is
     // something the reader can act on, and none of it may reach their screen.
@@ -73,10 +81,18 @@ async function resolve(token: string): Promise<Resolved> {
 
 export default async function BookPageEn({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { token } = await params;
+  // MercadoPago's back_url lands here. Read for ONE purpose — telling the
+  // payment step that this reader has just come back from a checkout, so it
+  // can say it is waiting instead of pretending nothing happened. It is a URL
+  // the client controls, so it proves nothing about the money; the webhook is
+  // the only thing that marks a booking paid.
+  const returnedFromPayment = hasPaymentReturnParams(await searchParams);
 
   const refuse = (reason: BookingAccessReason) => (
     <main className={SHELL}>
@@ -105,6 +121,7 @@ export default async function BookPageEn({
       token={token}
       locale={locale}
       dict={dict}
+      returnedFromPayment={returnedFromPayment}
     />
   );
 }

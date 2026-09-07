@@ -156,6 +156,7 @@ export function BookingSheet({
   onCancelToggle,
   onDelete,
   onRotateLink,
+  onUploadReceipt,
   onDeleteReceipt,
   onResend,
   dict,
@@ -602,6 +603,7 @@ export function BookingSheet({
               <ReceiptPreview
                 appt={appt}
                 busy={busy}
+                onUpload={onUploadReceipt}
                 onDelete={onDeleteReceipt}
                 dict={dict}
                 locale={locale}

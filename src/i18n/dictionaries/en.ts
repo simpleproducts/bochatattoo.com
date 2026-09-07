@@ -167,7 +167,12 @@ const en: Dictionary = {
       yourTime: "Your local time",
       deposit: "Deposit",
     },
-    rail: { details: "Your details", terms: "Terms", receipt: "Receipt" },
+    rail: {
+      details: "Your details",
+      terms: "Terms",
+      receipt: "Receipt",
+      payment: "Payment",
+    },
     form: {
       eyebrow: "Your details",
       intro: "Fill in your details to hold the slot. We'll confirm by email.",
@@ -208,6 +213,22 @@ const en: Dictionary = {
       amount: "Amount",
       copy: "copy",
       copied: "copied ✓",
+      chooseTitle: "How would you like to pay the deposit?",
+      methods: {
+        mercadopago: {
+          label: "MercadoPago",
+          hint: "Pay now and the appointment is confirmed right away.",
+        },
+        transfer: {
+          label: "Bank transfer",
+          hint: "Transfer from your bank, then upload the receipt here.",
+        },
+      },
+      mercadopago: {
+        cta: "Pay with MercadoPago",
+        redirect: "We'll take you to MercadoPago and bring you back here.",
+        pending: "Waiting for MercadoPago to confirm the payment…",
+      },
     },
     receipt: {
       eyebrow: "Transfer receipt",
@@ -231,6 +252,12 @@ const en: Dictionary = {
       sentTo: "We sent your confirmation to",
       addToCalendar: "Add to calendar",
       calendarTitle: "Appointment with Bocha",
+      paid: {
+        body:
+          "Your deposit is paid — there's nothing else to send. See you at " +
+          "{studio}. Any questions, {contact}.",
+        received: "Payment received",
+      },
     },
     invalid: {
       expired: "This link has expired.",
@@ -259,6 +286,9 @@ const en: Dictionary = {
       tooManyAttempts: "Too many attempts. Write to us and we'll sort it out.",
       conflict: "The terms were updated. Please reload the page.",
       missingContact: "We need your email or your Instagram.",
+      paymentFailed: "We couldn't start the payment. Try again in a moment.",
+      paymentRejected:
+        "MercadoPago declined the payment. Try again with another method.",
     },
   },
 };

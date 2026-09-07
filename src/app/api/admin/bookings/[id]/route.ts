@@ -4,8 +4,8 @@
  * The important handler is PATCH, and the important thing about PATCH is
  * everything it does NOT write. An admin edit touches the slot, the appointment's
  * time zone, the seed, the deposit, the notes and the cancel flag — and nothing
- * else. `client`,
- * `receipt`, `counters`, `emails` and `tokenEpoch` are copied across from the
+ * else. `client`, `receipt`, `payment`, `counters`, `emails` and `tokenEpoch`
+ * are copied across from the
  * record the mutator was handed, so a save from the sheet can never erase
  * `termsAcceptedAt`. That field is the only consent evidence this system has,
  * the client writes it from a different browser minutes later, and losing it is
@@ -13,6 +13,12 @@
  * The next record is therefore built field by field rather than by spreading:
  * a field added to BookingRecord later must be typed out here before it can
  * ride along on an admin write.
+ *
+ * That rule has already been paid for once. `payment` arrived with MercadoPago
+ * and was NOT typed out here, and because it is optional on BookingRecord the
+ * compiler had nothing to say: every admin edit of a paid booking silently
+ * dropped the deposit and walked the booking back from green to amber. Any
+ * future optional field carries exactly the same trap.
  *
  * The mutator is also PURE — it is re-run from scratch on every CAS retry, so
  * every value it needs (the validated patch, the cancellation timestamp) is
@@ -445,6 +451,14 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       // Never from an admin PATCH. See the header block.
       client: current.client,
       receipt: current.receipt,
+      // Carried across for the same reason as `receipt`, and with more at
+      // stake: this is the studio's only record that a deposit arrived, and
+      // dropping it here would silently un-pay the booking. Status is derived,
+      // so a rescheduled MercadoPago booking would fall from green back to
+      // amber and start asking the client for a comprobante they do not owe —
+      // while the provider payment id needed to find that money in the
+      // MercadoPago account went with it. Only the webhook writes this field.
+      payment: current.payment,
       tokenEpoch: current.tokenEpoch,
       counters: current.counters,
       emails: current.emails,

@@ -72,6 +72,7 @@ import {
 import { deletePrivate, putPrivateBytes, BookingsNotConfiguredError } from "@/lib/r2-private";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { sniffReceipt, type SniffedReceipt } from "@/lib/receipt-validate";
+import { loadPublicPaymentSettings } from "@/lib/settings-store";
 
 export const runtime = "nodejs";
 /** A 4 MB upload plus a bucket write plus two Brevo calls, behind one tap. */
@@ -239,7 +240,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     // could not act on and which no reload of the page would have produced.
     if (prepared.ok && record.receipt?.key === prepared.key) {
       return NextResponse.json(
-        { ok: true, view: toPublicView(record) },
+        { ok: true, view: toPublicView(record, await loadPublicPaymentSettings()) },
         { headers: NO_STORE },
       );
     }
@@ -253,7 +254,10 @@ export async function POST(req: Request, ctx: RouteContext) {
     // upload error under a "receipt missing" rail.
     if (deriveStatus(record) === "confirmed") {
       return NextResponse.json(
-        { error: "booking-locked", view: toPublicView(record) },
+        {
+          error: "booking-locked",
+          view: toPublicView(record, await loadPublicPaymentSettings()),
+        },
         { status: 409, headers: NO_STORE },
       );
     }
@@ -349,8 +353,11 @@ export async function POST(req: Request, ctx: RouteContext) {
       await logEmails(updated, ["ownerConfirmed", "clientConfirmed"]);
     }
 
+    // Past the commit and past the mails, so this must not throw: see the
+    // helper. A 500 here would tell a client their comprobante failed to
+    // upload when the booking is already holding it.
     return NextResponse.json(
-      { ok: true, view: toPublicView(updated) },
+      { ok: true, view: toPublicView(updated, await loadPublicPaymentSettings()) },
       { headers: NO_STORE },
     );
   } catch (err) {

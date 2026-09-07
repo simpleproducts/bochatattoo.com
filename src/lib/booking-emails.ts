@@ -34,6 +34,23 @@
  * the size and the upload time plus a deep link into the admin calendar, which
  * sits behind the admin session — that is the only path to the bytes.
  *
+ * TWO WAYS A DEPOSIT ARRIVES, AND THE MAIL SAYS WHICH. A transfer leaves a
+ * receipt; a MercadoPago payment leaves `record.payment` and NO receipt at all,
+ * because its webhook is what confirms it. So the confirmation mails do not
+ * report "the receipt" — they report the deposit, from whichever of the two
+ * facts the record actually holds, and a client who paid through MercadoPago is
+ * never told they still owe a comprobante. The provider's payment id and the
+ * amount it actually charged go to the OWNER only: they are what the studio
+ * types into their MercadoPago account to find the payment, and the client
+ * already has MercadoPago's own receipt for the same transaction.
+ *
+ * ADDRESSES COME FROM THE SETTINGS DOCUMENT, resolved once per batch in
+ * `sendBookingEmails` and handed down — sender to `sendTransactional`, transfer
+ * details to the builder that prints them. The builders stay pure functions of
+ * a record: they do no I/O, so any of them can be rendered in a test or a
+ * preview without a bucket. An empty settings field means "fall back" (to the
+ * env var, then to a constant), never "send from nothing".
+ *
  * COPY LIVES HERE, NOT IN THE DICTIONARY. `dict.booking` is typed for the
  * client page and every string in it is rendered by a React component; email
  * copy is a different medium (no JSX, a mandatory plain-text twin, an
@@ -52,7 +69,6 @@
  * offers a Resend.
  */
 import "server-only";
-import { PAYMENT_DETAILS, PAYMENT_ENABLED } from "@/config/payment";
 import type { Locale } from "@/i18n/config";
 import { bookingLinks, mintBookingToken } from "./booking-token";
 import {
@@ -66,15 +82,25 @@ import {
   bookingLabel,
   type BookingEmailKind,
   type BookingEmailLog,
+  type BookingPayment,
   type BookingRecord,
-  type Currency,
 } from "./bookings-types";
 import {
+  DEFAULT_SENDER_NAME,
   esc,
   sendTransactional,
   type Recipient,
+  type Sender,
   type TransactionalMessage,
 } from "./email";
+import { loadSettings } from "./settings-store";
+import {
+  DEFAULT_SETTINGS,
+  type EmailSettings,
+  type PaymentMethod,
+  type Settings,
+  type TransferSettings,
+} from "./settings-types";
 import {
   INSTAGRAM_DM_URL,
   SITE_EMAIL,
@@ -188,12 +214,19 @@ function stamp(utcIso: string, tz: string, locale: Locale): string {
 /**
  * "30.000 ARS". Deliberately not `style: "currency"`: that renders ARS as a
  * bare "$", which is the one symbol an English-speaking client reads as USD.
+ *
+ * `currency` is a plain string rather than `Currency` because the second caller
+ * is a payment, where the code is MercadoPago's report of what it charged and
+ * not one of our three. Printing it verbatim is the point: an amount whose code
+ * we did not recognise must still be shown exactly as the provider stated it.
  */
-function money(amount: number, currency: Currency, locale: Locale): string {
+function money(amount: number, currency: string, locale: Locale): string {
   const digits = new Intl.NumberFormat(locale === "en" ? "en-GB" : "es-AR", {
     maximumFractionDigits: 2,
   }).format(amount);
-  return `${digits} ${currency}`;
+  // A provider can report an amount without a code. "30.000" alone is still a
+  // number the studio can match against their account; "30.000 undefined" is not.
+  return currency ? `${digits} ${currency}` : digits;
 }
 
 function fileSize(bytes: number): string {
@@ -347,11 +380,18 @@ type ClientCopy = {
   eyebrowSubmitted: string;
   titleSubmitted: string;
   leadSubmitted: string;
+  /** When the transfer block is printed below it: the deposit goes to an account. */
   nextStep: string;
+  /** When it is not — MercadoPago only, or nothing configured. Names no method. */
+  nextStepPay: string;
+  /** Replaces both of the above once `record.payment` exists. Nothing is owed. */
+  nextStepPaid: string;
   payEyebrow: string;
   eyebrowConfirmed: string;
   titleConfirmed: string;
   leadConfirmed: string;
+  /** The same line for a booking confirmed by a payment, which has no receipt. */
+  leadConfirmedPaid: string;
   /** Carries {studio} and {contact} placeholders — see outroHtml/outroText. */
   outroConfirmed: string;
   studioLink: string;
@@ -366,11 +406,15 @@ type ClientCopy = {
     time: string;
     duration: string;
     deposit: string;
+    /** How the deposit arrived. The row only exists once one of them has. */
+    payment: string;
     alias: string;
     cbu: string;
     holder: string;
     bank: string;
   };
+  /** Keyed by BookingPayment["method"], so the union is what fills this in. */
+  methods: Record<PaymentMethod, string>;
 };
 
 const CLIENT_COPY: Record<Locale, ClientCopy> = {
@@ -385,10 +429,15 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     nextStep:
       "Falta un paso: transferí la seña y subí el comprobante desde tu link privado. " +
       "Cuando lo recibamos, el turno queda confirmado.",
+    nextStepPay:
+      "Falta un paso: pagá la seña desde tu link privado. " +
+      "Cuando la recibamos, el turno queda confirmado.",
+    nextStepPaid: "Ya recibimos tu pago: no falta nada más.",
     payEyebrow: "Datos para transferir",
     eyebrowConfirmed: "Turno confirmado",
     titleConfirmed: "Listo, tu turno está confirmado",
     leadConfirmed: "Recibimos tu comprobante. Nos vemos el {date} a las {time}.",
+    leadConfirmedPaid: "Recibimos tu pago. Nos vemos el {date} a las {time}.",
     outroConfirmed: "Nos vemos en {studio}. Cualquier cosa, {contact}.",
     studioLink: "el estudio",
     contactLink: "escribinos",
@@ -402,11 +451,14 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
       time: "Horario",
       duration: "Duración",
       deposit: "Seña",
+      payment: "Pago",
       alias: "Alias",
       cbu: "CBU",
       holder: "Titular",
       bank: "Banco",
     },
+    // A brand name is a brand name in both languages; only the bank line moves.
+    methods: { mercadopago: "MercadoPago", transfer: "Transferencia bancaria" },
   },
   en: {
     subjectSubmitted: "Your appointment with Bocha · {date}",
@@ -419,10 +471,15 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     nextStep:
       "One step left: send the deposit and upload the receipt from your private link. " +
       "Once we have it, the appointment is confirmed.",
+    nextStepPay:
+      "One step left: pay the deposit from your private link. " +
+      "Once we have it, the appointment is confirmed.",
+    nextStepPaid: "Your payment is in — there's nothing else to do.",
     payEyebrow: "Transfer details",
     eyebrowConfirmed: "Appointment confirmed",
     titleConfirmed: "You're all set",
     leadConfirmed: "We got your receipt. See you on {date} at {time}.",
+    leadConfirmedPaid: "We got your payment. See you on {date} at {time}.",
     outroConfirmed: "See you at {studio}. Any questions, {contact}.",
     studioLink: "the studio",
     contactLink: "write to us",
@@ -436,11 +493,13 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
       time: "Time",
       duration: "Duration",
       deposit: "Deposit",
+      payment: "Payment",
       alias: "Alias",
       cbu: "CBU",
       holder: "Account holder",
       bank: "Bank",
     },
+    methods: { mercadopago: "MercadoPago", transfer: "Bank transfer" },
   },
 };
 
@@ -463,14 +522,41 @@ function whenRows(b: BookingRecord, locale: Locale, c: ClientCopy): Row[] {
   return rows;
 }
 
-function paymentRows(c: ClientCopy): Row[] {
-  if (!PAYMENT_ENABLED) return [];
+/**
+ * Where to transfer — read from the settings document the studio edits, not
+ * from a deploy-time constant, so a changed account reaches the next mail
+ * instead of the next deploy.
+ *
+ * `enabled` alone does not print the block: a titular and a bank are not
+ * somewhere money can be sent, so with neither alias nor CBU there is no
+ * destination and the rows would answer nothing. Callers read the emptiness of
+ * what comes back as exactly that question — see buildClientSubmitted, which
+ * switches to a copy line that names no method when there is nothing to print.
+ */
+function transferRows(c: ClientCopy, transfer: TransferSettings): Row[] {
+  if (!transfer.enabled) return [];
+  const alias = transfer.alias.trim();
+  const cbu = transfer.cbu.trim();
+  if (!alias && !cbu) return [];
+  const holder = transfer.holder.trim();
+  const bank = transfer.bank.trim();
   const rows: Row[] = [];
-  if (PAYMENT_DETAILS.alias) rows.push({ label: c.labels.alias, value: PAYMENT_DETAILS.alias });
-  if (PAYMENT_DETAILS.cbu) rows.push({ label: c.labels.cbu, value: PAYMENT_DETAILS.cbu });
-  if (PAYMENT_DETAILS.holder) rows.push({ label: c.labels.holder, value: PAYMENT_DETAILS.holder });
-  if (PAYMENT_DETAILS.bank) rows.push({ label: c.labels.bank, value: PAYMENT_DETAILS.bank });
+  if (alias) rows.push({ label: c.labels.alias, value: alias });
+  if (cbu) rows.push({ label: c.labels.cbu, value: cbu });
+  if (holder) rows.push({ label: c.labels.holder, value: holder });
+  if (bank) rows.push({ label: c.labels.bank, value: bank });
   return rows;
+}
+
+/**
+ * How the deposit arrived, for the CLIENT: the method and nothing else.
+ *
+ * No amount (the Seña row above already carries what was agreed) and no
+ * provider payment id — the client holds MercadoPago's own receipt for this
+ * transaction, and our internal reference for it is not theirs to reconcile.
+ */
+function clientPaymentRow(payment: BookingPayment, c: ClientCopy): Row {
+  return { label: c.labels.payment, value: c.methods[payment.method] };
 }
 
 /* ────────────────────────── owner blocks ────────────────────────── */
@@ -520,6 +606,53 @@ function ownerBaseRows(b: BookingRecord): Row[] {
   return rows;
 }
 
+/** Owner mail never branches on locale (see the header), so these are literals. */
+const OWNER_METHOD: Record<PaymentMethod, string> = {
+  mercadopago: "MercadoPago",
+  transfer: "Transferencia bancaria",
+};
+
+/**
+ * HOW THE DEPOSIT ARRIVED, for the owner: every fact the record actually holds.
+ *
+ * A MercadoPago booking has a payment and no receipt; a transfer has a receipt
+ * and no payment; a client who paid online and then also sent a screenshot the
+ * studio attached has both, so the two blocks are appended, never chosen
+ * between. An empty result means neither is on file yet — a state the confirmed
+ * mails are not sent in, but which a resend of an older booking can still reach.
+ *
+ * `providerPaymentId` is owner-only, and this is the only function that prints
+ * it: it exists so the studio can find the payment inside their MercadoPago
+ * account, which is not something a client is ever asked to do.
+ */
+function ownerDepositRows(b: BookingRecord, tz: string, locale: Locale): Row[] {
+  const rows: Row[] = [];
+  if (b.payment) {
+    rows.push({ label: "Pago", value: OWNER_METHOD[b.payment.method] });
+    if (b.payment.amount !== undefined) {
+      // What the provider says it CHARGED, which is a different fact from the
+      // "Seña" row above — that one is what was agreed when the booking was
+      // created, and a mismatch between them is worth seeing side by side.
+      rows.push({
+        label: "Cobrado",
+        value: money(b.payment.amount, b.payment.currency ?? "", locale),
+      });
+    }
+    if (b.payment.providerPaymentId) {
+      rows.push({ label: "ID de pago", value: b.payment.providerPaymentId });
+    }
+    rows.push({ label: "Pagado", value: stamp(b.payment.paidAt, tz, locale) });
+  }
+  if (b.receipt) {
+    rows.push(
+      { label: "Archivo", value: b.receipt.filename },
+      { label: "Tamaño", value: fileSize(b.receipt.bytes) },
+      { label: "Subido", value: stamp(b.receipt.uploadedAt, tz, locale) },
+    );
+  }
+  return rows;
+}
+
 /** Deep link into the sheet for this booking. Behind the admin session. */
 function adminUrl(b: BookingRecord): string {
   return `${SITE_URL}/admin/calendar?b=${b.id}`;
@@ -533,8 +666,11 @@ export function buildOwnerSubmitted(b: BookingRecord): BuiltEmail {
   const date = formatDayLong(b.startsAt, recordTimeZone(b), locale);
   const rows = ownerBaseRows(b);
   const note = b.client.note?.trim() ?? "";
-  const lead =
-    "Completó sus datos y aceptó los términos. Falta el comprobante de la seña.";
+  // A resend can reach a booking that has since been paid; "falta el
+  // comprobante" would then be the one line in this mail that is false.
+  const lead = b.payment
+    ? "Completó sus datos y aceptó los términos. La seña ya está paga."
+    : "Completó sus datos y aceptó los términos. Falta el comprobante de la seña.";
   const url = adminUrl(b);
 
   return {
@@ -569,49 +705,68 @@ export function buildOwnerConfirmed(b: BookingRecord): BuiltEmail {
   const tz = recordTimeZone(b);
   const label = bookingLabel(b);
   const date = formatDayLong(b.startsAt, tz, locale);
-  const rows = ownerBaseRows(b);
-  if (b.receipt) {
-    rows.push(
-      { label: "Archivo", value: b.receipt.filename },
-      { label: "Tamaño", value: fileSize(b.receipt.bytes) },
-      { label: "Subido", value: stamp(b.receipt.uploadedAt, tz, locale) },
-    );
-  }
-  const lead = "El cliente subió el comprobante. El turno queda confirmado.";
+  const rows = [...ownerBaseRows(b), ...ownerDepositRows(b, tz, locale)];
+
+  // The headline names the fact that made this booking green, so the subject
+  // line answers "what arrived" from the inbox list alone. Three cases, because
+  // a payment and a comprobante are different things to go looking for.
+  const eyebrow = b.payment
+    ? b.receipt
+      ? "Seña recibida"
+      : "Pago recibido"
+    : "Comprobante recibido";
+  const lead = b.payment
+    ? b.receipt
+      ? "Hay un pago registrado y un comprobante en el turno. Queda confirmado."
+      : `El cliente pagó la seña por ${OWNER_METHOD[b.payment.method]}. El turno queda confirmado.`
+    : "Se subió el comprobante de la seña. El turno queda confirmado.";
   // Says out loud what the header block enforces: bank data never travels by
-  // mail, so "where is the file" has exactly one answer.
-  const privacy =
-    "El comprobante no viaja por correo: abrilo desde el calendario, con tu sesión de admin.";
+  // mail, so "where is the file" has exactly one answer. Only with a file:
+  // a MercadoPago booking has nothing to open and nothing to reassure about.
+  const privacy = b.receipt
+    ? "El comprobante no viaja por correo: abrilo desde el calendario, con tu sesión de admin."
+    : "";
+  const cta = b.receipt ? "Ver el comprobante" : "Ver en el calendario";
   const url = adminUrl(b);
 
   return {
-    subject: oneLine(`Comprobante recibido · ${label} · ${date}`),
+    subject: oneLine(`${eyebrow} · ${label} · ${date}`),
     html: shell(
       locale,
       `${label} · ${date} · ${timeLine(b, locale)}`,
       [
-        htmlEyebrow("Comprobante recibido"),
+        htmlEyebrow(eyebrow),
         htmlTitle(label),
         htmlPara(lead),
         htmlRows(rows),
-        htmlNote(privacy),
-        htmlCta(url, "Ver el comprobante"),
+        privacy ? htmlNote(privacy) : "",
+        htmlCta(url, cta),
       ].join(""),
       FOOTER_ES,
     ),
     text: textDoc([
-      "COMPROBANTE RECIBIDO",
+      eyebrow.toUpperCase(),
       label,
       lead,
       textRows(rows),
       privacy,
-      `Ver el comprobante:\n${url}`,
+      `${cta}:\n${url}`,
       `—\n${FOOTER_ES}`,
     ]),
   };
 }
 
-export function buildClientSubmitted(b: BookingRecord, token: string): BuiltEmail {
+/**
+ * `transfer` is passed in rather than read here because the builders are pure
+ * functions of a record — see the header. It decides two things at once: which
+ * account rows appear, and which of the three "what happens next" lines the
+ * mail closes the step with.
+ */
+export function buildClientSubmitted(
+  b: BookingRecord,
+  token: string,
+  transfer: TransferSettings,
+): BuiltEmail {
   const locale = clientLocale(b);
   const c = CLIENT_COPY[locale];
   const date = formatDayLong(b.startsAt, recordTimeZone(b), locale);
@@ -619,7 +774,16 @@ export function buildClientSubmitted(b: BookingRecord, token: string): BuiltEmai
   const greeting = name ? fill(c.greeting, { name }) : "";
   const lead = fill(c.leadSubmitted, { date });
   const rows = whenRows(b, locale, c);
-  const pay = paymentRows(c);
+  // A resend after a MercadoPago payment lands here. Someone who has already
+  // paid must not be handed a CBU and told to transfer — nothing is owed, and
+  // the mail says so instead.
+  if (b.payment) rows.push(clientPaymentRow(b.payment, c));
+  const pay = b.payment ? [] : transferRows(c, transfer);
+  const nextStep = b.payment
+    ? c.nextStepPaid
+    : pay.length
+      ? c.nextStep
+      : c.nextStepPay;
   const link = bookingLinks(token)[locale];
 
   return {
@@ -633,7 +797,7 @@ export function buildClientSubmitted(b: BookingRecord, token: string): BuiltEmai
         greeting ? htmlPara(greeting) : "",
         htmlPara(lead),
         htmlRows(rows),
-        htmlPara(c.nextStep),
+        htmlPara(nextStep),
         pay.length ? htmlEyebrow(c.payEyebrow) + htmlRows(pay) : "",
         htmlCta(link, c.ctaOpen),
         htmlNote(c.linkHint),
@@ -646,7 +810,7 @@ export function buildClientSubmitted(b: BookingRecord, token: string): BuiltEmai
       greeting,
       lead,
       textRows(rows),
-      c.nextStep,
+      nextStep,
       pay.length ? `${c.payEyebrow}:\n${textRows(pay)}` : "",
       `${c.ctaOpen}:\n${link}`,
       c.linkHint,
@@ -696,8 +860,15 @@ export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEma
   const time = clockLine(b.startsAt, tz, locale);
   const name = pick(b.client.name, b.seed.name);
   const greeting = name ? fill(c.greeting, { name }) : "";
-  const lead = fill(c.leadConfirmed, { date, time });
+  // "Recibimos tu comprobante" is only true of the road that leaves one. A
+  // MercadoPago booking is confirmed by its webhook and never uploads anything,
+  // so it gets the line about the payment and a row naming the method.
+  const lead = fill(b.payment ? c.leadConfirmedPaid : c.leadConfirmed, {
+    date,
+    time,
+  });
   const rows = whenRows(b, locale, c);
+  if (b.payment) rows.push(clientPaymentRow(b.payment, c));
   const link = token ? bookingLinks(token)[locale] : "";
 
   return {
@@ -738,13 +909,46 @@ function isClientKind(kind: BookingEmailKind): boolean {
 }
 
 /**
- * Where booking notifications land. Defaults to the studio's public address, so
- * the feature notifies correctly out of the box — BOOKING_NOTIFY_EMAIL only
- * exists to point them somewhere else.
+ * The settings document, or the defaults when the bucket cannot answer.
+ *
+ * Never throws, like everything else in this file: this runs after the record
+ * has already committed, and a booking the client completed must not become an
+ * error because a settings read failed. DEFAULT_SETTINGS is all-empty, and
+ * empty means "fall back to the env var" — so a bucket outage sends exactly the
+ * mail this feature sent before settings existed, from the same addresses,
+ * rather than sending nothing.
  */
-function ownerRecipient(): Recipient | null {
-  const email = process.env.BOOKING_NOTIFY_EMAIL?.trim() || SITE_EMAIL;
-  return email ? { email, name: "Bocha Tattoo" } : null;
+async function settingsOrDefaults(bookingId: string): Promise<Settings> {
+  try {
+    return await loadSettings();
+  } catch (err) {
+    console.error(`[booking-emails] ${bookingId} settings: ${messageOf(err)}`);
+    return DEFAULT_SETTINGS;
+  }
+}
+
+/**
+ * Who booking mail comes FROM. `pick` skips blanks, which is the whole
+ * fallback rule: a cleared settings field is a way BACK to the env var, never a
+ * way to send from an empty address. The chain ends in constants, so this
+ * always returns something real — see the note on Sender in email.ts.
+ */
+function senderFrom(email: EmailSettings): Sender {
+  return {
+    email: pick(email.senderEmail, process.env.BREVO_SENDER_EMAIL, SITE_EMAIL),
+    name: pick(email.senderName, process.env.BREVO_SENDER_NAME, DEFAULT_SENDER_NAME),
+  };
+}
+
+/**
+ * Where booking notifications land. Settings first, then the env var, then the
+ * studio's public address — so the feature notifies correctly out of the box,
+ * and the settings tab is now the way to point them somewhere else without a
+ * redeploy.
+ */
+function ownerRecipient(email: EmailSettings): Recipient | null {
+  const address = pick(email.notifyEmail, process.env.BOOKING_NOTIFY_EMAIL, SITE_EMAIL);
+  return address ? { email: address, name: DEFAULT_SENDER_NAME } : null;
 }
 
 /** The seed address is the fallback: a client who never typed one still gets mail. */
@@ -773,7 +977,12 @@ export async function sendBookingEmails(
   const wanted = Array.from(new Set(kinds));
   if (!wanted.length) return patch;
 
-  const owner = ownerRecipient();
+  // One read for the whole batch, and the only I/O this module does. Loaded
+  // after the early return above so a caller asking for no mail never touches
+  // the bucket at all.
+  const settings = await settingsOrDefaults(b.id);
+  const sender = senderFrom(settings.email);
+  const owner = ownerRecipient(settings.email);
   const client = clientRecipient(b);
   const failures: { kind: BookingEmailKind; message: string }[] = [];
 
@@ -808,7 +1017,7 @@ export async function sendBookingEmails(
           : kind === "ownerConfirmed"
             ? buildOwnerConfirmed(b)
             : kind === "clientSubmitted"
-              ? buildClientSubmitted(b, token)
+              ? buildClientSubmitted(b, token, settings.transfer)
               : buildClientConfirmed(b, token);
     } catch (err) {
       // A stored value the formatters reject (an unparseable date) must not
@@ -833,7 +1042,7 @@ export async function sendBookingEmails(
 
   // allSettled, not all: one dead recipient must not cancel the other mail.
   const results = await Promise.allSettled(
-    jobs.map((job) => sendTransactional(job.message)),
+    jobs.map((job) => sendTransactional(job.message, sender)),
   );
   const at = new Date().toISOString();
 

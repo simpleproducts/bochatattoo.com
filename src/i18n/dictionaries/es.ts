@@ -167,7 +167,12 @@ const es: Dictionary = {
       yourTime: "Tu hora local",
       deposit: "Seña",
     },
-    rail: { details: "Tus datos", terms: "Términos", receipt: "Comprobante" },
+    rail: {
+      details: "Tus datos",
+      terms: "Términos",
+      receipt: "Comprobante",
+      payment: "Pago",
+    },
     form: {
       eyebrow: "Tus datos",
       intro:
@@ -209,6 +214,22 @@ const es: Dictionary = {
       amount: "Monto",
       copy: "copiar",
       copied: "copiado ✓",
+      chooseTitle: "¿Cómo querés pagar la seña?",
+      methods: {
+        mercadopago: {
+          label: "MercadoPago",
+          hint: "Pagás ahora y el turno queda confirmado al toque.",
+        },
+        transfer: {
+          label: "Transferencia bancaria",
+          hint: "Transferís desde tu banco y después subís el comprobante acá.",
+        },
+      },
+      mercadopago: {
+        cta: "Pagar con MercadoPago",
+        redirect: "Te llevamos a MercadoPago y volvés acá cuando termines.",
+        pending: "Esperando que MercadoPago confirme el pago…",
+      },
     },
     receipt: {
       eyebrow: "Comprobante de transferencia",
@@ -232,6 +253,12 @@ const es: Dictionary = {
       sentTo: "Te mandamos la confirmación a",
       addToCalendar: "Agregar al calendario",
       calendarTitle: "Turno con Bocha",
+      paid: {
+        body:
+          "La seña ya está paga, no tenés que mandar nada más. Nos vemos en " +
+          "{studio}. Cualquier cosa, {contact}.",
+        received: "Pago recibido",
+      },
     },
     invalid: {
       expired: "Este enlace venció.",
@@ -262,6 +289,9 @@ const es: Dictionary = {
       tooManyAttempts: "Demasiados intentos. Escribinos y lo resolvemos.",
       conflict: "Los términos se actualizaron. Recargá la página, por favor.",
       missingContact: "Necesitamos tu email o tu Instagram.",
+      paymentFailed: "No pudimos abrir el pago. Probá de nuevo en un momento.",
+      paymentRejected:
+        "MercadoPago rechazó el pago. Probá de nuevo con otro medio.",
     },
   },
 };

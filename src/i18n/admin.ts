@@ -34,11 +34,16 @@
 import type { Locale } from "./config";
 
 export type AdminDictionary = {
-  /** The three tabs in AdminNav. Also the h1 of each page they lead to. */
+  /**
+   * The four tabs in AdminNav. Also the h1 of the page each one leads to —
+   * except Settings, whose page heads itself with `settings.title`, because a
+   * tab has room for one word and that page's heading says a little more.
+   */
   nav: {
     calendar: string;
     images: string;
     categories: string;
+    settings: string;
   };
 
   /**
@@ -380,6 +385,15 @@ export type AdminDictionary = {
       pdf: string;
       /** alt text for the uploaded image. `{filename}` as the client sent it. */
       imageAlt: string;
+      /**
+       * The studio attaching the proof itself. Clients send it by WhatsApp at
+       * least as often as they upload it, and a comprobante sitting in a chat
+       * is one the booking does not have — this control puts it on the record,
+       * and confirms the booking exactly as the client's own upload would.
+       */
+      upload: string;
+      uploading: string;
+      uploadFailed: string;
       delete: string;
       /** confirm(). `{status}` is `status.awaitingReceipt` — the state it falls back to. */
       deleteTitle: string;
@@ -471,6 +485,75 @@ export type AdminDictionary = {
     };
   };
 
+  /**
+   * The fourth tab: everything the studio can change without a deploy — who
+   * its mail comes from, whether a bank transfer is offered and with which
+   * numbers, whether MercadoPago is offered at all.
+   *
+   * No secret is named here and none may be. The Brevo key and the MercadoPago
+   * access token live in the hosting environment, which is the whole reason
+   * `hints.mercadopago` exists: a bare toggle would read as "turn MercadoPago
+   * on", and this screen cannot do that on its own.
+   *
+   * The tab's own label is `nav.settings`, with the other three, because
+   * AdminNav looks its labels up by tab key.
+   */
+  settings: {
+    /** The page h1. */
+    title: string;
+    /** After a successful PUT — inline beside the save button, not a dialog. */
+    saved: string;
+    /** The PUT was refused or never arrived. Nothing was written. */
+    saveFailed: string;
+    /** The three groups the form is split into. */
+    sections: {
+      email: string;
+      transfer: string;
+      mercadopago: string;
+    };
+    /**
+     * Field labels. The bank block reuses the client page's words on purpose —
+     * alias, CBU, titular, banco are what the operator will read back off a
+     * home-banking screen while copying them in.
+     */
+    fields: {
+      senderEmail: string;
+      senderName: string;
+      notifyEmail: string;
+      alias: string;
+      cbu: string;
+      holder: string;
+      bank: string;
+    };
+    /**
+     * The two "offer this method" switches. Phrased as what the CLIENT is
+     * given rather than as a feature flag, because that is what turning one
+     * off does: it removes a choice from the booking page.
+     */
+    toggles: {
+      transfer: string;
+      mercadopago: string;
+    };
+    /**
+     * Sits under the section it explains. Only two sections need one: the
+     * email fields, where empty is a meaningful value and not an omission,
+     * and MercadoPago, where the toggle is only half of what turns it on.
+     */
+    hints: {
+      email: string;
+      mercadopago: string;
+    };
+    /**
+     * What the form refuses before it ever sends. `invalidCbu` names the
+     * length in full: a CBU (and a CVU) is 22 digits, always, so "the right
+     * length" is a number the operator can count against what they pasted.
+     */
+    errors: {
+      invalidEmail: string;
+      invalidCbu: string;
+    };
+  };
+
   login: {
     title: string;
     password: string;
@@ -485,6 +568,7 @@ const adminEs: AdminDictionary = {
     calendar: "Calendario",
     images: "Imágenes",
     categories: "Categorías",
+    settings: "Ajustes",
   },
 
   common: {
@@ -711,6 +795,9 @@ const adminEs: AdminDictionary = {
       empty: "Todavía no subió nada.",
       pdf: "PDF",
       imageAlt: "Comprobante de transferencia: {filename}",
+      upload: "Subí un comprobante",
+      uploading: "Subiendo…",
+      uploadFailed: "No se pudo subir el comprobante.",
       delete: "Eliminar comprobante",
       deleteTitle: "¿Eliminar el comprobante?",
       deleteConfirm:
@@ -758,6 +845,40 @@ const adminEs: AdminDictionary = {
     },
   },
 
+  settings: {
+    title: "Ajustes del estudio",
+    saved: "Ajustes guardados ✓",
+    saveFailed: "No se pudieron guardar los ajustes.",
+    sections: {
+      email: "Emails",
+      transfer: "Transferencia bancaria",
+      mercadopago: "MercadoPago",
+    },
+    fields: {
+      senderEmail: "Dirección del remitente",
+      senderName: "Nombre del remitente",
+      notifyEmail: "Avisos a",
+      alias: "Alias",
+      cbu: "CBU",
+      holder: "Titular",
+      bank: "Banco",
+    },
+    toggles: {
+      transfer: "Ofrecer transferencia bancaria",
+      mercadopago: "Ofrecer MercadoPago",
+    },
+    hints: {
+      email: "Si lo dejás vacío se usa la dirección del sitio.",
+      mercadopago:
+        "El access token de MercadoPago se configura en el entorno del " +
+        "hosting, no acá.",
+    },
+    errors: {
+      invalidEmail: "Esa dirección de email no es válida.",
+      invalidCbu: "El CBU tiene que tener 22 dígitos.",
+    },
+  },
+
   login: {
     title: "Iniciar sesión",
     password: "Contraseña",
@@ -771,6 +892,7 @@ const adminEn: AdminDictionary = {
     calendar: "Calendar",
     images: "Images",
     categories: "Categories",
+    settings: "Settings",
   },
 
   common: {
@@ -997,6 +1119,9 @@ const adminEn: AdminDictionary = {
       empty: "Nothing uploaded yet.",
       pdf: "PDF",
       imageAlt: "Transfer receipt: {filename}",
+      upload: "Attach a receipt",
+      uploading: "Uploading…",
+      uploadFailed: "The receipt could not be uploaded.",
       delete: "Delete receipt",
       deleteTitle: "Delete this receipt?",
       deleteConfirm:
@@ -1041,6 +1166,40 @@ const adminEn: AdminDictionary = {
       invalidRange: "Invalid dates — the end cannot be before the start.",
       labelTooLong: "The name cannot be longer than {max} characters.",
       invalidTimeZone: "Invalid trip time zone — pick another one.",
+    },
+  },
+
+  settings: {
+    title: "Studio settings",
+    saved: "Settings saved ✓",
+    saveFailed: "The settings could not be saved.",
+    sections: {
+      email: "Email",
+      transfer: "Bank transfer",
+      mercadopago: "MercadoPago",
+    },
+    fields: {
+      senderEmail: "Sender address",
+      senderName: "Sender name",
+      notifyEmail: "Notifications to",
+      alias: "Alias",
+      cbu: "CBU",
+      holder: "Account holder",
+      bank: "Bank",
+    },
+    toggles: {
+      transfer: "Offer bank transfer",
+      mercadopago: "Offer MercadoPago",
+    },
+    hints: {
+      email: "Leave a field empty to fall back to the site address.",
+      mercadopago:
+        "The MercadoPago access token is configured in the hosting " +
+        "environment, not here.",
+    },
+    errors: {
+      invalidEmail: "That email address is not valid.",
+      invalidCbu: "A CBU is 22 digits long.",
     },
   },
 

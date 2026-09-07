@@ -1,7 +1,9 @@
 "use client";
 /**
  * The private booking page's whole client tree: the shell, the step machine,
- * and the only two writes a reader can make.
+ * and every request a reader can make from it — the two writes (their details,
+ * their comprobante), the one preference that sends them to MercadoPago, and
+ * the one read that asks whether the payment has landed yet.
  *
  * Three rules shape everything below.
  *
@@ -9,7 +11,10 @@
  *    successful POST, and is never refetched. Both routes answer with the view
  *    they just committed, so a re-read could only ever be staler — and a
  *    booking that has just gone green must never flicker back to yellow
- *    because a second request landed out of order.
+ *    because a second request landed out of order. The single exception is the
+ *    MercadoPago re-check, which adopts what it reads ONLY when that answer is
+ *    paid: green is a one-way door, so that read cannot walk the page
+ *    backwards. See `onRecheck`.
  * 2. The step the reader lands on is DERIVED from that view, not counted up
  *    from zero. Someone who finished last week and reopens the link sees the
  *    confirmed panel; they are never shown the form again.
@@ -17,11 +22,20 @@
  *    nothing; the modal's confirm is what posts details and acceptance
  *    together, which is also how the record makes "details submitted, terms
  *    not accepted" unrepresentable.
+ * 4. THE BROWSER NEVER MARKS A BOOKING PAID. MercadoPago sends the client back
+ *    to this page with parameters in the URL, which is a string they can type
+ *    themselves; the webhook is the only writer of `record.payment`, and
+ *    `view.paid` is the only thing this file believes. Everything the return
+ *    trip is allowed to influence is which sentence appears above the step —
+ *    "we are waiting for MercadoPago", rather than a payment screen behaving
+ *    as though the reader had never left it.
  *
  * The sessionStorage draft is insurance against a dropped connection or a
  * fat-fingered reload, not state: read once in the first render after
  * hydration (reading it in the hydrating render would desync the SSR pass),
- * rewritten on change, and dropped the moment the server has the data.
+ * rewritten on change, and dropped the moment the server has the data. The
+ * payment-attempt flag beside it is read under exactly the same rule, and is
+ * worth exactly as little — see paymentAttemptKey in contract.ts.
  */
 import {
   useCallback,
@@ -44,10 +58,13 @@ import {
   normalizeInstagram,
 } from "@/lib/bookings-types";
 import { TERMS_VERSION } from "@/lib/booking-terms";
+import type { PaymentMethod } from "@/lib/settings-types";
 import {
   draftKey,
   errorMessage,
   networkMessage,
+  offeredMethods,
+  paymentAttemptKey,
   readBookingError,
   type BookingFlowProps,
   type BookingStep,
@@ -60,7 +77,13 @@ import { AppointmentCard } from "./AppointmentCard";
 import { BookingHeader } from "./BookingHeader";
 import { ConfirmedPanel } from "./ConfirmedPanel";
 import { DetailsForm } from "./DetailsForm";
-import { PaymentDetails } from "./PaymentDetails";
+import {
+  MercadoPagoPanel,
+  MercadoPagoPending,
+  PaymentDetails,
+  PaymentMethodChooser,
+  PaymentUnavailable,
+} from "./PaymentDetails";
 import { ProgressRail } from "./ProgressRail";
 import { ReceiptUploader } from "./ReceiptUploader";
 import { TermsModal } from "./TermsModal";
@@ -98,9 +121,16 @@ function initialValues(view: PublicBookingView): DetailsValues {
   );
 }
 
-/** The whole reason a reader never re-does work the server already has. */
+/**
+ * The whole reason a reader never re-does work the server already has.
+ *
+ * A receipt and a payment are equal roads into `done`, exactly as they are in
+ * deriveStatus: a client who paid through MercadoPago owes no comprobante, and
+ * showing them an upload form for one would be asking twice for the same
+ * deposit.
+ */
 function initialStep(view: PublicBookingView): BookingStep {
-  if (view.termsAccepted && view.receipt) return "done";
+  if (view.termsAccepted && (view.receipt || view.paid)) return "done";
   if (view.termsAccepted) return "receipt";
   return "details";
 }
@@ -196,11 +226,45 @@ function clearDraft(key: string): void {
   }
 }
 
+/**
+ * The payment-attempt flag: written just before the browser leaves for
+ * Checkout Pro, read once on the way back.
+ *
+ * Same three-line shape as the draft helpers above and for the same reasons —
+ * a browser that refuses sessionStorage costs the reader the waiting copy, not
+ * the page. Losing the flag is survivable precisely because it decides nothing
+ * of consequence: the payment either reached the record or it did not.
+ */
+function rememberPaymentAttempt(bookingId: string): void {
+  try {
+    window.sessionStorage.setItem(paymentAttemptKey(bookingId), "1");
+  } catch {
+    // See above.
+  }
+}
+
+function readPaymentAttempt(bookingId: string): boolean {
+  try {
+    return window.sessionStorage.getItem(paymentAttemptKey(bookingId)) !== null;
+  } catch {
+    return false;
+  }
+}
+
+function forgetPaymentAttempt(bookingId: string): void {
+  try {
+    window.sessionStorage.removeItem(paymentAttemptKey(bookingId));
+  } catch {
+    // See above.
+  }
+}
+
 export function BookingFlow({
   view: served,
   token,
   locale,
   dict,
+  returnedFromPayment,
 }: BookingFlowProps) {
   const [view, setView] = useState<PublicBookingView>(served);
   const [step, setStep] = useState<BookingStep>(() => initialStep(served));
@@ -216,6 +280,30 @@ export function BookingFlow({
   const [uploadError, setUploadError] = useState<string | null>(null);
   /** Bumped on every successful submit so a re-submit still scrolls. */
   const [advanced, setAdvanced] = useState(0);
+  /**
+   * What the reader picked in the chooser, and nothing more: `null` means "has
+   * not picked", NOT "no method available". The method actually rendered is
+   * derived below, because a studio that switches a method off mid-flow must
+   * not leave anyone stranded on a screen for it.
+   */
+  const [chosen, setChosen] = useState<PaymentMethod | null>(null);
+  const [mpBusy, setMpBusy] = useState(false);
+  const [mpError, setMpError] = useState<string | null>(null);
+  const [recheckBusy, setRecheckBusy] = useState(false);
+  /**
+   * Kept apart from `mpError` rather than sharing one slot: the waiting panel
+   * and the pay button can be on screen together, and one message under both
+   * of them would be the same sentence printed twice, attached to whichever
+   * action the reader did not take.
+   */
+  const [recheckError, setRecheckError] = useState<string | null>(null);
+  /**
+   * Seeded from the prop, so the server render and the hydrating one agree,
+   * and OR-ed with this tab's own flag in the block below — the URL covers a
+   * reader who came back to a fresh tab, the flag covers back_urls that carry
+   * no parameters. Neither is evidence: see rule 4 in the header.
+   */
+  const [paymentAttempt, setPaymentAttempt] = useState(returnedFromPayment);
 
   const seed = view.seed;
   const key = draftKey(view.id);
@@ -237,6 +325,10 @@ export function BookingFlow({
     if (parsed !== undefined) {
       setValues((current) => withSeed(mergeDraft(current, parsed), served.seed));
     }
+    // Same one-shot, same reason it cannot happen a render earlier. Only ever
+    // turned ON here: the prop may already have said yes, and this pass has no
+    // business contradicting it.
+    if (readPaymentAttempt(served.id)) setPaymentAttempt(true);
   }
 
   // Gated on `restored` for the same reason the flag exists at all: this runs
@@ -368,7 +460,9 @@ export function BookingFlow({
       clearDraft(key);
       setView(next);
       setTermsOpen(false);
-      setStep(next.receipt ? "done" : "receipt");
+      // Both roads into green, exactly as initialStep reads them: a booking
+      // already paid through MercadoPago has nothing left to ask for.
+      setStep(next.receipt || next.paid ? "done" : "receipt");
       setAdvanced((n) => n + 1);
     } catch {
       setSubmitError(networkMessage(dict));
@@ -493,9 +587,144 @@ export function BookingFlow({
     setPhase("idle");
   }, []);
 
+  /**
+   * Picking a method is a local decision and stays local: nothing is posted
+   * until the reader taps the method's own control. Choosing the transfer is
+   * also how someone who abandoned a MercadoPago checkout gets out of the
+   * waiting state — they have told us, in the clearest way available, that the
+   * payment they walked away from is not coming.
+   */
+  const onChoose = useCallback(
+    (method: PaymentMethod) => {
+      setMpError(null);
+      setRecheckError(null);
+      setChosen(method);
+      if (method === "transfer") {
+        forgetPaymentAttempt(view.id);
+        setPaymentAttempt(false);
+      }
+    },
+    [view.id],
+  );
+
+  /** Back to the chooser. Only ever reachable while both methods are offered. */
+  const onClearChoice = useCallback(() => {
+    setMpError(null);
+    setChosen(null);
+  }, []);
+
+  /**
+   * Create the preference and leave.
+   *
+   * `mpBusy` is deliberately never cleared on the happy path. The redirect is
+   * already committed by then and un-disabling the button would only offer a
+   * second tap during the half-second the browser spends navigating — which is
+   * a second preference for one deposit, and the reason this guard exists at
+   * all. It is cleared on every failure, because a failure leaves the reader
+   * right here with something to try again.
+   */
+  const onPay = useCallback(async () => {
+    if (mpBusy) return;
+    setMpBusy(true);
+    setMpError(null);
+    try {
+      const res = await fetch(`/api/booking/${token}/mp`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        // The locale the reader is actually on, so Checkout Pro opens in the
+        // language this page is in rather than in whatever the record happens
+        // to remember from an earlier visit.
+        body: JSON.stringify({ locale }),
+      });
+
+      if (!res.ok) {
+        setMpError(await readBookingError(res, dict));
+        setMpBusy(false);
+        return;
+      }
+
+      const data = (await res.json()) as { initPoint?: string };
+      const initPoint =
+        typeof data.initPoint === "string" && data.initPoint ? data.initPoint : null;
+      if (!initPoint) {
+        setMpError(dict.booking.errors.paymentFailed);
+        setMpBusy(false);
+        return;
+      }
+
+      // Written BEFORE the navigation, never after: there is no "after" on
+      // this side of a location change.
+      rememberPaymentAttempt(view.id);
+      window.location.assign(initPoint);
+    } catch {
+      setMpError(networkMessage(dict));
+      setMpBusy(false);
+    }
+  }, [mpBusy, token, locale, dict, view.id]);
+
+  /**
+   * Ask the server whether the webhook has landed yet.
+   *
+   * The ONE deliberate exception to rule 1, and it is narrow by construction:
+   * the answer is adopted only when it comes back PAID, which is a one-way
+   * door — a booking cannot un-pay — so a slow response can never walk this
+   * page backwards the way an unconditional refetch could. A "not yet" is not
+   * an error and gets no message: the panel already says what is being waited
+   * on, and it stays on screen saying it.
+   */
+  const onRecheck = useCallback(async () => {
+    if (recheckBusy) return;
+    setRecheckBusy(true);
+    setRecheckError(null);
+    try {
+      const res = await fetch(`/api/booking/${token}`, { cache: "no-store" });
+      if (!res.ok) {
+        setRecheckError(await readBookingError(res, dict));
+        return;
+      }
+      const data = (await res.json()) as { view?: PublicBookingView };
+      const next = data.view ?? null;
+      if (next?.paid) {
+        forgetPaymentAttempt(view.id);
+        clearDraft(key);
+        setView(next);
+        setPaymentAttempt(false);
+        setStep("done");
+      }
+    } catch {
+      setRecheckError(networkMessage(dict));
+    } finally {
+      setRecheckBusy(false);
+    }
+  }, [recheckBusy, token, dict, view.id, key]);
+
   // The modal is a layer over the details step, not a step of its own — but it
   // is a distinct one to the rail, which is the reader's map of the flow.
   const railStep: BookingStep = termsOpen ? "terms" : step;
+
+  // Read off the VIEW, not off the props: a POST answers with the settings as
+  // they were a moment ago, so a method the studio just switched off stops
+  // being offered without anyone reloading.
+  const offered = offeredMethods(view.paymentSettings);
+  /**
+   * The method to render, which is not always the one that was chosen. One
+   * offered method is not a choice and is simply shown; a choice the studio has
+   * since withdrawn falls back to the chooser rather than to a screen for a
+   * method that is no longer on the table.
+   */
+  const method: PaymentMethod | null =
+    offered.length === 1
+      ? offered[0]
+      : chosen && offered.includes(chosen)
+        ? chosen
+        : null;
+  /**
+   * Came back from a payment attempt, and the webhook has not written anything
+   * yet. `view.paid` is checked rather than assumed even though a paid booking
+   * is already on the done panel: this is the one place in the file where being
+   * wrong would mean telling a client we are waiting for money we already have.
+   */
+  const awaitingPayment = paymentAttempt && !view.paid;
   const summaryName = view.client.name || values.name;
   const summaryEmail = view.client.email || values.email;
 
@@ -564,17 +793,67 @@ export function BookingFlow({
 
           {step === "receipt" ? (
             <div ref={receiptRef} className="flex flex-col gap-8">
-              <PaymentDetails view={view} dict={dict} />
-              <ReceiptUploader
-                locale={locale}
-                dict={dict}
-                phase={phase}
-                progress={progress}
-                error={uploadError}
-                existing={view.receipt}
-                onUpload={onUpload}
-                onReset={onReset}
-              />
+              {/* ABOVE the step, never instead of it. A reader who abandoned a
+                  checkout would otherwise be locked on a panel waiting for a
+                  payment that is never coming, with no way to transfer
+                  instead. */}
+              {awaitingPayment ? (
+                <MercadoPagoPending
+                  dict={dict}
+                  busy={recheckBusy}
+                  error={recheckError}
+                  onRecheck={() => {
+                    void onRecheck();
+                  }}
+                />
+              ) : null}
+
+              {offered.length === 0 ? (
+                <PaymentUnavailable dict={dict} />
+              ) : method === null ? (
+                <PaymentMethodChooser
+                  dict={dict}
+                  methods={offered}
+                  onChoose={onChoose}
+                />
+              ) : method === "mercadopago" ? (
+                <MercadoPagoPanel
+                  dict={dict}
+                  busy={mpBusy}
+                  error={mpError}
+                  onPay={() => {
+                    void onPay();
+                  }}
+                />
+              ) : (
+                <>
+                  <PaymentDetails view={view} dict={dict} />
+                  <ReceiptUploader
+                    locale={locale}
+                    dict={dict}
+                    phase={phase}
+                    progress={progress}
+                    error={uploadError}
+                    existing={view.receipt}
+                    onUpload={onUpload}
+                    onReset={onReset}
+                  />
+                </>
+              )}
+
+              {/* Only when there is something to go back TO. `terms.back` is
+                  the flow's own word for retracing a step, and this is the
+                  same act — a reader who tapped the wrong method is one tap
+                  from the other one, rather than a reload away. */}
+              {offered.length > 1 && method !== null ? (
+                <button
+                  type="button"
+                  onClick={onClearChoice}
+                  className="self-start min-h-[44px] px-2 flex items-center text-[10px] uppercase tracking-[0.2em] font-mono text-muted hover:text-fg transition-colors cursor-pointer"
+                >
+                  {dict.booking.terms.back}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </>

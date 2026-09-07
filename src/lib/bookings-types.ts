@@ -6,6 +6,7 @@
  * Status is NEVER a field on a record — see src/lib/booking-status.ts.
  */
 import type { Locale } from "@/i18n/config";
+import type { PaymentMethod, PublicPaymentSettings } from "./settings-types";
 
 export const BOOKING_SCHEMA_VERSION = 1 as const;
 
@@ -60,6 +61,37 @@ export type BookingReceipt = {
   uploadedAt: string; // UTC ISO
 };
 
+/**
+ * An APPROVED payment, and only ever that.
+ *
+ * There is deliberately NO pending state stored. A pending MercadoPago payment
+ * is indistinguishable from no payment for every purpose this product has: the
+ * deposit is not in the account, the client still owes proof, the appointment
+ * is still yellow. Writing one down would buy nothing and cost a third status —
+ * a "kind of paid" that deriveStatus, the calendar chip, the progress rail and
+ * the emails would each need a colour and a word for. A payment that never
+ * approves therefore leaves no trace at all, and the record goes straight from
+ * nothing to this.
+ */
+export type BookingPayment = {
+  /** How the client actually paid. */
+  method: PaymentMethod;
+  /**
+   * The four fields below are the PROVIDER's report of the payment, so they are
+   * only present when a provider was involved — today that means MercadoPago's
+   * webhook, which is the one writer of this whole object.
+   */
+  provider?: "mercadopago";
+  /**
+   * MercadoPago's own payment id. Kept for exactly one reason: it is the string
+   * the studio types into their MercadoPago account to find this payment.
+   */
+  providerPaymentId?: string;
+  amount?: number;
+  currency?: string;
+  paidAt: string; // UTC ISO
+};
+
 export type BookingEmailKind =
   | "clientSubmitted" | "ownerSubmitted" | "ownerConfirmed" | "clientConfirmed";
 
@@ -99,6 +131,13 @@ export type BookingRecord = {
   /** Admin-only. Never in PublicBookingView, never in a client email. */
   adminNotes?: string;
   receipt?: BookingReceipt;
+  /**
+   * Set ONLY once a payment is approved — see BookingPayment; there is no
+   * pending value of this field. Its writer is the MercadoPago webhook, never
+   * the browser coming back from the redirect, which is a URL the client
+   * controls and can forge. A booking carrying this is green with no receipt.
+   */
+  payment?: BookingPayment;
   /** Soft-cancel, reversible. Kills the link and greys the calendar row. */
   cancelledAt?: string;
   /** Bumped by POST .../link. Every previously issued token dies. */
@@ -116,7 +155,12 @@ export type BookingMonthIndex = {
   updatedAt: string;  // UTC ISO
 };
 
-/** Admin wire shape. Full record minus the receipt key, plus derived status + a live link. */
+/**
+ * Admin wire shape. Full record minus the receipt key, plus derived status + a
+ * live link. `payment` arrives through the Omit and is passed through whole:
+ * unlike the receipt it holds no private key, and the admin wants the provider
+ * payment id in order to find the payment in their MercadoPago account.
+ */
 export type AdminAppointment = Omit<BookingRecord, "receipt" | "timeZone"> & {
   status: BookingStatus;
   /** RESOLVED on read: the record's own zone, or STUDIO_TIME_ZONE. Never absent. */
@@ -143,6 +187,19 @@ export type PublicBookingView = {
   termsAccepted: boolean;
   termsVersion?: string;
   receipt: { filename: string; bytes: number; uploadedAt: string } | null;
+  /**
+   * True when an approved payment is on file. The BookingPayment object itself
+   * never crosses this line: the page has no use for a provider payment id, and
+   * one boolean is the whole of what it renders — paid means no receipt is
+   * owed.
+   */
+  paid: boolean;
+  /**
+   * Which methods the studio is offering right now, plus the bank details the
+   * transfer step displays. Email settings are NOT in this shape by type — see
+   * PublicPaymentSettings in src/lib/settings-types.ts.
+   */
+  paymentSettings: PublicPaymentSettings;
   /**
    * RESOLVED on read: the zone of the place THIS session happens. The page's
    * primary clock — the client is told the time of the city they are travelling
