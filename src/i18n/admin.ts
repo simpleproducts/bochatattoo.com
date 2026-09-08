@@ -561,6 +561,25 @@ export type AdminDictionary = {
     wrongPassword: string;
     submit: string;
   };
+
+  /**
+   * The home-screen install offer at the foot of the calendar — see
+   * InstallPrompt.tsx. Four strings, because there are two entirely different
+   * routes to an install and one way out of both: `action` is the button that
+   * replays Chrome's captured prompt, `ios` is the share-sheet instruction
+   * Safari leaves as the only alternative, and `dismiss` retires the bar for
+   * good.
+   *
+   * `ios` names the two rows to tap in the words iOS itself uses in that
+   * language, because the operator is matching this sentence against his own
+   * share sheet.
+   */
+  install: {
+    title: string;
+    action: string;
+    ios: string;
+    dismiss: string;
+  };
 };
 
 const adminEs: AdminDictionary = {
@@ -885,6 +904,13 @@ const adminEs: AdminDictionary = {
     wrongPassword: "Contraseña incorrecta.",
     submit: "Entrar",
   },
+
+  install: {
+    title: "Agregá el admin a la pantalla de inicio",
+    action: "Instalá",
+    ios: "Tocá Compartir y después «Agregar a pantalla de inicio».",
+    dismiss: "No mostrar más",
+  },
 };
 
 const adminEn: AdminDictionary = {
@@ -1208,6 +1234,13 @@ const adminEn: AdminDictionary = {
     password: "Password",
     wrongPassword: "Wrong password.",
     submit: "Enter",
+  },
+
+  install: {
+    title: "Add the admin to your home screen",
+    action: "Install",
+    ios: "Tap Share, then “Add to Home Screen”.",
+    dismiss: "Don't show again",
   },
 };
 

@@ -1,0 +1,40 @@
+{
+  "id": "/admin",
+  "name": "Bocha Tattoo · Admin",
+  "short_name": "Bocha Admin",
+  "description": "Panel del estudio: agenda, turnos y galería. Studio admin: calendar, appointments and gallery.",
+  "lang": "es-AR",
+  "dir": "ltr",
+  "start_url": "/admin/calendar",
+  "scope": "/admin",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/admin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/admin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/admin-icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/admin-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

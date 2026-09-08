@@ -25,6 +25,11 @@
  * on every covered heading for that reason, and not hidden the way the month
  * grid hides its repeats.
  *
+ * Both bars carry an `.admin-safe-*` class (see globals.css). They are inert in
+ * a browser tab and only pay for themselves once the admin has been installed
+ * to the home screen, where there is no chrome between the strip and the notch,
+ * or between the create bar and the home indicator.
+ *
  * The strip's height is MEASURED rather than written down: the day cells are
  * `aspect-square` in a 7-column grid, so the strip is as tall as a seventh of
  * whatever width it is given. That measurement is what the sticky day headings
@@ -233,7 +238,7 @@ export function AgendaList({
         ref={stripRef}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
-        className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line py-2"
+        className="admin-safe-top sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line py-2"
       >
         <div className="grid grid-cols-7 gap-1">
           {week.map((dayKey) => {
@@ -333,7 +338,7 @@ export function AgendaList({
         </div>
       )}
 
-      <div className="fixed bottom-0 inset-x-0 border-t border-line bg-bg/90 backdrop-blur-xl px-4 py-3 z-40">
+      <div className="admin-safe-bottom fixed bottom-0 inset-x-0 border-t border-line bg-bg/90 backdrop-blur-xl px-4 py-3 z-40">
         <button
           type="button"
           onClick={() => onCreate(selectedDayKey)}
