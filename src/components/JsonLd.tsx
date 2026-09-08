@@ -1,11 +1,27 @@
 import { DEFAULT_LOCALE } from "@/i18n";
 import type { Locale } from "@/i18n";
+import { STUDIO } from "@/config/studio";
+import { ENABLED_GUEST_SPOTS } from "@/config/guest-spots";
 
 const SITE = "https://bochatattoo.com";
 
 /**
- * LocalBusiness + Person JSON-LD for Bocha. Real values are filled in here;
- * email/phone/sameAs handles are placeholders until provided.
+ * LocalBusiness + Person JSON-LD for Bocha.
+ *
+ * Everything emitted here is either an established fact or a value the studio
+ * itself put in src/config/studio.ts. The NAP fields — street, postcode,
+ * phone, opening hours — are spread in CONDITIONALLY: while a config value is
+ * "" the property is absent from the JSON entirely, rather than present as an
+ * empty string. That distinction matters more than it looks. Google matches a
+ * site to a Business Profile by comparing these fields; an empty or wrong
+ * `telephone` does not read as "unknown", it reads as a contradiction and
+ * breaks the match, which costs more ranking than the missing field ever did.
+ * Absent is honest. Empty is a claim that the studio has no phone.
+ *
+ * `geo` is unconditional because the coordinates are real — resolved from the
+ * studio's own map pin. They are what ties this business to a point on the map
+ * for proximity searches even with no street address published, which is the
+ * whole reason a private, address-on-request studio can still rank locally.
  */
 export function JsonLd({ locale }: { locale: Locale }) {
   const data = {
@@ -26,18 +42,43 @@ export function JsonLd({ locale }: { locale: Locale }) {
     sameAs: ["https://instagram.com/bocha.ttt"],
     address: {
       "@type": "PostalAddress",
+      // Spread first so the property order reads street → locality → region →
+      // postcode → country, the way a postal address is actually written.
+      ...(STUDIO.streetAddress ? { streetAddress: STUDIO.streetAddress } : {}),
       addressLocality: "Almagro",
       addressRegion: "Ciudad Autónoma de Buenos Aires",
+      ...(STUDIO.postalCode ? { postalCode: STUDIO.postalCode } : {}),
       addressCountry: "AR",
     },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: STUDIO.lat,
+      longitude: STUDIO.lng,
+    },
+    ...(STUDIO.telephone ? { telephone: STUDIO.telephone } : {}),
+    ...(STUDIO.openingHours.length > 0
+      ? {
+          openingHoursSpecification: STUDIO.openingHours.map((block) => ({
+            "@type": "OpeningHoursSpecification",
+            // schema.org wants the capitalised English day tokens; studio.ts
+            // documents that requirement at the point where they get typed in.
+            dayOfWeek: block.days,
+            opens: block.opens,
+            closes: block.closes,
+          })),
+        }
+      : {}),
+    // Driven by the guest-spot config rather than a hardcoded list, so a city
+    // is claimed here only while it has a page behind it. Retiring a city with
+    // `enabled: false` drops it from the pages, the sitemap and this claim in
+    // one move — an areaServed for a city Bocha no longer visits is a promise
+    // the site cannot keep.
     areaServed: [
       { "@type": "City", name: "Buenos Aires" },
-      { "@type": "City", name: "Berlin" },
-      { "@type": "City", name: "Madrid" },
-      { "@type": "City", name: "Barcelona" },
-      { "@type": "City", name: "Colonia" },
-      { "@type": "City", name: "Freiburgo" },
-      { "@type": "City", name: "Basilea" },
+      ...ENABLED_GUEST_SPOTS.map((spot) => ({
+        "@type": "City",
+        name: spot.city[locale],
+      })),
     ],
     contactPoint: {
       "@type": "ContactPoint",

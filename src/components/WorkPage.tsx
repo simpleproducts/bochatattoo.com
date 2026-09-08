@@ -11,7 +11,9 @@ import {
   useImagesMap,
 } from "./ImagesProvider";
 import type { ImageWithSlug } from "@/lib/images-types";
+import { CATEGORY_SLUGS } from "@/content/categories";
 import { localePath } from "@/i18n";
+import { categoryPath } from "@/i18n/routes";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
@@ -81,6 +83,17 @@ export function WorkPage({
       }))
       .filter((s) => s.images.length > 0);
   }, [allImages, categories, hiddenSet, locale]);
+
+  // Subjects that have a page of their own, in the order the copy file sets
+  // (featured first). Derived from `sections`, so a category that is hidden or
+  // has no visible work is already gone and cannot be linked into a 404.
+  const categoryLinks = useMemo(
+    () =>
+      CATEGORY_SLUGS.map((slug) =>
+        sections.find((s) => s.slug === slug),
+      ).filter((s): s is Section => s !== undefined),
+    [sections],
+  );
 
   const flat = useMemo(
     () => sections.flatMap((s) => s.images),
@@ -208,6 +221,29 @@ export function WorkPage({
             </Reveal>
           </div>
         </div>
+
+        {/* Subject pages. The strip below jumps within this archive; these go
+            to the page written about each subject — which is also what makes
+            them crawlable, rather than orphans only the sitemap knows about. */}
+        {categoryLinks.length > 0 && (
+          <nav
+            aria-label={dict.nav.work}
+            className="mt-14 md:mt-20 pt-8 border-t border-line"
+          >
+            <ul className="flex flex-wrap gap-x-6 gap-y-3 text-xs uppercase tracking-[0.2em] font-mono text-muted">
+              {categoryLinks.map((c) => (
+                <li key={c.slug}>
+                  <Link
+                    href={categoryPath(locale, c.slug)}
+                    className="hover:text-fg transition-colors"
+                  >
+                    {c.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
       </section>
 
       {/* Category index — horizontal scroll on mobile, sticky strip on desktop */}
