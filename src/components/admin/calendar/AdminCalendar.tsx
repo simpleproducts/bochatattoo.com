@@ -43,6 +43,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { AdminLocaleSwitcher } from "@/components/admin/AdminLocaleSwitcher";
+import { InstallPrompt } from "@/components/admin/InstallPrompt";
 import { readError } from "@/components/admin/read-error";
 import {
   dayKeyOf,
@@ -1187,6 +1188,16 @@ export function AdminCalendar({
           />
         </>
       )}
+
+      {/*
+        Outside the `configured` branch and last in the tree on purpose: the
+        offer to install is about the SCREEN, not about the data, so it still
+        belongs on a calendar that could not reach R2 — and low, below
+        everything, because a home-screen tip must never sit between Bocha and
+        the schedule. It renders nothing at all once installed, once dismissed,
+        or on any browser it cannot positively identify.
+      */}
+      <InstallPrompt dict={dict} />
     </>
   );
 }

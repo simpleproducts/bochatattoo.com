@@ -298,7 +298,14 @@ export async function POST(req: Request, ctx: RouteContext) {
     if (updated.cancelledAt) return fail("invalid-link", 404);
 
     if (!sawPriorAcceptance) {
-      await logEmails(updated, ["ownerSubmitted", "clientSubmitted"]);
+      // The CLIENT is told we have their details and what is still owed; the
+      // STUDIO is not mailed here. A booking at this point is half-finished —
+      // the deposit has not landed — and a mail per half-finished booking is
+      // noise that trains its own reader to ignore the one that matters. The
+      // calendar already shows the amber state the moment this commits, and
+      // `ownerSubmitted` stays buildable so the sheet's Resend can still send
+      // it deliberately. The studio's automatic mail is the confirmation only.
+      await logEmails(updated, ["clientSubmitted"]);
     }
 
     // The CAS has committed and both mails have gone. This load cannot be

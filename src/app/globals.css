@@ -288,3 +288,64 @@ body {
   .work-grid:hover .tile { opacity: 1; }
   .cursor-mark { transition: none; }
 }
+
+/* ---------- Installed-app safe areas (admin only) ----------
+   Only the admin is installable, so these are the only place in the product
+   where there is no browser chrome between the page and the hardware: run from
+   the home screen, the agenda's sticky week strip pins under the notch and its
+   fixed "+ new appointment" bar sits under the home indicator.
+
+   Nothing here is opt-out. `env(safe-area-inset-*)` resolves to 0 unless the
+   document asks for `viewport-fit: cover`, which only src/app/admin/layout.tsx
+   does — so even if the public site ever picked one of these class names up,
+   it would compute to exactly the padding it already had.
+
+   Each rule RESTATES the Tailwind padding it extends and adds the inset to it.
+   A bare `padding-bottom: env(...)` would replace `py-3` rather than extend it,
+   which on a phone with no inset is a bar with no padding at all. These sit
+   outside every @layer, so they win over the utility they are extending no
+   matter what order Tailwind emits.
+
+   The `0px` fallback is required, not decorative: `env()` with no fallback is
+   invalid on a browser that does not know the variable, and an invalid value
+   drops the whole declaration. */
+.admin-safe-shell {
+  /* The admin <body>, which carries no padding of its own — so no base to add
+     to, and a bare inset is the whole rule.
+
+     It earns its keep because the layout asks for `black-translucent`: the
+     installed app owns the full screen height, so WITHOUT this the tab bar at
+     the top of every admin page renders behind the clock and the battery. The
+     left/right pair is the landscape case, where `viewport-fit: cover` lets a
+     row of tabs run into the notch.
+
+     It does nothing for the two bars below. A `position: sticky` element sticks
+     to the SCROLLPORT, and a `position: fixed` one is placed against the
+     viewport; neither is moved by padding on an ancestor, which is why each
+     carries its own inset. */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.admin-safe-top {
+  /* Extends `py-2` on AgendaList's sticky week strip. The day headings below it
+     offset themselves by the strip's MEASURED height, so they follow this on
+     their own.
+
+     The inset is paid ALWAYS, not only while the strip is stuck — CSS cannot ask
+     "am I pinned right now", and the alternative, sticking at
+     `top: env(safe-area-inset-top)`, leaves a transparent gap the calendar rows
+     scroll through beneath a translucent status bar. A slightly taller strip is
+     the cheaper of the two, and it costs nothing outside the installed app. */
+  padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+}
+
+.admin-safe-bottom {
+  /* Extends `px-4 py-3` on AgendaList's fixed create bar. It takes the
+     horizontal insets too because it is `fixed`: it is positioned against the
+     viewport, so .admin-safe-shell on <body> never reaches it. */
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+}
