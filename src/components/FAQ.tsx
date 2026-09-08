@@ -1,4 +1,5 @@
 import { Reveal } from "./Reveal";
+import { FaqJsonLd } from "./FaqJsonLd";
 import type { Dictionary } from "@/i18n/types";
 
 export function FAQ({ dict }: { dict: Dictionary["faq"] }) {
@@ -7,6 +8,14 @@ export function FAQ({ dict }: { dict: Dictionary["faq"] }) {
 			id="faq"
 			className="px-6 md:px-10 py-24 md:py-32 border-t border-line"
 		>
+			{/*
+				Emitted from inside the section that renders the answers, so the
+				markup and the visible copy can only ever ship together: delete
+				this section and the FAQPage claim leaves with it, rather than
+				surviving as a promise of answers the page no longer shows.
+			*/}
+			<FaqJsonLd items={dict.items} />
+
 			<Reveal>
 				<div className="flex items-baseline justify-between mb-12 md:mb-16">
 					<h2 className="font-serif italic text-3xl md:text-5xl">{dict.title}</h2>
