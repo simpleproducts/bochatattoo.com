@@ -230,6 +230,8 @@ export type Dictionary = {
        */
       body: string;
       studioLink: string;
+      /** The studio is private — the door is sent by message, never published. */
+      addressNote: string;
       contactLink: string;
       sentTo: string;
       addToCalendar: string;

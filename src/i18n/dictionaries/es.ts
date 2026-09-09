@@ -247,8 +247,9 @@ const es: Dictionary = {
     done: {
       eyebrow: "Turno confirmado",
       title: "Listo, está todo.",
-      body: "Nos vemos en {studio}. Cualquier cosa, {contact}.",
-      studioLink: "el estudio",
+      body: "Nos vemos en Almagro, a pasos de {studio}. Cualquier cosa, {contact}.",
+      studioLink: "la estación Medrano",
+      addressNote: "Te paso la dirección exacta por mensaje antes del turno.",
       contactLink: "escribinos",
       sentTo: "Te mandamos la confirmación a",
       addToCalendar: "Agregar al calendario",
@@ -256,7 +257,7 @@ const es: Dictionary = {
       paid: {
         body:
           "La seña ya está paga, no tenés que mandar nada más. Nos vemos en " +
-          "{studio}. Cualquier cosa, {contact}.",
+          "Almagro, a pasos de {studio}. Cualquier cosa, {contact}.",
         received: "Pago recibido",
       },
     },

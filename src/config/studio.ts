@@ -21,12 +21,22 @@
  *
  * HOW TO FILL EACH FIELD, AND WHAT IT UNLOCKS
  *
- * lat / lng — already real. Resolved from the studio's own Google Maps pin
- *   (the one STUDIO_MAPS_URL in src/lib/site.ts points at). They let the
- *   LocalBusiness carry a `geo` block, which is what ties the site to a point
- *   on the map for "tatuador cerca mío"-type searches even with no street
- *   address. The pin's venue is a shared address, not a business Bocha owns —
- *   use the coordinates, never the venue's name.
+ * lat / lng — DELIBERATELY NOT THE STUDIO. These are the coordinates of
+ *   Medrano-Almagro station on Subte line B (Av. Corrientes y Av. Medrano),
+ *   about 200 m from the door.
+ *
+ *   This is a PRIVATE studio. The address is given to a client once their
+ *   appointment is confirmed, by message, and it is not published anywhere on
+ *   this site. Coordinates are an address: a `geo` block accurate to seven
+ *   decimal places puts a pin on the actual door for anyone who reads the page
+ *   source, which is exactly what "private" excludes. So the published point
+ *   is the nearest public landmark instead — true, useful to a client working
+ *   out how to get there, and it gives Google the Almagro signal that makes
+ *   the site relevant to "tatuador cerca mío" without handing out the door.
+ *
+ *   If the studio ever DOES publish its address, replace these with the real
+ *   ones and make them match the Google Business Profile exactly — a geo that
+ *   disagrees with the profile is worse than no geo at all.
  *
  * streetAddress — the street and number as it is written on the Google
  *   Business Profile, character for character ("Av. Corrientes 1234, 2º B" and
@@ -60,9 +70,13 @@
  *   are usually better served by an empty array than by hours nobody keeps.
  */
 export const STUDIO = {
-  /** Real. Do not round or "clean up" — the precision is the point. */
-  lat: -34.6050123,
-  lng: -58.420779,
+  /**
+   * Medrano-Almagro station, Subte B — NOT the studio. See the note above
+   * before changing these: the studio's own coordinates are private and must
+   * not be published here or anywhere else on the public site.
+   */
+  lat: -34.60319,
+  lng: -58.42094,
 
   /** Empty until the studio supplies them. Omitted from JSON-LD while empty. */
   streetAddress: "",

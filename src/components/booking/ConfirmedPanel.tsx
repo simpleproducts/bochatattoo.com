@@ -109,6 +109,14 @@ export function ConfirmedPanel({ view, locale, dict }: ConfirmedPanelProps) {
         })}
       </p>
 
+      {/* The studio is private: the pin in the line above is the Subte stop,
+          and the door itself arrives by message. Saying so stops a client
+          hunting for an address on a page that deliberately does not carry
+          one. */}
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+        {d.addressNote}
+      </p>
+
       {email ? (
         <p className="font-mono text-xs text-muted break-all">
           {d.sentTo} {email}

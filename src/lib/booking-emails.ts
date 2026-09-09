@@ -438,8 +438,9 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     titleConfirmed: "Listo, tu turno está confirmado",
     leadConfirmed: "Recibimos tu comprobante. Nos vemos el {date} a las {time}.",
     leadConfirmedPaid: "Recibimos tu pago. Nos vemos el {date} a las {time}.",
-    outroConfirmed: "Nos vemos en {studio}. Cualquier cosa, {contact}.",
-    studioLink: "el estudio",
+    outroConfirmed:
+      "Nos vemos en Almagro, a pasos de {studio}. Te paso la dirección exacta por mensaje antes del turno. Cualquier cosa, {contact}.",
+    studioLink: "la estación Medrano",
     contactLink: "escribinos",
     ctaOpen: "Abrir mi turno",
     ctaView: "Ver mi turno",
@@ -480,8 +481,9 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     titleConfirmed: "You're all set",
     leadConfirmed: "We got your receipt. See you on {date} at {time}.",
     leadConfirmedPaid: "We got your payment. See you on {date} at {time}.",
-    outroConfirmed: "See you at {studio}. Any questions, {contact}.",
-    studioLink: "the studio",
+    outroConfirmed:
+      "See you in Almagro, a short walk from {studio}. I'll send you the exact address by message before your appointment. Any questions, {contact}.",
+    studioLink: "Medrano station",
     contactLink: "write to us",
     ctaOpen: "Open my appointment",
     ctaView: "View my appointment",
