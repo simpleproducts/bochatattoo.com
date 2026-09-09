@@ -246,16 +246,17 @@ const en: Dictionary = {
     done: {
       eyebrow: "Appointment confirmed",
       title: "You're all set.",
-      body: "See you at {studio}. Any questions, {contact}.",
-      studioLink: "the studio",
+      body: "See you in Almagro, a short walk from {studio}. Any questions, {contact}.",
+      studioLink: "Medrano station",
+      addressNote: "I'll send you the exact address by message before your appointment.",
       contactLink: "write to us",
       sentTo: "We sent your confirmation to",
       addToCalendar: "Add to calendar",
       calendarTitle: "Appointment with Bocha",
       paid: {
         body:
-          "Your deposit is paid — there's nothing else to send. See you at " +
-          "{studio}. Any questions, {contact}.",
+          "Your deposit is paid — there's nothing else to send. See you in " +
+          "Almagro, a short walk from {studio}. Any questions, {contact}.",
         received: "Payment received",
       },
     },

@@ -34,5 +34,19 @@ export const INSTAGRAM_URL = `https://instagram.com/${INSTAGRAM_HANDLE}`;
  */
 export const INSTAGRAM_DM_URL = `https://ig.me/m/${INSTAGRAM_HANDLE}`;
 
-/** The studio, on Google Maps. Shortlink so it survives being pasted anywhere. */
-export const STUDIO_MAPS_URL = "https://maps.app.goo.gl/KeshNw1dSqBvvmfn6";
+/**
+ * MEDRANO STATION, not the studio.
+ *
+ * The studio is private and its address goes to a client by message once the
+ * appointment is confirmed — never on the site, and never in a link that ends
+ * up in an inbox, a browser history or a forwarded WhatsApp message. So the
+ * pin every public surface points at is the nearest Subte stop (line B,
+ * Av. Corrientes y Av. Medrano, about 200 m away), which is the part of the
+ * journey a client actually needs help with anyway.
+ *
+ * Coordinate form rather than a shortlink: it cannot silently start resolving
+ * to a different place, and it carries no venue name that could be mistaken
+ * for the studio's.
+ */
+export const STUDIO_MAPS_URL =
+  "https://www.google.com/maps/search/?api=1&query=-34.60319%2C-58.42094";

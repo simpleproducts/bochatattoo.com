@@ -18,10 +18,13 @@ const SITE = "https://bochatattoo.com";
  * breaks the match, which costs more ranking than the missing field ever did.
  * Absent is honest. Empty is a claim that the studio has no phone.
  *
- * `geo` is unconditional because the coordinates are real — resolved from the
- * studio's own map pin. They are what ties this business to a point on the map
- * for proximity searches even with no street address published, which is the
- * whole reason a private, address-on-request studio can still rank locally.
+ * `geo` is unconditional, but the point it publishes is Medrano station, NOT
+ * the studio — see src/config/studio.ts. This is a private studio whose address
+ * a client receives by message after their appointment is confirmed, and
+ * coordinates are an address: a seven-decimal `geo` puts a pin on the door for
+ * anyone who reads this page's source. The nearest Subte stop is 200 m away,
+ * is true, and gives Google the same Almagro proximity signal without
+ * publishing what the studio deliberately does not publish.
  */
 export function JsonLd({ locale }: { locale: Locale }) {
   const data = {
