@@ -34,7 +34,7 @@ import { toPublicView, verifyBookingAccess } from "@/lib/bookings-store";
 import type { BookingAccessReason } from "@/lib/bookings-types";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { BookingsNotConfiguredError } from "@/lib/r2-private";
-import { loadPublicPaymentSettings } from "@/lib/settings-store";
+import { loadBookingPageSettings } from "@/lib/settings-store";
 
 export const runtime = "nodejs";
 
@@ -78,9 +78,14 @@ export async function GET(req: Request, ctx: RouteContext) {
     if (!access.ok) return refuse(access.reason);
     // Read only after the token has proven itself, so a burst of forged links
     // costs one R2 GET each and not two. Never throws — see the helper.
-    const paymentSettings = await loadPublicPaymentSettings();
+    const settings = await loadBookingPageSettings();
     return NextResponse.json(
-      { ok: true, view: toPublicView(access.record, paymentSettings) },
+      {
+        ok: true,
+        // Both blocks handed down whole; toPublicView is the only thing that
+        // decides whether this booking has earned the address.
+        view: toPublicView(access.record, settings.payment, settings.studio),
+      },
       { headers: NO_STORE },
     );
   } catch (err) {

@@ -248,6 +248,8 @@ const en: Dictionary = {
       title: "You're all set.",
       body: "See you in Almagro, a short walk from {studio}. Any questions, {contact}.",
       studioLink: "Medrano station",
+      addressTitle: "Studio address",
+      arrivalLabel: "When you arrive",
       addressNote: "I'll send you the exact address by message before your appointment.",
       contactLink: "write to us",
       sentTo: "We sent your confirmation to",

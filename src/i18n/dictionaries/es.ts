@@ -249,6 +249,8 @@ const es: Dictionary = {
       title: "Listo, está todo.",
       body: "Nos vemos en Almagro, a pasos de {studio}. Cualquier cosa, {contact}.",
       studioLink: "la estación Medrano",
+      addressTitle: "Dirección del estudio",
+      arrivalLabel: "Al llegar",
       addressNote: "Te paso la dirección exacta por mensaje antes del turno.",
       contactLink: "escribinos",
       sentTo: "Te mandamos la confirmación a",

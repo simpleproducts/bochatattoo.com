@@ -488,7 +488,10 @@ export type AdminDictionary = {
   /**
    * The fourth tab: everything the studio can change without a deploy — who
    * its mail comes from, whether a bank transfer is offered and with which
-   * numbers, whether MercadoPago is offered at all.
+   * numbers, whether MercadoPago is offered at all, and where the studio is.
+   *
+   * That last one is the only field here that is not about money, and the only
+   * one whose whole point is who does NOT get to read it: see `hints.studio`.
    *
    * No secret is named here and none may be. The Brevo key and the MercadoPago
    * access token live in the hosting environment, which is the whole reason
@@ -505,11 +508,12 @@ export type AdminDictionary = {
     saved: string;
     /** The PUT was refused or never arrived. Nothing was written. */
     saveFailed: string;
-    /** The three groups the form is split into. */
+    /** The four groups the form is split into. */
     sections: {
       email: string;
       transfer: string;
       mercadopago: string;
+      studio: string;
     };
     /**
      * Field labels. The bank block reuses the client page's words on purpose —
@@ -524,6 +528,8 @@ export type AdminDictionary = {
       cbu: string;
       holder: string;
       bank: string;
+      address: string;
+      arrivalNote: string;
     };
     /**
      * The two "offer this method" switches. Phrased as what the CLIENT is
@@ -535,13 +541,29 @@ export type AdminDictionary = {
       mercadopago: string;
     };
     /**
-     * Sits under the section it explains. Only two sections need one: the
-     * email fields, where empty is a meaningful value and not an omission,
-     * and MercadoPago, where the toggle is only half of what turns it on.
+     * Sits with the section it explains. Three sections need one: the email
+     * fields, where empty is a meaningful value and not an omission;
+     * MercadoPago, where the toggle is only half of what turns it on; and the
+     * studio address, for the reason `studio` spells out below.
      */
     hints: {
       email: string;
       mercadopago: string;
+      /**
+       * THE ANSWER TO "DOES TYPING THIS PUBLISH MY ADDRESS?", and the reason it
+       * is a string in the dictionary rather than a comment in the code: the
+       * person who will ask it is the operator staring at an empty box, not a
+       * reader of this file. It has to name the audience (a client whose
+       * booking is CONFIRMED), the two places it appears (their private page,
+       * their confirmation email), and the place it never does (the public
+       * site) — because a hint that only reassures, without saying what the
+       * condition is, is not something an operator can check.
+       *
+       * Rendered ABOVE the inputs, not under them: it is read before typing.
+       */
+      studio: string;
+      /** What belongs in the arrival note, since "note" alone says nothing. */
+      arrivalNote: string;
     };
     /**
      * What the form refuses before it ever sends. `invalidCbu` names the
@@ -872,6 +894,7 @@ const adminEs: AdminDictionary = {
       email: "Emails",
       transfer: "Transferencia bancaria",
       mercadopago: "MercadoPago",
+      studio: "Dirección del estudio",
     },
     fields: {
       senderEmail: "Dirección del remitente",
@@ -881,6 +904,8 @@ const adminEs: AdminDictionary = {
       cbu: "CBU",
       holder: "Titular",
       bank: "Banco",
+      address: "Dirección",
+      arrivalNote: "Indicaciones de llegada",
     },
     toggles: {
       transfer: "Ofrecer transferencia bancaria",
@@ -891,6 +916,13 @@ const adminEs: AdminDictionary = {
       mercadopago:
         "El access token de MercadoPago se configura en el entorno del " +
         "hosting, no acá.",
+      studio:
+        "Esto lo ve únicamente el cliente que ya tiene el turno confirmado " +
+        "—términos aceptados y seña acreditada—, en su página privada y en el " +
+        "mail de confirmación. Nunca aparece en el sitio público. Si lo dejás " +
+        "vacío, no se muestra ninguna dirección.",
+      arrivalNote:
+        "Timbre, piso, la esquina más cercana — lo que ayude a llegar a la puerta.",
     },
     errors: {
       invalidEmail: "Esa dirección de email no es válida.",
@@ -1203,6 +1235,7 @@ const adminEn: AdminDictionary = {
       email: "Email",
       transfer: "Bank transfer",
       mercadopago: "MercadoPago",
+      studio: "Studio address",
     },
     fields: {
       senderEmail: "Sender address",
@@ -1212,6 +1245,8 @@ const adminEn: AdminDictionary = {
       cbu: "CBU",
       holder: "Account holder",
       bank: "Bank",
+      address: "Street address",
+      arrivalNote: "Arrival note",
     },
     toggles: {
       transfer: "Offer bank transfer",
@@ -1222,6 +1257,13 @@ const adminEn: AdminDictionary = {
       mercadopago:
         "The MercadoPago access token is configured in the hosting " +
         "environment, not here.",
+      studio:
+        "Only a client whose booking is confirmed — terms accepted and deposit " +
+        "settled — ever sees this, on their private booking page and in their " +
+        "confirmation email. It never appears on the public site. Leave it " +
+        "empty and no address is shown at all.",
+      arrivalNote:
+        "Buzzer, floor, the nearest corner — whatever helps someone find the door.",
     },
     errors: {
       invalidEmail: "That email address is not valid.",
