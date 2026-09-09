@@ -14,7 +14,7 @@
  * lives with until someone notices.
  *
  * Each failure answers its own CODE. One `bad-settings` for the lot would tell
- * the form nothing it could point at, and these are eight fields the operator
+ * the form nothing it could point at, and these are ten fields the operator
  * types by hand off a home-banking screen; "which one" is the entire question.
  *
  * NO SECRET IS READ OR WRITTEN HERE. `mercadoPagoConfigured()` answers whether
@@ -38,11 +38,14 @@ import {
   SettingsConflictError,
 } from "@/lib/settings-store";
 import {
+  ADDRESS_MAX,
   ALIAS_MAX,
+  ARRIVAL_NOTE_MAX,
   BANK_MAX,
   CBU_MAX,
   HOLDER_MAX,
   type EmailSettings,
+  type StudioSettings,
   type TransferSettings,
 } from "@/lib/settings-types";
 
@@ -311,6 +314,39 @@ export async function PUT(req: Request) {
     );
   }
 
+  const studioSection = readSection(body.studio, "bad-studio-section", "studio");
+  if (!studioSection.ok) return studioSection.response;
+
+  /*
+   * The street address, and the note that gets a client through the door.
+   *
+   * Both are plain capped text, and BLANK IS VALID for both — it is how a studio
+   * that has not decided yet, or that has moved and not re-typed, says "not
+   * set". There is deliberately no `transfer-unusable`-style refusal pairing
+   * them: an arrival note with no address is not a broken configuration, because
+   * the gate in toPublicView() keys on the ADDRESS, so a note with nothing to
+   * accompany is simply never disclosed rather than leaked on its own.
+   *
+   * Nothing else is checked. There is no such thing as a malformed Buenos Aires
+   * address, and a route that tried to prove one would only refuse the real one
+   * the operator was looking at.
+   */
+  const address = readText(
+    studioSection.value.address,
+    "bad-address",
+    "studio.address",
+    ADDRESS_MAX,
+  );
+  if (!address.ok) return address.response;
+
+  const arrivalNote = readText(
+    studioSection.value.arrivalNote,
+    "bad-arrival-note",
+    "studio.arrivalNote",
+    ARRIVAL_NOTE_MAX,
+  );
+  if (!arrivalNote.ok) return arrivalNote.response;
+
   const email: EmailSettings = {
     senderEmail: senderEmail.value,
     senderName: senderName.value,
@@ -323,6 +359,10 @@ export async function PUT(req: Request) {
     holder: holder.value,
     bank: bank.value,
   };
+  const studio: StudioSettings = {
+    address: address.value,
+    arrivalNote: arrivalNote.value,
+  };
 
   try {
     // `version` and `updatedAt` are the store's to stamp, which is why the
@@ -331,6 +371,7 @@ export async function PUT(req: Request) {
       email,
       transfer,
       mercadopago: { enabled: mpEnabled.value },
+      studio,
     });
     return ok({ ok: true, settings });
   } catch (err) {

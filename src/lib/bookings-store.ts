@@ -66,7 +66,7 @@ import {
   type PublicBookingView,
   type ReceiptExt,
 } from "./bookings-types";
-import type { PublicPaymentSettings } from "./settings-types";
+import type { PublicPaymentSettings, StudioSettings } from "./settings-types";
 import { deriveStatus } from "./booking-status";
 import {
   bookingLinks,
@@ -597,15 +597,21 @@ export async function toAdminAppointment(b: BookingRecord): Promise<AdminAppoint
  * below rather than sent, because the page renders "paid" and has no use for a
  * provider payment id or for an amount it did not choose.
  *
- * The payment settings arrive as an ARGUMENT rather than being read here. This
+ * Both settings blocks arrive as ARGUMENTS rather than being read here. This
  * function is synchronous and pure — it is called inside route handlers that
  * have already committed a mutation — and loading a settings document from R2
  * in the middle of that would make it neither. Every caller (both booking pages
- * and the booking API routes) loads them once per request and hands them down.
+ * and the booking API routes) loads them once per request through the one
+ * shared loader in settings-store and hands them down.
  */
 export function toPublicView(
   b: BookingRecord,
   paymentSettings: PublicPaymentSettings,
+  /**
+   * The studio block WHOLE, address included. Handing this function the private
+   * value and letting it decide is the point: the decision is below, once.
+   */
+  studio: StudioSettings,
 ): PublicBookingView {
   const derived = deriveStatus(b);
   // verifyBookingAccess refuses a cancelled booking before anything can reach
@@ -653,6 +659,25 @@ export function toPublicView(
     paid: Boolean(b.payment),
     paymentSettings,
     studioTimeZone: STUDIO_TIME_ZONE,
+    // THE ADDRESS GATE. The studio is private and its street address is the one
+    // fact it cannot take back once it is out: this link travels by WhatsApp,
+    // where it is forwarded, screenshotted and pasted into group chats long
+    // before anyone has transferred a deposit, and a booking that is still red
+    // is somebody Bocha invited who may never come. So an unconfirmed booking
+    // produces NO address at all — not an empty string, not a null the reader
+    // could tell apart from a studio that has not set one.
+    //
+    // It is one check in one place deliberately. This whole shape is typed out
+    // field by field so a new field cannot leak by being added; the same
+    // reasoning puts the status check inside it rather than at the five call
+    // sites, because five checks are five chances to forget one, and the one
+    // that forgets is the one that leaks. `derived` is reused rather than
+    // re-derived — deriveStatus is the single definition of "confirmed", and
+    // this is not a second opinion about it.
+    studioAddress:
+      derived === "confirmed" && studio.address.trim()
+        ? { address: studio.address, arrivalNote: studio.arrivalNote }
+        : null,
   };
 }
 

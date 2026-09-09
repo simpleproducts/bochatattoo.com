@@ -174,6 +174,11 @@ export type Dictionary = {
       holder: string;
       bank: string;
       amount: string;
+      /**
+       * The copy-button pair, shared with the confirmed panel's address block:
+       * it is the same control doing the same thing, and a second identical
+       * "copiar" under `done` would only be two strings to keep in step.
+       */
       copy: string;
       copied: string;
       /**
@@ -230,7 +235,19 @@ export type Dictionary = {
        */
       body: string;
       studioLink: string;
-      /** The studio is private — the door is sent by message, never published. */
+      /**
+       * Heads the address block, which renders ONLY when the wire carried an
+       * address — i.e. a confirmed booking at a studio that has typed one into
+       * the settings tab. See ConfirmedPanel; the page decides nothing.
+       */
+      addressTitle: string;
+      /** Labels the door instructions under it: buzzer, floor, which bell. */
+      arrivalLabel: string;
+      /**
+       * The studio is private, and with no address on the wire the door is
+       * still sent by message. This is the fallback the address block replaces,
+       * never a line shown next to a real address — it would contradict it.
+       */
       addressNote: string;
       contactLink: string;
       sentTo: string;

@@ -36,7 +36,7 @@ import type {
   PublicBookingView,
 } from "@/lib/bookings-types";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
-import { loadPublicPaymentSettings } from "@/lib/settings-store";
+import { loadBookingPageSettings } from "@/lib/settings-store";
 
 const locale = "en" as const;
 const dict = getDictionary(locale);
@@ -69,8 +69,13 @@ async function resolve(token: string): Promise<Resolved> {
   try {
     const access = await verifyBookingAccess(token);
     if (!access.ok) return { ok: false, reason: access.reason };
-    const settings = await loadPublicPaymentSettings();
-    return { ok: true, view: toPublicView(access.record, settings) };
+    const settings = await loadBookingPageSettings();
+    return {
+      ok: true,
+      // The studio block goes in WHOLE and comes out gated: toPublicView keeps
+      // the address off any view that is not confirmed. Nothing here decides.
+      view: toPublicView(access.record, settings.payment, settings.studio),
+    };
   } catch (err) {
     // An unset bucket, a missing signing key, a sulking R2. None of it is
     // something the reader can act on, and none of it may reach their screen.

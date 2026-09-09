@@ -212,6 +212,16 @@ export type PublicBookingView = {
    * "where the studio is", `timeZone` says "where this appointment is".
    */
   studioTimeZone: string;
+  /**
+   * The studio's street address — PRESENT ONLY ON A CONFIRMED BOOKING, `null`
+   * in every other state. Not an empty string, not a blanked-out field: an
+   * unconfirmed booking carries no address anywhere in this object, so nothing
+   * a reader receives can be told apart from a studio that has not set one.
+   *
+   * The single gate that fills it lives in toPublicView() — see the comment
+   * there for why it is one check in one place and not five at the call sites.
+   */
+  studioAddress: { address: string; arrivalNote: string } | null;
 };
 
 /** Why a token was refused. The API collapses all of these to one vague code. */

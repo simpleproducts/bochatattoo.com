@@ -68,11 +68,12 @@ import {
   type BookingEmailKind,
   type BookingId,
   type BookingRecord,
+  type PublicBookingView,
 } from "@/lib/bookings-types";
 import { deletePrivate, putPrivateBytes, BookingsNotConfiguredError } from "@/lib/r2-private";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { sniffReceipt, type SniffedReceipt } from "@/lib/receipt-validate";
-import { loadPublicPaymentSettings } from "@/lib/settings-store";
+import { loadBookingPageSettings } from "@/lib/settings-store";
 
 export const runtime = "nodejs";
 /** A 4 MB upload plus a bucket write plus two Brevo calls, behind one tap. */
@@ -95,6 +96,21 @@ function refuse(reason: BookingAccessReason): NextResponse {
   return reason === "link-expired"
     ? fail("link-expired", 410)
     : fail("invalid-link", 404);
+}
+
+/**
+ * One settings read, one view. Three of the answers below carry a
+ * PublicBookingView and each is reached on its own, so the read stays with the
+ * answer rather than being hoisted to the top — the paths that refuse WITHOUT a
+ * view (the durable upload ceiling, a rejected file) still cost zero settings
+ * GETs, which is what keeps a valid link that is being hammered cheap.
+ *
+ * Both settings blocks go into toPublicView untouched. The studio address is
+ * gated in there, once, and this route makes no judgement of its own about it.
+ */
+async function viewOf(record: BookingRecord): Promise<PublicBookingView> {
+  const settings = await loadBookingPageSettings();
+  return toPublicView(record, settings.payment, settings.studio);
 }
 
 /** Persist first, send second, log third — never fail a committed upload. */
@@ -240,7 +256,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     // could not act on and which no reload of the page would have produced.
     if (prepared.ok && record.receipt?.key === prepared.key) {
       return NextResponse.json(
-        { ok: true, view: toPublicView(record, await loadPublicPaymentSettings()) },
+        { ok: true, view: await viewOf(record) },
         { headers: NO_STORE },
       );
     }
@@ -256,7 +272,7 @@ export async function POST(req: Request, ctx: RouteContext) {
       return NextResponse.json(
         {
           error: "booking-locked",
-          view: toPublicView(record, await loadPublicPaymentSettings()),
+          view: await viewOf(record),
         },
         { status: 409, headers: NO_STORE },
       );
@@ -357,7 +373,7 @@ export async function POST(req: Request, ctx: RouteContext) {
     // helper. A 500 here would tell a client their comprobante failed to
     // upload when the booking is already holding it.
     return NextResponse.json(
-      { ok: true, view: toPublicView(updated, await loadPublicPaymentSettings()) },
+      { ok: true, view: await viewOf(updated) },
       { headers: NO_STORE },
     );
   } catch (err) {

@@ -44,12 +44,34 @@
  * types into their MercadoPago account to find the payment, and the client
  * already has MercadoPago's own receipt for the same transaction.
  *
- * ADDRESSES COME FROM THE SETTINGS DOCUMENT, resolved once per batch in
+ * SETTINGS COME FROM THE SETTINGS DOCUMENT, resolved once per batch in
  * `sendBookingEmails` and handed down — sender to `sendTransactional`, transfer
- * details to the builder that prints them. The builders stay pure functions of
- * a record: they do no I/O, so any of them can be rendered in a test or a
- * preview without a bucket. An empty settings field means "fall back" (to the
- * env var, then to a constant), never "send from nothing".
+ * details and the studio's street address to the builders that print them. The
+ * builders stay pure functions of a record: they do no I/O, so any of them can
+ * be rendered in a test or a preview without a bucket. An empty settings field
+ * means "fall back" (to the env var, then to a constant) for the sender, and
+ * simply "print nothing" for the blocks that are optional.
+ *
+ * THE STREET ADDRESS TRAVELS IN EXACTLY ONE OF THESE FOUR MAILS.
+ * `buildClientConfirmed`, and nowhere else. Not `buildClientSubmitted`: that one
+ * goes out while the booking is still amber, and the private link it carries is
+ * forwarded and screenshotted long before anybody has paid. Not the owner mails
+ * either — Bocha knows where his own studio is, so a copy there would be one
+ * more inbox holding the address for no reader who needs it.
+ *
+ * AND THERE IS NO STATUS CHECK AROUND IT, on purpose. `clientConfirmed` is
+ * queued on the TRANSITION into confirmed and by nothing else: the receipt route
+ * and the MercadoPago webhook each queue it in the same breath as writing the
+ * receipt or the approved payment that made the booking green. Restating
+ * `deriveStatus(b) === "confirmed"` inside the builder would put the rule in a
+ * second place, where it is free to drift from the real one in booking-status.ts
+ * and where nothing would ever exercise it. The caller decides which mail to
+ * send; this file prints the mail it was asked for.
+ *
+ * (The admin Resend button can re-issue any kind on any booking. That is a
+ * deliberate act by the one person who owns the address, taken behind the admin
+ * session — a different thing entirely from a forwarded link, and not what the
+ * gate in toPublicView exists to stop.)
  *
  * COPY LIVES HERE, NOT IN THE DICTIONARY. `dict.booking` is typed for the
  * client page and every string in it is rendered by a React component; email
@@ -99,6 +121,7 @@ import {
   type EmailSettings,
   type PaymentMethod,
   type Settings,
+  type StudioSettings,
   type TransferSettings,
 } from "./settings-types";
 import {
@@ -392,8 +415,18 @@ type ClientCopy = {
   leadConfirmed: string;
   /** The same line for a booking confirmed by a payment, which has no receipt. */
   leadConfirmedPaid: string;
+  /** Heads the address block. Printed only when there is an address to head. */
+  addressEyebrow: string;
   /** Carries {studio} and {contact} placeholders — see outroHtml/outroText. */
   outroConfirmed: string;
+  /**
+   * The same closing line for a mail that just printed the address, with the
+   * "I'll send it by message" promise taken out — it is the one sentence that
+   * would be false three centimetres under the street the client is being sent
+   * to. Same two placeholders, same renderer; the Medrano pin stays, because
+   * getting to the neighbourhood is still the first half of the trip.
+   */
+  outroConfirmedAddress: string;
   studioLink: string;
   contactLink: string;
   ctaOpen: string;
@@ -408,6 +441,10 @@ type ClientCopy = {
     deposit: string;
     /** How the deposit arrived. The row only exists once one of them has. */
     payment: string;
+    /** The street itself. Confirmed client mail only — see the header. */
+    address: string;
+    /** Heads the door instructions: buzzer, floor, which bell to ring. */
+    arrival: string;
     alias: string;
     cbu: string;
     holder: string;
@@ -438,8 +475,11 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     titleConfirmed: "Listo, tu turno está confirmado",
     leadConfirmed: "Recibimos tu comprobante. Nos vemos el {date} a las {time}.",
     leadConfirmedPaid: "Recibimos tu pago. Nos vemos el {date} a las {time}.",
+    addressEyebrow: "Dirección del estudio",
     outroConfirmed:
       "Nos vemos en Almagro, a pasos de {studio}. Te paso la dirección exacta por mensaje antes del turno. Cualquier cosa, {contact}.",
+    outroConfirmedAddress:
+      "Nos vemos en Almagro, a pasos de {studio}. Cualquier cosa, {contact}.",
     studioLink: "la estación Medrano",
     contactLink: "escribinos",
     ctaOpen: "Abrir mi turno",
@@ -453,6 +493,8 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
       duration: "Duración",
       deposit: "Seña",
       payment: "Pago",
+      address: "Dirección",
+      arrival: "Al llegar",
       alias: "Alias",
       cbu: "CBU",
       holder: "Titular",
@@ -481,8 +523,11 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
     titleConfirmed: "You're all set",
     leadConfirmed: "We got your receipt. See you on {date} at {time}.",
     leadConfirmedPaid: "We got your payment. See you on {date} at {time}.",
+    addressEyebrow: "Studio address",
     outroConfirmed:
       "See you in Almagro, a short walk from {studio}. I'll send you the exact address by message before your appointment. Any questions, {contact}.",
+    outroConfirmedAddress:
+      "See you in Almagro, a short walk from {studio}. Any questions, {contact}.",
     studioLink: "Medrano station",
     contactLink: "write to us",
     ctaOpen: "Open my appointment",
@@ -496,6 +541,8 @@ const CLIENT_COPY: Record<Locale, ClientCopy> = {
       duration: "Duration",
       deposit: "Deposit",
       payment: "Payment",
+      address: "Address",
+      arrival: "When you arrive",
       alias: "Alias",
       cbu: "CBU",
       holder: "Account holder",
@@ -829,9 +876,13 @@ export function buildClientSubmitted(
  * and "escribinos" with no address is a dead end. `esc` is applied to the
  * labels for the same reason it is applied everywhere else in this file — the
  * URLs are our own constants, the labels come from the copy table.
+ *
+ * `template` is passed in rather than read off `c` because there are now two of
+ * them and the choice belongs to the caller, which is the only place that knows
+ * whether the address was printed above.
  */
-function outroHtml(c: ClientCopy): string {
-  const filled = c.outroConfirmed
+function outroHtml(c: ClientCopy, template: string): string {
+  const filled = template
     .replace(
       "{studio}",
       `<a href="${STUDIO_MAPS_URL}" style="color:${INK};">${esc(c.studioLink)}</a>`,
@@ -843,18 +894,28 @@ function outroHtml(c: ClientCopy): string {
   return htmlParaRaw(filled);
 }
 
-function outroText(c: ClientCopy): string {
-  return c.outroConfirmed
+function outroText(c: ClientCopy, template: string): string {
+  return template
     .replace("{studio}", `${c.studioLink} (${STUDIO_MAPS_URL})`)
     .replace("{contact}", `${c.contactLink} (${INSTAGRAM_DM_URL})`);
 }
 
 /**
- * `token` is optional only so a caller holding just a record can still build
- * this mail; `sendBookingEmails` always passes one, because a confirmation the
+ * THE ONE MAIL THAT CARRIES THE STUDIO'S STREET ADDRESS. Why it needs no status
+ * check of its own, and why the other three must never grow one, is in the
+ * header block.
+ *
+ * `studio` comes before `token` purely because TypeScript will not take a
+ * required parameter after an optional one, and `token` stays optional for the
+ * reason it always was: a caller holding just a record can still render this
+ * mail, while `sendBookingEmails` always passes one, because a confirmation the
  * client cannot click back into is a worse confirmation.
  */
-export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEmail {
+export function buildClientConfirmed(
+  b: BookingRecord,
+  studio: StudioSettings,
+  token?: string,
+): BuiltEmail {
   const locale = clientLocale(b);
   const c = CLIENT_COPY[locale];
   const tz = recordTimeZone(b);
@@ -871,6 +932,15 @@ export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEma
   });
   const rows = whenRows(b, locale, c);
   if (b.payment) rows.push(clientPaymentRow(b.payment, c));
+
+  // An unset address is a settings document nobody has finished filling in, not
+  // a broken mail: the block simply does not print and the closing line goes
+  // back to promising the door by message, which is then exactly what happens.
+  const address = studio.address.trim();
+  // Gated on the ADDRESS, not on itself. "Timbre dos veces" with no street
+  // above it is an instruction for a building the reader cannot find.
+  const arrival = address ? studio.arrivalNote.trim() : "";
+  const outro = address ? c.outroConfirmedAddress : c.outroConfirmed;
   const link = token ? bookingLinks(token)[locale] : "";
 
   return {
@@ -884,7 +954,17 @@ export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEma
         greeting ? htmlPara(greeting) : "",
         htmlPara(lead),
         htmlRows(rows),
-        outroHtml(c),
+        // Its own headed block under the when-rows, so "where" reads as a
+        // second answer rather than a fourth line of the appointment table.
+        address
+          ? htmlEyebrow(c.addressEyebrow) +
+            htmlRows([{ label: c.labels.address, value: address }])
+          : "",
+        // htmlQuote and not another row: this is free text the studio typed,
+        // and it is the one block here whose newlines are load-bearing — a
+        // table cell would flatten "3º B / timbre dos veces" into one line.
+        arrival ? htmlQuote(c.labels.arrival, arrival) : "",
+        outroHtml(c, outro),
         link ? htmlCta(link, c.ctaView) : "",
         htmlNote(c.reply),
       ].join(""),
@@ -896,7 +976,11 @@ export function buildClientConfirmed(b: BookingRecord, token?: string): BuiltEma
       greeting,
       lead,
       textRows(rows),
-      outroText(c),
+      address ? `${c.addressEyebrow}:\n${address}` : "",
+      // Same shape as the owner mail's client note, and for the same reason:
+      // padEnd alignment assumes a single-line value, which this is not.
+      arrival ? `${c.labels.arrival}:\n${arrival}` : "",
+      outroText(c, outro),
       link ? `${c.ctaView}:\n${link}` : "",
       c.reply,
       `—\n${c.footer}`,
@@ -1020,7 +1104,12 @@ export async function sendBookingEmails(
             ? buildOwnerConfirmed(b)
             : kind === "clientSubmitted"
               ? buildClientSubmitted(b, token, settings.transfer)
-              : buildClientConfirmed(b, token);
+              : // The one send that carries the address, from the same batch
+                // read as everything else. Note that `settings.studio` is NOT
+                // reachable from the other three branches: each builder is
+                // handed the slice it is allowed to print, so the address
+                // cannot end up in an owner mail by an edit made above.
+                buildClientConfirmed(b, settings.studio, token);
     } catch (err) {
       // A stored value the formatters reject (an unparseable date) must not
       // take down a request whose write already committed.

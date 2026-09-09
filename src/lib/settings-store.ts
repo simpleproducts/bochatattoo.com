@@ -12,6 +12,9 @@
  *    is the studio's own inbox — and the public half is chosen deliberately by
  *    toPublicPaymentSettings(), not by which bucket an object happens to sit
  *    in. Nothing should ever be readable merely because nobody thought about it.
+ *    The `studio` block is what makes that more than a principle: it holds the
+ *    street address of a private studio, disclosed only to a client whose
+ *    booking is confirmed, so this object must never become fetchable by URL.
  *
  * 2. Every write is a compare-and-swap (`IfMatch` on the ETag read a moment
  *    earlier), never a plain read-modify-write, for the same reason
@@ -50,6 +53,7 @@ import {
   type EmailSettings,
   type PublicPaymentSettings,
   type Settings,
+  type StudioSettings,
   type TransferSettings,
 } from "./settings-types";
 import { getPrivateJson, putPrivateJson, PreconditionFailed } from "./r2-private";
@@ -81,6 +85,7 @@ type StoredSettings = {
   email?: Partial<EmailSettings>;
   transfer?: Partial<TransferSettings>;
   mercadopago?: { enabled?: boolean };
+  studio?: Partial<StudioSettings>;
   updatedAt?: string;
 };
 
@@ -115,6 +120,16 @@ function mergeSettings(stored: StoredSettings | undefined): Settings {
     mercadopago: {
       enabled: stored?.mercadopago?.enabled ?? d.mercadopago.enabled,
     },
+    // Every settings document on R2 today predates this block. Without the
+    // merge, `studio` reads back as undefined while the type promises a
+    // StudioSettings, and the first thing that touches it — the gate's
+    // `studio.address.trim()` in toPublicView() — throws on a booking page the
+    // client is entitled to see. The defaults say "no address set", which is
+    // the truth for a document that was written before there was one.
+    studio: {
+      address: stored?.studio?.address ?? d.studio.address,
+      arrivalNote: stored?.studio?.arrivalNote ?? d.studio.arrivalNote,
+    },
     updatedAt: stored?.updatedAt ?? d.updatedAt,
   };
 }
@@ -136,11 +151,42 @@ export async function loadSettings(): Promise<Settings> {
 }
 
 /**
- * The public half of the settings, for a caller that must not fail when the
+ * Everything a booking page needs out of the settings document, in the two
+ * blocks it needs them as.
+ *
+ * The split is the security boundary written down. `payment` is the half that
+ * is PUBLIC by construction — it rides out on every PublicBookingView — while
+ * `studio` is the half that is not: it carries the street address, which
+ * reaches a browser only through toPublicView's confirmed-only gate. Returning
+ * them as one flat object would put the address one careless spread away from
+ * the wire; two named blocks make handing the wrong one somewhere a thing
+ * someone has to type. PublicPaymentSettings itself is deliberately unchanged.
+ */
+export type BookingPageSettings = {
+  payment: PublicPaymentSettings;
+  /** PRIVATE. Passed to toPublicView, which decides; never sent as-is. */
+  studio: StudioSettings;
+};
+
+/**
+ * Built field by field, and fresh, for the same two reasons everything else in
+ * this pair of files is: a spread would carry a future Settings field into
+ * whichever half it landed in, and a returned reference into DEFAULT_SETTINGS
+ * would let a caller mutate this module's own constant.
+ */
+function splitForBookingPage(s: Settings): BookingPageSettings {
+  return {
+    payment: toPublicPaymentSettings(s),
+    studio: { address: s.studio.address, arrivalNote: s.studio.arrivalNote },
+  };
+}
+
+/**
+ * The settings a booking page runs on, for a caller that must not fail when the
  * settings read does. THE ONLY function in here that swallows an error, and it
  * is deliberate: every caller is on the booking path — the page that renders a
- * client's link, and the four routes that answer with a PublicBookingView —
- * where the settings are ONE FIELD of a response whose other twenty are a real
+ * client's link, and the routes that answer with a PublicBookingView — where
+ * the settings are two fields of a response whose other twenty are a real
  * appointment the reader is entitled to see.
  *
  * Two of those callers make it more than a nicety. The submit and receipt
@@ -148,10 +194,13 @@ export async function loadSettings(): Promise<Settings> {
  * would turn a write that already landed into a 500, and the client would
  * retry an upload the booking already has.
  *
- * The fallback is DEFAULT_SETTINGS, which offers NEITHER method — the honest
- * answer to "we could not find out what the studio accepts", and the one that
- * cannot send a client to a checkout or a CBU we failed to read. The payment
- * step says so out loud rather than rendering empty; see PaymentUnavailable.
+ * The fallback is DEFAULT_SETTINGS, which offers NEITHER payment method and
+ * carries NO address — the honest answer to "we could not find out what the
+ * studio accepts", and in both halves the safe direction: it cannot send a
+ * client to a checkout or a CBU we failed to read, and a confirmed booking
+ * simply renders without an address rather than with a guess at one. The
+ * payment step says so out loud rather than rendering empty; see
+ * PaymentUnavailable.
  *
  * Not a general-purpose wrapper around loadSettings(): the admin settings tab
  * and the MercadoPago preference route both need to know that a read FAILED —
@@ -159,12 +208,12 @@ export async function loadSettings(): Promise<Settings> {
  * refuse to charge for a method it cannot confirm is on offer — so they call
  * loadSettings() and let it throw.
  */
-export async function loadPublicPaymentSettings(): Promise<PublicPaymentSettings> {
+export async function loadBookingPageSettings(): Promise<BookingPageSettings> {
   try {
-    return toPublicPaymentSettings(await loadSettings());
+    return splitForBookingPage(await loadSettings());
   } catch (err) {
     console.error("settings: falling back to defaults, load failed", err);
-    return toPublicPaymentSettings(DEFAULT_SETTINGS);
+    return splitForBookingPage(DEFAULT_SETTINGS);
   }
 }
 
@@ -243,6 +292,7 @@ export async function saveSettings(
     email: next.email,
     transfer: next.transfer,
     mercadopago: next.mercadopago,
+    studio: next.studio,
     // Carried forward so the mutator returns a complete Settings; the loop
     // overwrites it on the write that commits.
     updatedAt: current.updatedAt,

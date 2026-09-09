@@ -66,7 +66,7 @@ import {
 } from "@/lib/bookings-types";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { BookingsNotConfiguredError } from "@/lib/r2-private";
-import { loadPublicPaymentSettings } from "@/lib/settings-store";
+import { loadBookingPageSettings } from "@/lib/settings-store";
 
 export const runtime = "nodejs";
 /** Two Brevo calls plus three R2 round trips, all behind one client tap. */
@@ -312,8 +312,9 @@ export async function POST(req: Request, ctx: RouteContext) {
     // allowed to throw past here or a submit that fully succeeded would answer
     // 500 and invite the client to send it again — which is exactly why the
     // helper falls back instead of throwing.
+    const settings = await loadBookingPageSettings();
     return NextResponse.json(
-      { ok: true, view: toPublicView(updated, await loadPublicPaymentSettings()) },
+      { ok: true, view: toPublicView(updated, settings.payment, settings.studio) },
       { headers: NO_STORE },
     );
   } catch (err) {

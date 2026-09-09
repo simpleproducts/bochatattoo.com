@@ -64,12 +64,38 @@ export type EmailSettings = {
   notifyEmail: string;
 };
 
+/**
+ * WHERE THE STUDIO IS. The single most restricted value in this document, and
+ * the reason it is stored here rather than in src/config/studio.ts: that file is
+ * compiled into the public site and read by JsonLd, so anything put in it is
+ * published by definition. This one is read out of the private bucket at request
+ * time, and reaches a human only through the gate in toPublicView().
+ *
+ * This is a PRIVATE studio. The address is disclosed to exactly one audience —
+ * a client whose booking deriveStatus() calls "confirmed" — in exactly two
+ * places: their own tokenised booking page, and the confirmation email sent on
+ * that same transition. The private link travels by WhatsApp and gets forwarded
+ * long before anyone has paid, so a booking that is not yet confirmed must
+ * produce a response with no address in it at all.
+ *
+ * Both fields are `string` and not `string | null` for the reason the header
+ * gives: "" is a real value meaning "not set", and there is no third state.
+ */
+export type StudioSettings = {
+  /** Street address, given only to confirmed clients. "" means not set. */
+  address: string;
+  /** Buzzer, floor, "ring twice", nearest corner — anything that helps at the door. "" means not set. */
+  arrivalNote: string;
+};
+
 /** The whole document. One object; see settings-store.ts for the key and the CAS. */
 export type Settings = {
   version: 1;
   email: EmailSettings;
   transfer: TransferSettings;
   mercadopago: { enabled: boolean };
+  /** Never public. See StudioSettings, and the gate in bookings-store.ts. */
+  studio: StudioSettings;
   /** UTC ISO. Stamped by the store on every committed write, never by a caller. */
   updatedAt: string;
 };
@@ -98,6 +124,17 @@ export type PublicPaymentSettings = {
  * nothing anywhere errors. Typed out, a new field is simply absent here until a
  * human decides it should be public — including inside `transfer`, which is
  * entirely public TODAY and has no guarantee of staying that way.
+ *
+ * `studio` IS NOT PART OF THIS AND MUST NEVER BE ADDED TO IT. Not the address,
+ * not the arrival note, not a boolean saying whether an address exists. What
+ * this function returns is handed to the client booking page WHOLESALE, on every
+ * booking in every state — red, amber and green alike — because the payment step
+ * has to render before anybody has paid. The address is disclosed on exactly one
+ * condition, and that condition is a property of the BOOKING, not of the
+ * settings, so it cannot be expressed here: adding `studio` to
+ * PublicPaymentSettings would publish the studio's address to everyone holding a
+ * forwarded link. The one place allowed to read it is toPublicView() in
+ * bookings-store.ts, which has the booking in hand and can check its status.
  */
 export function toPublicPaymentSettings(s: Settings): PublicPaymentSettings {
   return {
@@ -128,6 +165,11 @@ export const DEFAULT_SETTINGS: Settings = {
   email: { senderEmail: "", senderName: "", notifyEmail: "" },
   transfer: { enabled: false, alias: "", cbu: "", holder: "", bank: "" },
   mercadopago: { enabled: false },
+  // Empty until a human types it into the settings tab. An unset address is not
+  // a broken state: the gate simply finds nothing to disclose and the confirmed
+  // client's page shows no address block at all, which is strictly better than
+  // any placeholder a default could invent.
+  studio: { address: "", arrivalNote: "" },
   // The epoch, because these defaults were never saved by anyone. It keeps
   // `updatedAt` a plain non-null string — every consumer can format it without
   // a guard — while still being obviously not a real save: any actual write
@@ -148,3 +190,17 @@ export const CBU_MAX = 34;
 export const ALIAS_MAX = 40;
 export const HOLDER_MAX = 80;
 export const BANK_MAX = 60;
+
+/**
+ * Room for "Av. Corrientes 1234, Piso 5 Depto B, Villa Crespo, CABA" and then
+ * some, without leaving room for directions that belong in the note below.
+ */
+export const ADDRESS_MAX = 200;
+
+/**
+ * Longer than the address on purpose: this is prose, not a field. "Timbre 5B,
+ * tocá dos veces. El portón verde al lado del kiosco — si no abre, mandame un
+ * WhatsApp." is the shape of the thing, and it is printed on a confirmed
+ * client's page and in their email, so it has to fit both.
+ */
+export const ARRIVAL_NOTE_MAX = 300;

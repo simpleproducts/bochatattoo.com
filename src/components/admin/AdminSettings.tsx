@@ -2,17 +2,27 @@
 /**
  * The settings screen: everything the studio can change without a deploy.
  *
- * Three sections — email, bank transfer, MercadoPago — and ONE save, because
- * bookings/settings.json is one object and saveSettings() replaces it whole. A
- * save button per section would each claim to write its own block while
- * actually writing all three, and the day two tabs are open that lie costs a
- * CBU: the stale tab's "save email" would carry its stale bank details along
- * with it. One form, one PUT, one line saying what happened.
+ * Four sections — email, bank transfer, MercadoPago, studio address — and ONE
+ * save, because bookings/settings.json is one object and saveSettings()
+ * replaces it whole. A save button per section would each claim to write its
+ * own block while actually writing all four, and the day two tabs are open that
+ * lie costs a CBU: the stale tab's "save email" would carry its stale bank
+ * details along with it. One form, one PUT, one line saying what happened.
  *
  * The draft is seeded from `initial` ONCE, in a lazy initialiser. Not an
  * effect: this repo lints setState-inside-useEffect as an error, and an effect
  * would also let a parent re-render overwrite half-typed input with the
  * document as it was when the page was served.
+ *
+ * THE STUDIO ADDRESS SECTION IS LAST, and it carries a hint above its inputs
+ * rather than below them. It is the one field on this screen whose risk is not
+ * "wrong value" but "wrong audience": a private studio's street address, which
+ * a client only ever sees once their booking is confirmed, on their own
+ * tokenised page and in their confirmation email. Somebody will hesitate over
+ * that empty box wondering whether typing in it publishes their home, and the
+ * answer has to be on the screen at the moment they hesitate — before they
+ * type, which is why the hint sits above the fields and not under them. The
+ * gate itself is in toPublicView(); this component only says so out loud.
  *
  * WHAT THIS COMPONENT NEVER RECEIVES is a secret. `mercadoPagoReady` is a
  * boolean the server derived from the access token's presence; the token
@@ -34,7 +44,9 @@ import type { ReactNode } from "react";
 import type { AdminDictionary } from "@/i18n/admin";
 import { EMAIL_MAX, EMAIL_RE, NAME_MAX } from "@/lib/bookings-types";
 import {
+  ADDRESS_MAX,
   ALIAS_MAX,
+  ARRIVAL_NOTE_MAX,
   BANK_MAX,
   CBU_MAX,
   HOLDER_MAX,
@@ -62,6 +74,12 @@ const LABEL = "font-mono uppercase tracking-[0.2em] text-muted";
 const SECTION = "flex flex-col gap-4 border border-line p-4";
 const LEGEND = "px-1 font-mono text-[10px] uppercase tracking-[0.2em] text-muted";
 const HINT = "font-mono text-[10px] text-muted";
+/**
+ * For a hint that must be READ rather than merely available. Accent and not the
+ * amber of `hints.mercadopago`: nothing is wrong here, and an operator who
+ * learns to read amber as "broken" would start skipping this one.
+ */
+const HINT_LOUD = "font-mono text-[10px] text-accent leading-relaxed";
 const ERROR = "font-mono text-[10px] uppercase tracking-[0.2em] text-red-400";
 
 /** The booking form's field idiom, verbatim, so the two screens read as one. */
@@ -106,6 +124,7 @@ function toDraft(s: Settings): Draft {
       bank: s.transfer.bank,
     },
     mercadopago: { enabled: s.mercadopago.enabled },
+    studio: { address: s.studio.address, arrivalNote: s.studio.arrivalNote },
   };
 }
 
@@ -138,7 +157,7 @@ export function AdminSettings({
   const t = dict.settings;
 
   /**
-   * Every edit goes through one of these three, and all of them drop the
+   * Every edit goes through one of these four, and all of them drop the
    * status back to idle on the way. One updater per section rather than a
    * generic deep patch: two levels is not enough depth to be worth a helper
    * that no longer says which field it is changing.
@@ -164,6 +183,17 @@ export function AdminSettings({
   function patchMercadoPago(enabled: boolean) {
     setStatus({ kind: "idle" });
     setDraft((d) => ({ ...d, mercadopago: { enabled } }));
+  }
+
+  /**
+   * No coupling rule like patchTransfer's. An arrival note left behind after
+   * the address is cleared is harmless — the gate keys on the ADDRESS, so a
+   * lone note is never disclosed to anyone — and silently wiping what the
+   * operator typed would be the surprising behaviour, not the safe one.
+   */
+  function patchStudio(p: Partial<Draft["studio"]>) {
+    setStatus({ kind: "idle" });
+    setDraft((d) => ({ ...d, studio: { ...d.studio, ...p } }));
   }
 
   const senderEmailBad = emailInvalid(draft.email.senderEmail);
@@ -195,6 +225,7 @@ export function AdminSettings({
           email: draft.email,
           transfer: { ...draft.transfer, enabled: transferOn },
           mercadopago: { enabled: mercadoPagoOn },
+          studio: draft.studio,
         }),
       });
       if (!res.ok) throw new Error(await readError(res));
@@ -400,6 +431,47 @@ export function AdminSettings({
         >
           {t.hints.mercadopago}
         </p>
+      </fieldset>
+
+      {/* ── Studio address ──────────────────────────────────────────── */}
+      <fieldset className={SECTION}>
+        <legend className={LEGEND}>{t.sections.studio}</legend>
+
+        {/* Above the inputs on purpose — see the header. This is the answer to
+            the question the empty box provokes, and an answer printed under
+            the box is an answer given after the decision. */}
+        <p className={HINT_LOUD}>{t.hints.studio}</p>
+
+        <Field label={t.fields.address}>
+          {/* autoComplete off, and not "street-address": the browser would
+              helpfully offer the OPERATOR'S OWN home address, which is the one
+              address that must not end up in a field that gets sent to
+              clients. */}
+          <input
+            type="text"
+            autoComplete="off"
+            maxLength={ADDRESS_MAX}
+            value={draft.studio.address}
+            onChange={(e) => patchStudio({ address: e.target.value })}
+            className={INPUT}
+          />
+        </Field>
+
+        {/* A textarea and not an input: this is a couple of sentences of
+            directions to a door, and a single line would hide the end of what
+            the operator typed behind a scroll they cannot see. */}
+        <Field
+          label={t.fields.arrivalNote}
+          hint={<span className={HINT}>{t.hints.arrivalNote}</span>}
+        >
+          <textarea
+            rows={3}
+            maxLength={ARRIVAL_NOTE_MAX}
+            value={draft.studio.arrivalNote}
+            onChange={(e) => patchStudio({ arrivalNote: e.target.value })}
+            className={`${INPUT} resize-y min-h-20`}
+          />
+        </Field>
       </fieldset>
 
       <div className="flex items-center gap-4">
