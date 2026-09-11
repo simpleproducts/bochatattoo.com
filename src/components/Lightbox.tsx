@@ -52,9 +52,18 @@ export function Lightbox({
 
   // Reset slide direction whenever the lightbox transitions closed → open,
   // so the first navigation after re-opening doesn't use stale direction.
-  useEffect(() => {
+  //
+  // React's "adjust state when a prop changes" pattern — run during render,
+  // the way AdminCalendar folds a server refresh in — rather than an effect.
+  // The slide element is keyed by index and picks its animation class from
+  // `direction` as it mounts, so resetting a commit later meant the opening
+  // frame could still carry the previous session's direction and then restart
+  // the 280ms animation the other way round once the effect landed.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (wasOpen !== open) {
+    setWasOpen(open);
     if (open) setDirection(1);
-  }, [open]);
+  }
 
   const endIndex = endCard ? pieces.length : null;
   const isEnd = endIndex !== null && index === endIndex;
@@ -88,8 +97,15 @@ export function Lightbox({
     [index, pieces.length, onIndexChange, endIndex],
   );
 
+  // The popstate listener below is registered on `open` alone — re-running it
+  // per render would push a history entry every time — so it reaches the
+  // CURRENT onClose through a ref. Written in an effect rather than during
+  // render: render has to stay free of side effects, and the only reader is a
+  // popstate handler, which cannot run before the commit this effect follows.
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;

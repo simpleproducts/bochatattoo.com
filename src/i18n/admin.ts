@@ -602,6 +602,64 @@ export type AdminDictionary = {
     ios: string;
     dismiss: string;
   };
+
+  /**
+   * The push opt-in that sits beside the install offer — see PushToggle.tsx.
+   *
+   * Seven strings for five mutually exclusive outcomes, because the component
+   * refuses to show a control it cannot honour. `enable` and `disable` are the
+   * two directions of the only button there is; `enabled` is the line beside
+   * the off switch, and it says THIS PHONE on purpose — a subscription belongs
+   * to one browser on one device, and an operator who enabled it on the studio
+   * tablet must not read this on his phone as a promise about the phone.
+   *
+   * `denied` and `ios` are dead ends with no button under them, so each has to
+   * name the way out in full: the browser's own site settings for the first,
+   * the home screen for the second. Apple ships Web Push only inside an
+   * installed web app, never in a tab, so `ios` is not a suggestion — it is
+   * the entire mechanism, stated once.
+   *
+   * `error` covers BOTH directions of the switch, which is why it is worded
+   * about the alerts rather than about enabling: the same line has to be true
+   * after a failed subscribe and after a failed unsubscribe. A failure coming
+   * back from our own API is shown in the API's own words instead — this one
+   * stands in for the browser's untranslated DOMExceptions.
+   */
+  push: {
+    title: string;
+    enable: string;
+    disable: string;
+    enabled: string;
+    denied: string;
+    ios: string;
+    error: string;
+
+    /**
+     * The words a push notification is built from.
+     *
+     * They live HERE, and are rendered by GET /api/admin/push/summary, because
+     * the service worker cannot reach this file: it has no bundle, no imports,
+     * and — the deciding reason — no way to read `ba_admin_locale`, which is
+     * the admin's ACTUAL chosen language rather than the phone's. The route is
+     * fetched with the admin's own cookie, so it can. The worker keeps exactly
+     * two hardcoded Spanish strings for the case where that fetch fails; see
+     * the header of public/admin-push-sw.js.
+     *
+     * `awaiting` is a bare noun phrase with the number put in front of it by
+     * the route — "1 sin confirmar", "3 sin confirmar" — which is grammatical
+     * at every count in both languages and is why there is no plural form here.
+     */
+    notification: {
+      /** Title when the booking that just changed is now green. */
+      confirmed: string;
+      /** Title for any other movement, and when there is nothing to name. */
+      movement: string;
+      /** Follows a number: "2 sin confirmar". Never shown at zero. */
+      awaiting: string;
+      /** Body when the calendar has nothing upcoming left to report. */
+      nothing: string;
+    };
+  };
 };
 
 const adminEs: AdminDictionary = {
@@ -943,6 +1001,23 @@ const adminEs: AdminDictionary = {
     ios: "Tocá Compartir y después «Agregar a pantalla de inicio».",
     dismiss: "No mostrar más",
   },
+
+  push: {
+    title: "Avisos de reservas",
+    enable: "Activá",
+    disable: "Desactivar",
+    enabled: "Los avisos están activados en este teléfono.",
+    denied:
+      "El navegador tiene los avisos bloqueados. Habilitalos en los ajustes del sitio y volvé a entrar.",
+    ios: "En iPhone los avisos andan solo con el admin agregado a la pantalla de inicio.",
+    error: "Algo falló con los avisos. Probá de nuevo.",
+    notification: {
+      confirmed: "Reserva confirmada",
+      movement: "Movimiento en el calendario",
+      awaiting: "sin confirmar",
+      nothing: "No queda nada por confirmar.",
+    },
+  },
 };
 
 const adminEn: AdminDictionary = {
@@ -1283,6 +1358,23 @@ const adminEn: AdminDictionary = {
     action: "Install",
     ios: "Tap Share, then “Add to Home Screen”.",
     dismiss: "Don't show again",
+  },
+
+  push: {
+    title: "Booking alerts",
+    enable: "Enable",
+    disable: "Disable",
+    enabled: "Alerts are on for this phone.",
+    denied:
+      "This browser has notifications blocked. Allow them in the site settings and come back.",
+    ios: "On iPhone, alerts only work with the admin added to the home screen.",
+    error: "Something went wrong with the alerts. Try again.",
+    notification: {
+      confirmed: "Booking confirmed",
+      movement: "Movement on the calendar",
+      awaiting: "awaiting confirmation",
+      nothing: "Nothing left to confirm.",
+    },
   },
 };
 

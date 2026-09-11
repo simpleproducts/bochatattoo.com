@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Placeholder } from "./Placeholder";
 import { RemoteImage } from "./RemoteImage";
@@ -14,10 +14,24 @@ import { localePath } from "@/i18n";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
+/**
+ * "Has this component hydrated yet" is a fact about the runtime, not state this
+ * component owns, so it is read through `useSyncExternalStore` — the same pair
+ * LocalTime and PageCurtain use — rather than copied in by an effect, which
+ * this repo lints as an error. The store never changes, hence the no-op
+ * subscribe: `false` on the server and during the hydrating render, `true` on
+ * the re-render immediately after, which is the moment the old effect ran.
+ */
+const subscribeNever = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
 type Props = { dict: Dictionary["work"]; locale: Locale };
 
 export function Work({ dict, locale }: Props) {
+  const mounted = useSyncExternalStore(subscribeNever, onClient, onServer);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [deepLinked, setDeepLinked] = useState(false);
   const { images, hiddenSet } = useImagesMap();
   const categories = useCategories();
   const featuredSlugs = useFeaturedSlugs();
@@ -78,17 +92,29 @@ export function Work({ dict, locale }: Props) {
     category: t.catLabel || undefined,
   }));
 
-  // Open directly to ?tattoo=slug on mount
-  useEffect(() => {
+  // Open directly to ?tattoo=slug — React's documented "adjust state during
+  // render", the same shape Nav and Lightbox use, rather than an effect.
+  //
+  // `deepLinked` is a one-shot latch and is NOT optional: while the lightbox is
+  // open, Lightbox rewrites ?tattoo= with pushState/replaceState on every piece
+  // the viewer moves to. Re-reading the URL on a later render would drag
+  // `openIndex` back to whatever the address bar now says — and closing the
+  // lightbox would immediately reopen it. The URL is only ever an INSTRUCTION at
+  // mount; after that the lightbox owns it.
+  //
+  // Gated on `mounted` because the server has no window.location.search to read,
+  // and because opening the lightbox during the hydrating render would paint DOM
+  // the server's HTML does not contain. It now opens one paint EARLIER than the
+  // effect did — React finishes this render pass before the browser sees it —
+  // which removes the single frame of un-opened grid the old code flashed.
+  if (mounted && !deepLinked) {
+    setDeepLinked(true);
     const slug = new URLSearchParams(window.location.search).get("tattoo");
     if (slug) {
       const idx = pieces.findIndex((p) => p.slug === slug);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (idx !== -1) setOpenIndex(idx);
     }
-  // pieces identity is stable after first render
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
   return (
     <section id="work" className="px-6 md:px-10 py-24 md:py-32">
