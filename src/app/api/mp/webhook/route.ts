@@ -65,6 +65,7 @@ import {
   type BookingRecord,
 } from "@/lib/bookings-types";
 import { getPayment, MercadoPagoError } from "@/lib/mercadopago";
+import { notifyAdminDevices } from "@/lib/push";
 import { BookingsNotConfiguredError } from "@/lib/r2-private";
 
 export const runtime = "nodejs";
@@ -338,7 +339,16 @@ export async function POST(req: Request) {
     // and correctly sends nothing; one already confirmed by a receipt has
     // already had its pair.
     if (!wasConfirmed && deriveStatus(updated) === "confirmed") {
-      await logEmails(updated, ["ownerConfirmed", "clientConfirmed"]);
+      // The push rides the same condition as the mails, from the same place, so
+      // the two can never drift apart on what "confirmed" means. Both are
+      // best-effort and neither can reject — each returns its failures instead
+      // of throwing — so Promise.all here cannot turn a recorded payment into a
+      // 500 that puts MercadoPago into a retry loop over a delivery that
+      // already did its job.
+      await Promise.all([
+        notifyAdminDevices(`booking ${bookingId} confirmed by payment`),
+        logEmails(updated, ["ownerConfirmed", "clientConfirmed"]),
+      ]);
     }
 
     return ack();

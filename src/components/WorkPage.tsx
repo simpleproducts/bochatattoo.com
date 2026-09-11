@@ -1,5 +1,11 @@
 "use client";
-import { useMemo, useState, useEffect, useRef } from "react";
+import {
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import Link from "next/link";
 import { SiteShell } from "./SiteShell";
 import { Reveal } from "./Reveal";
@@ -17,6 +23,16 @@ import { categoryPath } from "@/i18n/routes";
 import type { Dictionary } from "@/i18n/types";
 import type { Locale } from "@/i18n";
 
+/**
+ * "Has this component hydrated yet" is a fact about the runtime, not state this
+ * component owns, so it is read through `useSyncExternalStore` — the same pair
+ * LocalTime and PageCurtain use — rather than copied in by an effect, which this
+ * repo lints as an error. The store never changes, hence the no-op subscribe.
+ */
+const subscribeNever = () => () => {};
+const onClient = () => true;
+const onServer = () => false;
+
 type Section = {
   slug: string;
   label: string;
@@ -32,7 +48,9 @@ export function WorkPage({
 }) {
   const work = dict.work;
   const home = localePath(locale);
+  const mounted = useSyncExternalStore(subscribeNever, onClient, onServer);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [deepLinked, setDeepLinked] = useState(false);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
   const allImages = useAllImages();
@@ -117,17 +135,29 @@ export function WorkPage({
     return m;
   }, [flat]);
 
-  // Open directly to ?tattoo=slug on mount
-  useEffect(() => {
+  // Open directly to ?tattoo=slug — React's documented "adjust state during
+  // render", the same shape Nav and Lightbox use, rather than an effect.
+  //
+  // `deepLinked` is a one-shot latch and is NOT optional: while the lightbox is
+  // open, Lightbox rewrites ?tattoo= with pushState/replaceState on every piece
+  // the viewer moves to. Re-reading the URL on a later render would drag
+  // `openIndex` back to whatever the address bar now says — and closing the
+  // lightbox would immediately reopen it. The URL is only ever an INSTRUCTION at
+  // mount; after that the lightbox owns it.
+  //
+  // Gated on `mounted` because the server has no window.location.search to read,
+  // and because opening the lightbox during the hydrating render would paint DOM
+  // the server's HTML does not contain. It now opens one paint EARLIER than the
+  // effect did — React finishes this render pass before the browser sees it —
+  // which removes the single frame of un-opened archive the old code flashed.
+  if (mounted && !deepLinked) {
+    setDeepLinked(true);
     const slug = new URLSearchParams(window.location.search).get("tattoo");
     if (slug) {
       const idx = indexBySlug.get(slug);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (idx !== undefined) setOpenIndex(idx);
     }
-  // indexBySlug is stable after mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
   // Scroll-spy: track which section is currently in view so the category
   // nav can highlight it. Trigger line sits just below the sticky nav strip.

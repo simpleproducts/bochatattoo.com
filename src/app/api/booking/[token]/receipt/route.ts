@@ -70,6 +70,7 @@ import {
   type BookingRecord,
   type PublicBookingView,
 } from "@/lib/bookings-types";
+import { notifyAdminDevices } from "@/lib/push";
 import { deletePrivate, putPrivateBytes, BookingsNotConfiguredError } from "@/lib/r2-private";
 import { ipFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { sniffReceipt, type SniffedReceipt } from "@/lib/receipt-validate";
@@ -365,8 +366,22 @@ export async function POST(req: Request, ctx: RouteContext) {
     // client would get by reloading the page.
     if (updated.cancelledAt) return fail("invalid-link", 404);
 
+    // The first transition to green, and the only one that tells anybody. The
+    // push goes out on exactly the same condition as the mails and from exactly
+    // the same place, because a second definition of "confirmed" is how the two
+    // eventually disagree.
+    //
+    // Run together rather than in sequence: both are best-effort, both are past
+    // the commit, and NEITHER CAN REJECT — sendBookingEmails and
+    // notifyAdminDevices each return their failures instead of throwing, which
+    // is what makes this Promise.all safe. The client is holding a spinner, so
+    // they cost max(push, mail) rather than the sum; the mail half does a second
+    // record write against Brevo and is the slow one.
     if (!sawPriorReceipt && deriveStatus(updated) === "confirmed") {
-      await logEmails(updated, ["ownerConfirmed", "clientConfirmed"]);
+      await Promise.all([
+        notifyAdminDevices(`booking ${updated.id} confirmed by receipt`),
+        logEmails(updated, ["ownerConfirmed", "clientConfirmed"]),
+      ]);
     }
 
     // Past the commit and past the mails, so this must not throw: see the

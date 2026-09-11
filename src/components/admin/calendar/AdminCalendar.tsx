@@ -44,6 +44,7 @@ import {
 import { useRouter } from "next/navigation";
 import { AdminLocaleSwitcher } from "@/components/admin/AdminLocaleSwitcher";
 import { InstallPrompt } from "@/components/admin/InstallPrompt";
+import { PushToggle } from "@/components/admin/PushToggle";
 import { readError } from "@/components/admin/read-error";
 import {
   dayKeyOf,
@@ -1191,13 +1192,28 @@ export function AdminCalendar({
 
       {/*
         Outside the `configured` branch and last in the tree on purpose: the
-        offer to install is about the SCREEN, not about the data, so it still
-        belongs on a calendar that could not reach R2 — and low, below
-        everything, because a home-screen tip must never sit between Bocha and
-        the schedule. It renders nothing at all once installed, once dismissed,
-        or on any browser it cannot positively identify.
+        offer to install and the offer to be notified are both about the
+        SCREEN, not about the data, so they still belong on a calendar that
+        could not reach R2 — and low, below everything, because neither a
+        home-screen tip nor a notification switch may sit between Bocha and the
+        schedule. Each renders nothing at all on a browser it cannot positively
+        serve: InstallPrompt once installed or dismissed, PushToggle wherever
+        push is unsupported or VAPID is unconfigured.
+
+        PushToggle comes FIRST so that InstallPrompt — which carries its own
+        `mb-24` — stays the bottom-most element whenever both are on screen.
+        The wrapper repeats that clearance because AgendaList's create bar is
+        fixed over the very bottom of the document and PushToggle can easily be
+        the last thing on the page: InstallPrompt renders nothing once the
+        admin is installed, which is precisely the state in which push works on
+        an iPhone and this switch has something to offer. `empty:hidden` is
+        what stops that clearance from becoming 6rem of dead scroll on the
+        loads where both of them render nothing.
       */}
-      <InstallPrompt dict={dict} />
+      <div className="mb-24 flex flex-col gap-3 empty:hidden">
+        <PushToggle dict={dict} />
+        <InstallPrompt dict={dict} />
+      </div>
     </>
   );
 }

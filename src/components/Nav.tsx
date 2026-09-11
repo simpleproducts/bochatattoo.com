@@ -70,11 +70,20 @@ export function Nav({ dict, locale, switcherLabel }: Props) {
     () => ["about", "work", "process", "faq", "contact"] as const,
     [],
   );
+  // Leaving the home page clears the highlight during render — React's
+  // "adjust state when a prop changes" pattern, the one AdminCalendar uses for
+  // server refreshes — instead of from the effect below. Same end state, one
+  // paint earlier: the effect used to leave the previous page's section marked
+  // active for the first frame rendered after the route changed.
+  const [trackedHome, setTrackedHome] = useState(onHome);
+  if (trackedHome !== onHome) {
+    setTrackedHome(onHome);
+    setActiveId(null);
+  }
+
   useEffect(() => {
-    if (!onHome) {
-      setActiveId(null);
-      return;
-    }
+    // Nothing to observe off the home page, and nothing left to reset either.
+    if (!onHome) return;
     const elements = sectionIds
       .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => Boolean(el));
