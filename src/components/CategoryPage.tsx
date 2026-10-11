@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { SiteShell } from "./SiteShell";
 import { Reveal } from "./Reveal";
 import { RemoteImage } from "./RemoteImage";
+import { ImagesProvider } from "./ImagesProvider";
 import { BreadcrumbJsonLd } from "./BreadcrumbJsonLd";
 import { CATEGORY_COPY, CATEGORY_SLUGS } from "@/content/categories";
-import { getImagesData } from "@/lib/images-store";
+import { getImagesData, pickImages } from "@/lib/images-store";
 import { getDictionary, localePath } from "@/i18n";
 import { categoryPath, workPath } from "@/i18n/routes";
 import type { Locale } from "@/i18n";
@@ -195,36 +196,45 @@ export async function CategoryPage({
         </div>
       </section>
 
-      <div className="px-6 md:px-10 pb-20 md:pb-28 border-t border-line pt-16 md:pt-20">
-        <div className="work-grid columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4 [column-fill:_balance]">
-          {pieces.map((piece, i) => {
-            // "Animales 03" — the same label the archive uses. The original
-            // filename is never exposed.
-            const altLabel = `${label} ${String(i + 1).padStart(2, "0")}`;
-            const isFirstRow = i < 4;
-            return (
-              <Link
-                key={piece.slug}
-                href={`${archiveHref}?tattoo=${piece.slug}`}
-                aria-label={`${dict.work.open}: ${altLabel}`}
-                data-cursor
-                className="tile relative block w-full mb-3 md:mb-4 break-inside-avoid bg-line overflow-hidden"
-                style={{ aspectRatio: `${piece.width} / ${piece.height}` }}
-              >
-                <RemoteImage
-                  slug={piece.slug}
-                  alt={altLabel}
-                  fill
-                  sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
-                  className="object-cover tile-img"
-                  priority={isFirstRow}
-                  fetchPriority={isFirstRow ? "high" : "low"}
-                />
-              </Link>
-            );
-          })}
+      {/* Only this subject's pieces reach the client: RemoteImage reads its
+          entries from here, and nothing else on the page needs the manifest. */}
+      <ImagesProvider
+        data={pickImages(
+          data,
+          pieces.map((piece) => piece.slug),
+        )}
+      >
+        <div className="px-6 md:px-10 pb-20 md:pb-28 border-t border-line pt-16 md:pt-20">
+          <div className="work-grid columns-2 md:columns-3 lg:columns-4 gap-3 md:gap-4 [column-fill:_balance]">
+            {pieces.map((piece, i) => {
+              // "Animales 03" — the same label the archive uses. The original
+              // filename is never exposed.
+              const altLabel = `${label} ${String(i + 1).padStart(2, "0")}`;
+              const isFirstRow = i < 4;
+              return (
+                <Link
+                  key={piece.slug}
+                  href={`${archiveHref}?tattoo=${piece.slug}`}
+                  aria-label={`${dict.work.open}: ${altLabel}`}
+                  data-cursor
+                  className="tile relative block w-full mb-3 md:mb-4 break-inside-avoid bg-line overflow-hidden"
+                  style={{ aspectRatio: `${piece.width} / ${piece.height}` }}
+                >
+                  <RemoteImage
+                    slug={piece.slug}
+                    alt={altLabel}
+                    fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
+                    className="object-cover tile-img"
+                    priority={isFirstRow}
+                    fetchPriority={isFirstRow ? "high" : "low"}
+                  />
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      </ImagesProvider>
 
       <section className="px-6 md:px-10 py-16 md:py-24 border-t border-line">
         <Link

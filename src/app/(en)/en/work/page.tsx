@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { WorkPage } from "@/components/WorkPage";
+import { ImagesProvider } from "@/components/ImagesProvider";
+import { getArchiveImagesData } from "@/lib/images-store";
 import { getDictionary } from "@/i18n";
 
 const locale = "en" as const;
@@ -24,6 +26,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function WorkEn() {
-  return <WorkPage dict={dict} locale={locale} />;
+export default async function WorkEn() {
+  return (
+    <ImagesProvider data={await getArchiveImagesData()}>
+      <WorkPage dict={dict} locale={locale} />
+    </ImagesProvider>
+  );
 }

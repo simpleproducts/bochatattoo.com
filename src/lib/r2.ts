@@ -87,8 +87,11 @@ async function putJson(key: string, data: unknown): Promise<void> {
       Key: key,
       Body: JSON.stringify(data, null, 2),
       ContentType: "application/json",
-      // Public manifest — short cache so revalidations propagate fast.
-      CacheControl: "public, max-age=30, must-revalidate",
+      // Never cached by a CDN in front of R2. The site's data cache has no
+      // TTL (images-store.ts), so a page regenerated right after an admin
+      // write must read the new file, not a 30s-stale edge copy — otherwise
+      // the stale version sticks until the next write.
+      CacheControl: "no-cache",
     }),
   );
 }

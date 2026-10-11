@@ -4,6 +4,7 @@ import {
   EMPTY_CATEGORIES,
   EMPTY_MANIFEST,
   type CategoriesData,
+  type ImageEntry,
   type ImagesData,
   type ImagesManifest,
 } from "./images-types";
@@ -14,12 +15,18 @@ async function fetchJson<T>(path: string, fallback: T): Promise<T> {
   if (!BASE) return fallback;
   try {
     const res = await fetch(`${BASE}/${path}`, {
-      // Tag-based invalidation is the primary mechanism — every admin write
+      // Tag-based invalidation is the ONLY mechanism — every admin write
       // calls revalidateTag('images'), which wipes this entry instantly.
-      // The TTL is just a safety net for cases where the tag invalidation
-      // doesn't fully propagate (e.g., a CDN sitting in front of Vercel).
-      // 5 minutes is a reasonable balance between freshness and R2 GET cost.
-      next: { tags: ["images"], revalidate: 300 },
+      //
+      // WHY no TTL: every public page renders through this fetch, so its
+      // revalidate becomes the revalidate of every ISR page on the site. A
+      // 300s TTL re-rendered ~54 pages every 5 minutes, each writing ~1MB of
+      // HTML + RSC (the whole manifest ships to the client), and burned
+      // ~460k Vercel ISR write units a month on a manifest that had not
+      // changed since May. The stale-CDN race the TTL guarded against is
+      // closed at the source: r2.ts writes the manifest with `no-cache`.
+      cache: "force-cache",
+      next: { tags: ["images"] },
     });
     if (!res.ok) return fallback;
     return (await res.json()) as T;
@@ -40,6 +47,42 @@ export const getImagesData = cache(async (): Promise<ImagesData> => {
   ]);
   return { manifest, categoriesData };
 });
+
+/**
+ * The slice of the manifest one public page actually renders, for its
+ * ImagesProvider.
+ *
+ * WHY per page and not once in the layout: whatever the provider receives is
+ * serialized into that page's HTML and RSC payload. The whole manifest is
+ * ~290KB (blur placeholders included), so shipping it from the layout put it
+ * on every page — guest-spot pages that show no images at all, a home strip
+ * that shows twelve — and made every ISR write and read that much heavier.
+ *
+ * Hidden pieces are dropped here rather than flagged: every public consumer
+ * filters them out anyway, so leaving them out is the same render with fewer
+ * bytes. Categories and featuredSlugs are tiny and stay whole — the archive
+ * needs hidden categories to keep their images out of its "tail".
+ */
+export function pickImages(
+  data: ImagesData,
+  slugs: Iterable<string>,
+): ImagesData {
+  const images: Record<string, ImageEntry> = {};
+  for (const slug of slugs) {
+    const entry = data.manifest.images[slug];
+    if (entry && !entry.hidden) images[slug] = entry;
+  }
+  return {
+    manifest: { ...data.manifest, images },
+    categoriesData: data.categoriesData,
+  };
+}
+
+/** Every visible piece — for /work, the one page that shows the whole archive. */
+export async function getArchiveImagesData(): Promise<ImagesData> {
+  const data = await getImagesData();
+  return pickImages(data, Object.keys(data.manifest.images));
+}
 
 /**
  * Always-fresh variant for the admin dashboard. Bypasses Next's data cache
